@@ -507,6 +507,8 @@ BOOL virt_machine_run(RISCVMachine *s, int hartid, int n_cycles) {
         }
     }
 
+	//std::cout << "++++" << !riscv_terminated(s->cpu_state[hartid]) << "++++" <<  s->common.maxinsns << std::endl;
+	//non zero trace value that is !=10000  or max instructions not a multiple of 10000
     return !riscv_terminated(s->cpu_state[hartid]) && s->common.maxinsns > 0;
 }
 
@@ -563,6 +565,9 @@ static void usage(const char *prog, const char *msg) {
             "       --terminate-event name of the validate event to terminate execution\n"
             "       --trace start trace dump after a number of instructions. Trace disabled by default\n"
             "       --stf_trace <filename>  Dump an STF trace to the given file\n"
+            "       --stf_insn_num_tracing  Enable stf tracing with instruction number\n"
+            "       --stf_start  starts stf trace after a number of instructions\n"
+            "       --stf_length terminates stf trace after a number of instructions from stf_start\n"
             "       --ignore_sbi_shutdown continue simulation even upon seeing the SBI_SHUTDOWN call\n"
             "       --dump_memories dump memories that could be used to load a cosimulation\n"
             "       --memory_size sets the memory size in MiB (default 256 MiB)\n"
@@ -623,6 +628,9 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
     uint64_t    maxinsns                 = 0;
     uint64_t    trace                    = UINT64_MAX;
     const char *stf_trace                = nullptr;
+    bool        stf_insn_num_tracing     = false;
+    uint64_t    stf_start                = UINT64_MAX;
+    uint64_t    stf_length               = 0;
     long        memory_size_override     = 0;
     uint64_t    memory_addr_override     = 0;
     bool        ignore_sbi_shutdown      = false;
@@ -660,8 +668,11 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
             {"save",                    required_argument, 0,  's' },
             {"simpoint",                required_argument, 0,  'S' },
             {"maxinsns",                required_argument, 0,  'm' }, // CFG
-            {"trace   ",                required_argument, 0,  't' },
+            {"trace",                   required_argument, 0,  't' },
             {"stf_trace",               required_argument, 0,  'z' },
+            {"stf_insn_num_tracing",          no_argument, 0,  'e' },
+            {"stf_start",               required_argument, 0,  'x' },
+            {"stf_length",              required_argument, 0,  'y' },
             {"ignore_sbi_shutdown",     required_argument, 0,  'P' }, // CFG
             {"dump_memories",                 no_argument, 0,  'D' }, // CFG
             {"memory_size",             required_argument, 0,  'M' }, // CFG
@@ -743,6 +754,9 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
                 break;
 
             case 'z': stf_trace = strdup(optarg); break;
+            case 'e': stf_insn_num_tracing = true; break;
+            case 'x': stf_start = (uint64_t)atoll(optarg); break;
+            case 'y': stf_length = (uint64_t)atoll(optarg); break;
             case 'a': stf_no_priv_check = true; break;
 
             case 'P': ignore_sbi_shutdown = true; break;
@@ -1085,6 +1099,13 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
     // then run indefinitely
     if (s->common.maxinsns == 0)
         s->common.maxinsns = UINT64_MAX;
+
+    s->common.stf_insn_num_tracing   = stf_insn_num_tracing;
+    s->common.stf_start          = stf_start;
+    s->common.stf_length         = stf_length;
+    if(s->common.maxinsns < stf_length){
+       s->common.stf_length = s->common.maxinsns;
+    }
 
     for (int i = 0; i < s->ncpus; ++i) s->cpu_state[i]->ignore_sbi_shutdown = ignore_sbi_shutdown;
 

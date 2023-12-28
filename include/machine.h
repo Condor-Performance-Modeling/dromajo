@@ -78,9 +78,9 @@ struct FBDevice {
 #ifdef SIMPOINT_BB
 extern int simpoint_roi;
 
-//#define SIMPOINT_SIZE 1000000UL      // For Benchmarking Fine Grain
+#define SIMPOINT_SIZE 1000000UL      // For Benchmarking Fine Grain
 //#define SIMPOINT_SIZE 10000UL        // For verification
-#define SIMPOINT_SIZE 100000000UL  // Traditional 100M simpoint
+///#define SIMPOINT_SIZE 100000000UL  // Traditional 100M simpoint
 #endif
 
 typedef enum {
@@ -207,6 +207,13 @@ typedef struct VirtMachine {
     uint64_t maxinsns;
     uint64_t trace;
     const char * stf_trace = nullptr; // stf file name
+    uint64_t stf_start = UINT64_MAX;
+    uint64_t stf_length = 0;
+    uint64_t instruction_count = 0;
+    bool     stf_insn_num_tracing;
+    bool     stf_insn_tracing_enabled; // stf tracing is active
+    bool     stf_insn_start;    // detected the START_TRACE opcode
+    bool     stf_insn_stop;     // detected the STOP_TRACE opcode
     bool         stf_tracing_enabled; // stf tracing is active
     bool         stf_no_priv_check;   // override the priv==0 check
     bool         stf_is_start_opc;    // detected the START_TRACE opcode

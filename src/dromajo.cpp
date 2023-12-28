@@ -125,11 +125,7 @@ int simpoint_step(RISCVMachine *m, int hartid) {
 #endif
 
 static int iterate_core(RISCVMachine *m, int hartid, int n_cycles) {
-    m->common.maxinsns -= n_cycles;
 
-    if (m->common.maxinsns <= 0)
-        /* Succeed after N instructions without failure. */
-        return 0;
 
     RISCVCPUState *cpu = m->cpu_state[hartid];
 
@@ -143,8 +139,11 @@ static int iterate_core(RISCVMachine *m, int hartid, int n_cycles) {
 
     (void)riscv_read_insn(cpu, &insn_raw, last_pc);
 
+    if(stf_trace_trigger_insn(cpu, last_pc, m->common.instruction_count)) {
+    }
+
     //STF:The start OPC has been detected, throttle back n_cycles
-    if(m->common.stf_tracing_enabled) {
+    if(m->common.stf_tracing_enabled || m->common.stf_insn_tracing_enabled) {
       n_cycles = 1;
     }
 
@@ -154,13 +153,24 @@ static int iterate_core(RISCVMachine *m, int hartid, int n_cycles) {
     } else
       m->common.trace -= n_cycles;
 
+    m->common.instruction_count = m->common.instruction_count + n_cycles;
+
+    if(m->common.maxinsns  < uint64_t(n_cycles))
+        m->common.maxinsns = 0;
+    else
+        m->common.maxinsns -= n_cycles;
+
+    if (m->common.maxinsns <= 0)
+        /* Succeed after N instructions without failure. */
+        return 0;
+
     int keep_going = virt_machine_run(m, hartid, n_cycles);
 
     //STF:Trace the insn if the start OPC has been detected,
     //do not trace the start or stop insn's
-    if(m->common.stf_tracing_enabled
+    if((m->common.stf_tracing_enabled
        && !m->common.stf_is_start_opc
-       && !m->common.stf_is_stop_opc)
+       && !m->common.stf_is_stop_opc) || (m->common.stf_insn_tracing_enabled && m->common.stf_insn_num_tracing))
     {
         RISCVCPUState *cpu = m->cpu_state[hartid];
 
@@ -216,6 +226,9 @@ static int iterate_core(RISCVMachine *m, int hartid, int n_cycles) {
                 }
             }
         }
+		else {
+			fprintf(dromajo_stderr, "cpu->pending_exception == -1 = %d --- stf_prog_asid %lx== satp >> 4 %lx",(cpu->pending_exception == -1), m->common.stf_prog_asid, ((cpu->satp >> 4) & 0xFFFF));
+		}
     }
 
     if (!do_trace) {
