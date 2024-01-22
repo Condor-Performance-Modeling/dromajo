@@ -206,6 +206,8 @@ typedef struct VirtMachine {
     char *   terminate_event;
     uint64_t maxinsns;
     uint64_t trace;
+    uint64_t heartbeat;
+    const char * bb_file = nullptr;   // simpoint.bbv file name
     const char * stf_trace = nullptr; // stf file name
     bool         stf_tracing_enabled; // stf tracing is active
     bool         stf_no_priv_check;   // override the priv==0 check

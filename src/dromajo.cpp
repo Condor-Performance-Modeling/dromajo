@@ -153,6 +153,7 @@ static int iterate_core(RISCVMachine *m, int hartid, int n_cycles) {
         do_trace = true;
     } else
       m->common.trace -= n_cycles;
+    do_trace = false;
 
     int keep_going = virt_machine_run(m, hartid, n_cycles);
 
@@ -283,7 +284,12 @@ int main(int argc, char **argv) {
 
 #ifdef SIMPOINT_BB
     if (m->common.simpoints.empty()) {
-        simpoint_bb_file = fopen("dromajo_simpoint.bb", "w");
+        if (m->common.bb_file != nullptr){
+             simpoint_bb_file = fopen(m->common.bb_file, "w");
+        }
+        else {
+             simpoint_bb_file = fopen("dromajo_simpoint.bb", "w");
+        }
         if (simpoint_bb_file == nullptr) {
             fprintf(dromajo_stderr, "\nerror: could not open dromajo_simpoint.bb for dumping trace\n");
             exit(-3);
@@ -299,11 +305,19 @@ int main(int argc, char **argv) {
     execution_progress_meassure = &m->cpu_state[0]->minstret;
     signal(SIGINT, sigintr_handler);
 
+    uint64_t inst_heart_beat = 0;
+    uint64_t total_inst_count = 0;
     int keep_going;
     do {
         keep_going = 0;
         for (int i = 0; i < m->ncpus; ++i) keep_going |= iterate_core(m, i, n_cycles);
 #ifdef SIMPOINT_BB
+        inst_heart_beat += n_cycles;
+        total_inst_count += n_cycles;
+        if(inst_heart_beat > m->common.heartbeat){
+            fprintf(dromajo_stderr, "HeartBeat : %li / %li \n", inst_heart_beat, total_inst_count);
+            inst_heart_beat = 0;
+        }
         if (simpoint_roi) {
             if (!simpoint_step(m, 0))
                 break;
