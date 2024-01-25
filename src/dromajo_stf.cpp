@@ -64,7 +64,7 @@ bool stf_trace_trigger(RISCVCPUState *s,target_ulong PC,uint32_t insn)
 
 #define STF_TRACE_DEBUG	\
     if(s->machine->common.stf_insn_tracing_enabled){\
-        /**/ fprintf(dromajo_stderr, "\t\t>>>>> Traced Instr Count : %ld / exe:%ld\n", s->machine->common.stf_count, insn_executed); /* */\
+        /**/ fprintf(dromajo_stderr, "\tSATP: %lx  ASID: %lx>>>>> Traced Instr Count : %ld / exe:%ld\n", cpu->satp, (cpu->satp >> 4) & 0xFFFF, s->machine->common.stf_count, insn_executed); /* */\
     }
 
 bool stf_trace_trigger_insn(RISCVCPUState *s,target_ulong PC, uint64_t insn_executed) 

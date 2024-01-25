@@ -124,7 +124,7 @@ int simpoint_step(RISCVMachine *m, int hartid) {
 }
 #endif
 
-static int iterate_core(RISCVMachine *m, int hartid, int n_cycles) {
+static int iterate_core(RISCVMachine *m, int hartid, int& n_cycles) {
 
 
     RISCVCPUState *cpu = m->cpu_state[hartid];
@@ -227,10 +227,11 @@ static int iterate_core(RISCVMachine *m, int hartid, int n_cycles) {
             }
         }
 		else {
-			fprintf(dromajo_stderr, "cpu->pending_exception == -1 = %d --- stf_prog_asid %lx== satp >> 4 %lx",(cpu->pending_exception == -1), m->common.stf_prog_asid, ((cpu->satp >> 4) & 0xFFFF));
+			fprintf(dromajo_stderr, "stf_prog_asid %lx == (satp >> 4) %lx", m->common.stf_prog_asid, ((cpu->satp >> 4) & 0xFFFF));
 		}
     }
 
+	do_trace = false;
     if (!do_trace) {
         return keep_going;
     }
@@ -307,15 +308,26 @@ int main(int argc, char **argv) {
     if (!m)
         return 1;
 
+    RISCVCPUState *cpu = m->cpu_state[0];
+
     int n_cycles = 10000;
     execution_start_ts = get_current_time_in_seconds();
     execution_progress_meassure = &m->cpu_state[0]->minstret;
     signal(SIGINT, sigintr_handler);
 
+    uint64_t prev_prog_asid = 0;
+    uint64_t inst_heart_beat = 0;
+    uint64_t total_inst_count = 0;
     int keep_going;
     do {
         keep_going = 0;
+        prev_prog_asid = (cpu->satp);
         for (int i = 0; i < m->ncpus; ++i) keep_going |= iterate_core(m, i, n_cycles);
+        inst_heart_beat += n_cycles;
+        total_inst_count += n_cycles;
+        if((cpu->satp) != prev_prog_asid){
+            fprintf(dromajo_stderr, "\t -- ASID ::  %lx --> %lx  @%li\n", prev_prog_asid, (cpu->satp), total_inst_count);
+        }
 #ifdef SIMPOINT_BB
         if (simpoint_roi) {
             if (!simpoint_step(m, 0))
