@@ -226,9 +226,6 @@ static int iterate_core(RISCVMachine *m, int hartid, int& n_cycles) {
                 }
             }
         }
-		else {
-			fprintf(dromajo_stderr, "stf_prog_asid %lx == (satp >> 4) %lx", m->common.stf_prog_asid, ((cpu->satp >> 4) & 0xFFFF));
-		}
     }
 
 	do_trace = false;
@@ -297,7 +294,12 @@ int main(int argc, char **argv) {
 
 #ifdef SIMPOINT_BB
     if (m->common.simpoints.empty()) {
-        simpoint_bb_file = fopen("dromajo_simpoint.bb", "w");
+        if (m->common.bb_file != nullptr){
+             simpoint_bb_file = fopen(m->common.bb_file, "w");
+        }
+        else {
+             simpoint_bb_file = fopen("dromajo_simpoint.bb", "w");
+        }
         if (simpoint_bb_file == nullptr) {
             fprintf(dromajo_stderr, "\nerror: could not open dromajo_simpoint.bb for dumping trace\n");
             exit(-3);
@@ -325,8 +327,12 @@ int main(int argc, char **argv) {
         for (int i = 0; i < m->ncpus; ++i) keep_going |= iterate_core(m, i, n_cycles);
         inst_heart_beat += n_cycles;
         total_inst_count += n_cycles;
+        if(inst_heart_beat > m->common.heartbeat){
+            fprintf(dromajo_stderr, "HeartBeat : %li / %li \n", inst_heart_beat, total_inst_count);
+            inst_heart_beat = 0;
+        }
         if((cpu->satp) != prev_prog_asid){
-            fprintf(dromajo_stderr, "\t -- ASID ::  %lx --> %lx  @%li\n", prev_prog_asid, (cpu->satp), total_inst_count);
+            fprintf(dromajo_stderr, "\t -- ASID ::  %lx --> %lx @%li\n", prev_prog_asid, (cpu->satp), total_inst_count);
         }
 #ifdef SIMPOINT_BB
         if (simpoint_roi) {

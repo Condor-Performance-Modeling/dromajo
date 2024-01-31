@@ -565,6 +565,9 @@ static void usage(const char *prog, const char *msg) {
             "       --terminate-event name of the validate event to terminate execution\n"
             "       --trace start trace dump after a number of instructions. Trace disabled by default\n"
             "       --stf_trace <filename>  Dump an STF trace to the given file\n"
+            "       --stf_exit_on_stop_opc Terminate the simulation after detecting a STOP_TRACE opcode\n"
+            "       --bb_file <filename>  Name of file to dump simpoint.bb\n"
+            "       --heartbeat <n> after executing every n instructions \n"
             "       --stf_insn_num_tracing  Enable stf tracing with instruction number\n"
             "       --stf_start  starts stf trace after a number of instructions\n"
             "       --stf_length terminates stf trace after a number of instructions from stf_start\n"
@@ -627,7 +630,10 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
     long        ncpus                    = 0;
     uint64_t    maxinsns                 = 0;
     uint64_t    trace                    = UINT64_MAX;
+    uint64_t    heartbeat                = UINT64_MAX;
     const char *stf_trace                = nullptr;
+    bool        stf_exit_on_stop_opc     = false;
+    const char *bb_file	                 = nullptr;
     bool        stf_insn_num_tracing     = false;
     uint64_t    stf_start                = UINT64_MAX;
     uint64_t    stf_length               = 0;
@@ -668,9 +674,12 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
             {"save",                    required_argument, 0,  's' },
             {"simpoint",                required_argument, 0,  'S' },
             {"maxinsns",                required_argument, 0,  'm' }, // CFG
+            {"heartbeat",               required_argument, 0,  'H' }, // CFG
             {"trace",                   required_argument, 0,  't' },
             {"stf_trace",               required_argument, 0,  'z' },
-            {"stf_insn_num_tracing",          no_argument, 0,  'e' },
+            {"stf_exit_on_stop_opc",          no_argument, 0,  'e' },
+            {"bb_file",                 required_argument, 0,  'B' },
+            {"stf_insn_num_tracing",          no_argument, 0,  'E' },
             {"stf_start",               required_argument, 0,  'x' },
             {"stf_length",              required_argument, 0,  'y' },
             {"ignore_sbi_shutdown",     required_argument, 0,  'P' }, // CFG
@@ -747,6 +756,8 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
                 }
                 break;
 
+            case 'H':
+                heartbeat = (uint64_t)atoll(optarg);
             case 't':
                 if (trace != UINT64_MAX)
                     usage(prog, "already had a trace set");
@@ -754,7 +765,9 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
                 break;
 
             case 'z': stf_trace = strdup(optarg); break;
-            case 'e': stf_insn_num_tracing = true; break;
+            case 'e': stf_exit_on_stop_opc = true; break;
+            case 'B': bb_file = strdup(optarg); break;
+            case 'E': stf_insn_num_tracing = true; break;
             case 'x': stf_start = (uint64_t)atoll(optarg); break;
             case 'y': stf_length = (uint64_t)atoll(optarg); break;
             case 'a': stf_no_priv_check = true; break;
@@ -1083,7 +1096,10 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
 
     s->common.snapshot_save_name = snapshot_save_name;
     s->common.trace              = trace;
+    s->common.heartbeat          = heartbeat;
     s->common.stf_trace          = stf_trace;
+    s->common.stf_exit_on_stop_opc  = stf_exit_on_stop_opc;
+    s->common.bb_file            = bb_file;
     s->common.stf_no_priv_check  = stf_no_priv_check;
     s->common.stf_tracing_enabled = false;
     s->common.stf_is_start_opc    = false;
