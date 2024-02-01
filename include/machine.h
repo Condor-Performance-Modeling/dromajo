@@ -75,13 +75,13 @@ struct FBDevice {
 
 #define VM_CONFIG_VERSION 1
 
-#ifdef SIMPOINT_BB
+//#ifdef SIMPOINT_BB
 extern int simpoint_roi;
 
 //#define SIMPOINT_SIZE 1000000UL      // For Benchmarking Fine Grain
 //#define SIMPOINT_SIZE 10000UL        // For verification
-#define SIMPOINT_SIZE 100000000UL  // Traditional 100M simpoint
-#endif
+//#define SIMPOINT_SIZE 100000000UL  // Traditional 100M simpoint
+//#endif
 
 typedef enum {
     VM_FILE_BIOS,
@@ -117,7 +117,7 @@ typedef struct {
     EthernetDevice *net;
 } VMEthEntry;
 
-#ifdef SIMPOINT_BB
+//#ifdef SIMPOINT_BB
 #include <vector>
 struct Simpoint {
     Simpoint(uint64_t i, int j) : start(i), id(j) {}
@@ -126,7 +126,7 @@ struct Simpoint {
     uint64_t start;
     int      id;
 };
-#endif
+//#endif
 
 typedef struct {
     char *           cfg_filename;
@@ -196,10 +196,10 @@ typedef struct VirtMachine {
     /* graphics */
     FBDevice *fb_dev;
 
-#ifdef SIMPOINT_BB
+//#ifdef SIMPOINT_BB
     uint32_t              simpoint_next;
     std::vector<Simpoint> simpoints;
-#endif
+//#endif
 
     char *   snapshot_load_name;
     char *   snapshot_save_name;
@@ -207,6 +207,7 @@ typedef struct VirtMachine {
     uint64_t maxinsns;
     uint64_t trace;
     uint64_t heartbeat;
+    uint64_t simpoint_size;
     bool     en_bbv = false;// terminate the simulation after detecting STOP_TRACE opcode
     const char * bb_file = nullptr;   // simpoint.bbv file name
     const char * stf_trace = nullptr; // stf file name

@@ -49,7 +49,7 @@
 #include "dromajo_stf.h"
 #include <limits>
 
-#ifdef SIMPOINT_BB
+//#ifdef SIMPOINT_BB
 FILE *simpoint_bb_file = nullptr;
 int   simpoint_roi     = 0;  // start without ROI enabled
 
@@ -86,8 +86,8 @@ int simpoint_step(RISCVMachine *m, int hartid) {
     static std::unordered_map<uint64_t, int> pc2id;
     static int                               next_id = 1;
     if (m->common.maxinsns <= next_bbv_dump) {
-        if (m->common.maxinsns > SIMPOINT_SIZE)
-            next_bbv_dump = m->common.maxinsns - SIMPOINT_SIZE;
+        if (m->common.maxinsns > m->common.simpoint_size)
+            next_bbv_dump = m->common.maxinsns - m->common.simpoint_size;
         else
             next_bbv_dump = 0;
 
@@ -122,7 +122,7 @@ int simpoint_step(RISCVMachine *m, int hartid) {
 
     return 1;
 }
-#endif
+//#endif
 
 static int iterate_core(RISCVMachine *m, int hartid, int& n_cycles) {
     m->common.maxinsns -= n_cycles;
@@ -282,8 +282,8 @@ int main(int argc, char **argv) {
 #else
     RISCVMachine *m = virt_machine_main(argc, argv);
 
-#ifdef SIMPOINT_BB
-    if (m->common.simpoints.empty()) {
+//#ifdef SIMPOINT_BB
+    if (m->common.simpoints.empty() & m->common.en_bbv) {
         if (m->common.bb_file != nullptr){
              simpoint_bb_file = fopen(m->common.bb_file, "w");
         }
@@ -295,7 +295,7 @@ int main(int argc, char **argv) {
             exit(-3);
         }
     }
-#endif
+//#endif
 
     if (!m)
         return 1;
@@ -322,14 +322,14 @@ int main(int argc, char **argv) {
             inst_heart_beat = 0;
         }
         if((cpu->satp) != prev_prog_asid){
-            fprintf(dromajo_stderr, "\t -- ASID ::  %lx --> %lx @%li\n", prev_prog_asid, (cpu->satp), total_inst_count);
+            fprintf(dromajo_stderr, "\n\t -- ASID ::  %lx --> %lx @%li \n", prev_prog_asid, (cpu->satp), total_inst_count);
         }
-#ifdef SIMPOINT_BB
-        if (simpoint_roi) {
+//#ifdef SIMPOINT_BB
+        if (simpoint_roi & m->common.en_bbv) {
             if (!simpoint_step(m, 0))
                 break;
         }
-#endif
+//#endif
     } while (keep_going);
 
     double t = get_current_time_in_seconds();
