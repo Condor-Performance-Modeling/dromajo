@@ -567,7 +567,9 @@ static void usage(const char *prog, const char *msg) {
             "       --stf_trace <filename>  Dump an STF trace to the given file\n"
             "       --stf_exit_on_stop_opc Terminate the simulation after detecting a STOP_TRACE opcode\n"
             "       --bb_file <filename>  Name of file to dump simpoint.bb\n"
+            "       --en_bbv Enable bbv collection\n"
             "       --heartbeat <n> after executing every n instructions \n"
+            "       --simpoint_size <n> SIMPOINT_SIZE for bbv collection \n"
             "       --stf_insn_num_tracing  Enable stf tracing with instruction number\n"
             "       --stf_start  starts stf trace after a number of instructions\n"
             "       --stf_length terminates stf trace after a number of instructions from stf_start\n"
@@ -631,8 +633,10 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
     uint64_t    maxinsns                 = 0;
     uint64_t    trace                    = UINT64_MAX;
     uint64_t    heartbeat                = UINT64_MAX;
+    uint64_t    simpoint_size            = 100000000UL;
     const char *stf_trace                = nullptr;
     bool        stf_exit_on_stop_opc     = false;
+    bool        en_bbv                   = false;
     const char *bb_file	                 = nullptr;
     bool        stf_insn_num_tracing     = false;
     uint64_t    stf_start                = UINT64_MAX;
@@ -675,10 +679,12 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
             {"simpoint",                required_argument, 0,  'S' },
             {"maxinsns",                required_argument, 0,  'm' }, // CFG
             {"heartbeat",               required_argument, 0,  'H' }, // CFG
+            {"simpoint_size",           required_argument, 0,  'Z' }, // CFG
             {"trace",                   required_argument, 0,  't' },
             {"stf_trace",               required_argument, 0,  'z' },
             {"stf_exit_on_stop_opc",          no_argument, 0,  'e' },
             {"bb_file",                 required_argument, 0,  'B' },
+            {"en_bbv",                        no_argument, 0,  'v' },
             {"stf_insn_num_tracing",          no_argument, 0,  'E' },
             {"stf_start",               required_argument, 0,  'x' },
             {"stf_length",              required_argument, 0,  'y' },
@@ -758,6 +764,8 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
 
             case 'H':
                 heartbeat = (uint64_t)atoll(optarg);
+            case 'Z':
+                simpoint_size = (uint64_t)atoll(optarg);
             case 't':
                 if (trace != UINT64_MAX)
                     usage(prog, "already had a trace set");
@@ -766,6 +774,7 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
 
             case 'z': stf_trace = strdup(optarg); break;
             case 'e': stf_exit_on_stop_opc = true; break;
+            case 'v': en_bbv = true; break;
             case 'B': bb_file = strdup(optarg); break;
             case 'E': stf_insn_num_tracing = true; break;
             case 'x': stf_start = (uint64_t)atoll(optarg); break;
@@ -1069,7 +1078,7 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
         int distance;
         int num;
         while (fscanf(file, "%d %d", &distance, &num) == 2) {
-            uint64_t start = distance * SIMPOINT_SIZE;
+            uint64_t start = distance * s->common.simpoint_size;
 
             if (start == 0) {  // skip boot ROM
                 start = ROM_SIZE;
@@ -1097,9 +1106,11 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
     s->common.snapshot_save_name = snapshot_save_name;
     s->common.trace              = trace;
     s->common.heartbeat          = heartbeat;
+    s->common.simpoint_size      = simpoint_size;
     s->common.stf_trace          = stf_trace;
     s->common.stf_exit_on_stop_opc  = stf_exit_on_stop_opc;
     s->common.bb_file            = bb_file;
+    s->common.en_bbv             = en_bbv;
     s->common.stf_no_priv_check  = stf_no_priv_check;
     s->common.stf_tracing_enabled = false;
     s->common.stf_is_start_opc    = false;
