@@ -352,6 +352,7 @@ int main(int argc, char **argv) {
         }
     }
 
+    fprintf(dromajo_stderr, "\nInstruction Count: %i \n", total_inst_count);
     fprintf(dromajo_stderr, "Simulation speed: %5.2f MIPS (single-core)\n",
             1e-6 * *execution_progress_meassure / (t - execution_start_ts));
 
