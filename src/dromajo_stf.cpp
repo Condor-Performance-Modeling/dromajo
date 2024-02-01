@@ -67,7 +67,9 @@ bool stf_trace_trigger(RISCVCPUState *s,target_ulong PC,uint32_t insn)
 
 #define STF_TRACE_DEBUG	\
     if(s->machine->common.stf_insn_tracing_enabled){\
+        if(s->machine->common.stf_count % 1000000 == 0){\
         /**/ fprintf(dromajo_stderr, "\tSATP: %lx  ASID: %lx>>>>> Traced Instr Count : %ld / exe:%ld\n", cpu->satp, (cpu->satp >> 4) & 0xFFFF, s->machine->common.stf_count, insn_executed); /* */\
+        }\
     }
 
 bool stf_trace_trigger_insn(RISCVCPUState *s,target_ulong PC, uint64_t insn_executed) 
@@ -75,8 +77,16 @@ bool stf_trace_trigger_insn(RISCVCPUState *s,target_ulong PC, uint64_t insn_exec
     int hartid = s->mhartid;
     RISCVCPUState *cpu = s->machine->cpu_state[hartid];
 
-    s->machine->common.stf_insn_start = (insn_executed == s->machine->common.stf_start);
-    s->machine->common.stf_insn_stop  = s->machine->common.stf_insn_tracing_enabled && (s->machine->common.stf_count == s->machine->common.stf_length);//(insn_executed == (s->machine->common.stf_start + s->machine->common.stf_length - 1));
+    if((not (s->machine->common.stf_insn_tracing_enabled) ) & (s->machine->common.stf_count == 0)){
+       s->machine->common.stf_insn_start = (insn_executed >= s->machine->common.stf_start);
+    } else {
+       s->machine->common.stf_insn_start = false;
+    }
+    if(s->machine->common.stf_insn_tracing_enabled){
+       s->machine->common.stf_insn_stop  = (s->machine->common.stf_count == s->machine->common.stf_length);
+    } else {
+       s->machine->common.stf_insn_stop  = false;
+    }
 
     if(s->machine->common.stf_insn_start) {
 

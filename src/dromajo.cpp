@@ -139,6 +139,7 @@ static int iterate_core(RISCVMachine *m, int hartid, int& n_cycles) {
 
     (void)riscv_read_insn(cpu, &insn_raw, last_pc);
 
+    //fprintf(dromajo_stderr, "\n----Instruction Count-----: %li \n",  m->common.instruction_count);
     if(stf_trace_trigger_insn(cpu, last_pc, m->common.instruction_count)) {
     }
 
@@ -335,12 +336,16 @@ int main(int argc, char **argv) {
             fprintf(dromajo_stderr, "\n\t -- ASID ::  %lx --> %lx @%li \n", prev_prog_asid, (cpu->satp), total_inst_count);
         }
 //#ifdef SIMPOINT_BB
-        if (simpoint_roi & m->common.en_bbv) {
+        if (simpoint_roi && m->common.en_bbv) {
             if (!simpoint_step(m, 0))
                 break;
         }
 //#endif
     } while (keep_going);
+
+   FILE *asid_file = fopen("benchmark_asid", "w");
+   fprintf(asid_file, "%lx", cpu->satp);
+   fflush(asid_file);
 
     double t = get_current_time_in_seconds();
 

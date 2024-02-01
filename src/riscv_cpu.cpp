@@ -1893,13 +1893,17 @@ static int csr_write(RISCVCPUState *s, uint32_t funct3, uint32_t csr, target_ulo
             } else if ((val & 1) && simpoint_roi) {
                 fprintf(dromajo_stderr, "simpoint ROI already started\n");
             } else if ((val & 1) == 0 && simpoint_roi) {
+              if(s->machine->common.en_bbv){
                 fprintf(dromajo_stderr, "simpoint ROI finished\n");
+              }
                 simpoint_roi = 0;
             } else if ((val & 1) == 0 && simpoint_roi == 0) {
                 fprintf(dromajo_stderr, "simpoint ROI already finished\n");
             } else {
+              if(s->machine->common.en_bbv){
                 fprintf(dromajo_stderr, "simpoint ROI started\n");
                 simpoint_roi = 1;
+              }
             }
 
             break;
