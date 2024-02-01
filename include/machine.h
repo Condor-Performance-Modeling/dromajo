@@ -207,6 +207,7 @@ typedef struct VirtMachine {
     uint64_t maxinsns;
     uint64_t trace;
     uint64_t heartbeat;
+    bool     en_bbv = false;// terminate the simulation after detecting STOP_TRACE opcode
     const char * bb_file = nullptr;   // simpoint.bbv file name
     const char * stf_trace = nullptr; // stf file name
     bool         stf_tracing_enabled; // stf tracing is active

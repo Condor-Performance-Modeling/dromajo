@@ -565,6 +565,7 @@ static void usage(const char *prog, const char *msg) {
             "       --stf_trace <filename>  Dump an STF trace to the given file\n"
             "       --stf_exit_on_stop_opc Terminate the simulation after detecting a STOP_TRACE opcode\n"
             "       --bb_file <filename>  Name of file to dump simpoint.bb\n"
+            "       --en_bbv Enable bbv collection\n"
             "       --heartbeat <n> after executing every n instructions \n"
             "       --ignore_sbi_shutdown continue simulation even upon seeing the SBI_SHUTDOWN call\n"
             "       --dump_memories dump memories that could be used to load a cosimulation\n"
@@ -628,6 +629,7 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
     uint64_t    heartbeat                = UINT64_MAX;
     const char *stf_trace                = nullptr;
     bool        stf_exit_on_stop_opc     = false;
+    bool        en_bbv                   = false;
     const char *bb_file	                 = nullptr;
     long        memory_size_override     = 0;
     uint64_t    memory_addr_override     = 0;
@@ -667,10 +669,11 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
             {"simpoint",                required_argument, 0,  'S' },
             {"maxinsns",                required_argument, 0,  'm' }, // CFG
             {"heartbeat",               required_argument, 0,  'H' }, // CFG
-            {"trace   ",                required_argument, 0,  't' },
+            {"trace",                   required_argument, 0,  't' },
             {"stf_trace",               required_argument, 0,  'z' },
             {"stf_exit_on_stop_opc",          no_argument, 0,  'e' },
             {"bb_file",                 required_argument, 0,  'B' },
+            {"en_bbv",                        no_argument, 0,  'v' },
             {"ignore_sbi_shutdown",     required_argument, 0,  'P' }, // CFG
             {"dump_memories",                 no_argument, 0,  'D' }, // CFG
             {"memory_size",             required_argument, 0,  'M' }, // CFG
@@ -755,6 +758,7 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
 
             case 'z': stf_trace = strdup(optarg); break;
             case 'e': stf_exit_on_stop_opc = true; break;
+            case 'v': en_bbv = true; break;
             case 'B': bb_file = strdup(optarg); break;
             case 'a': stf_no_priv_check = true; break;
 
@@ -1086,6 +1090,7 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
     s->common.stf_trace          = stf_trace;
     s->common.stf_exit_on_stop_opc  = stf_exit_on_stop_opc;
     s->common.bb_file            = bb_file;
+    s->common.en_bbv             = en_bbv;
     s->common.stf_no_priv_check  = stf_no_priv_check;
     s->common.stf_tracing_enabled = false;
     s->common.stf_is_start_opc    = false;
