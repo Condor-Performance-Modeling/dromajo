@@ -764,8 +764,10 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
 
             case 'H':
                 heartbeat = (uint64_t)atoll(optarg);
+                break;
             case 'Z':
                 simpoint_size = (uint64_t)atoll(optarg);
+                break;
             case 't':
                 if (trace != UINT64_MAX)
                     usage(prog, "already had a trace set");
