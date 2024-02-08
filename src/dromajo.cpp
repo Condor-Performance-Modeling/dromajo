@@ -347,6 +347,10 @@ int main(int argc, char **argv) {
    fprintf(asid_file, "%lx", cpu->satp);
    fflush(asid_file);
 
+   FILE *total_insn_count_file = fopen("total_num_instructions", "w");
+   fprintf(total_insn_count_file, "%lx", total_inst_count);
+   fflush(total_insn_count_file);
+
     double t = get_current_time_in_seconds();
 
     for (int i = 0; i < m->ncpus; ++i) {
