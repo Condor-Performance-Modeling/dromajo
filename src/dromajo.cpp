@@ -140,7 +140,7 @@ static int iterate_core(RISCVMachine *m, int hartid, int& n_cycles) {
     (void)riscv_read_insn(cpu, &insn_raw, last_pc);
 
     //fprintf(dromajo_stderr, "\n----Instruction Count-----: %li \n",  m->common.instruction_count);
-    if(stf_trace_trigger_insn(cpu, last_pc, m->common.instruction_count)) {
+    if(stf_trace_trigger_insn(m/*cpu*/, hartid, last_pc, m->common.instruction_count)) {
     }
 
     //STF:The start OPC has been detected, throttle back n_cycles
@@ -171,7 +171,7 @@ static int iterate_core(RISCVMachine *m, int hartid, int& n_cycles) {
     //do not trace the start or stop insn's
     if((m->common.stf_tracing_enabled
        && !m->common.stf_is_start_opc
-       && !m->common.stf_is_stop_opc) || (m->common.stf_insn_tracing_enabled && m->common.stf_insn_num_tracing))
+       && !m->common.stf_is_stop_opc) || (m->common.stf_insn_tracing_enabled/* && m->common.stf_insn_num_tracing) */ ))
     {
         RISCVCPUState *cpu = m->cpu_state[hartid];
 

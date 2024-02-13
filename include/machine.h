@@ -207,7 +207,7 @@ typedef struct VirtMachine {
     uint64_t maxinsns;
     uint64_t trace;
     uint64_t heartbeat;
-    uint64_t simpoint_size;
+    uint64_t simpoint_size = 50000000UL;
     bool     en_bbv = false;// terminate the simulation after detecting STOP_TRACE opcode
     const char * bb_file = nullptr;   // simpoint.bbv file name
     const char * stf_trace = nullptr; // stf file name

@@ -633,7 +633,7 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
     uint64_t    maxinsns                 = 0;
     uint64_t    trace                    = UINT64_MAX;
     uint64_t    heartbeat                = UINT64_MAX;
-    uint64_t    simpoint_size            = 100000000UL;
+    uint64_t    simpoint_size            = 50000000UL;
     const char *stf_trace                = nullptr;
     bool        stf_exit_on_stop_opc     = false;
     bool        en_bbv                   = false;
@@ -1070,41 +1070,6 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
         s->common.snapshot_load_name = snapshot_load_name;
     }
 
-    if (simpoint_file) {
-#ifdef SIMPOINT_BB
-        FILE *file = fopen(simpoint_file, "r");
-        if (file == 0) {
-            fprintf(stderr, "could not open simpoint file %s\n", simpoint_file);
-            exit(1);
-        }
-        int distance;
-        int num;
-        while (fscanf(file, "%d %d", &distance, &num) == 2) {
-            uint64_t start = distance * s->common.simpoint_size;
-
-            if (start == 0) {  // skip boot ROM
-                start = ROM_SIZE;
-            }
-
-            s->common.simpoints.push_back({start, num});
-        }
-
-        std::sort(s->common.simpoints.begin(), s->common.simpoints.end());
-        for (auto sp : s->common.simpoints) {
-            printf("simpoint %d starts at %dK\n", sp.id, (int)sp.start / 1000);
-        }
-
-        if (s->common.simpoints.empty()) {
-            fprintf(stderr, "simpoint file %s appears empty or invalid\n", simpoint_file);
-            exit(1);
-        }
-        s->common.simpoint_next = 0;
-#else
-        fprintf(stderr, "simpoint flag requires to recompile with SIMPOINT_BB\n");
-        exit(1);
-#endif
-    }
-
     s->common.snapshot_save_name = snapshot_save_name;
     s->common.trace              = trace;
     s->common.heartbeat          = heartbeat;
@@ -1134,6 +1099,42 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
     s->common.stf_length         = stf_length;
     if(s->common.maxinsns < stf_length){
        s->common.stf_length = s->common.maxinsns;
+    }
+
+    if (simpoint_file) {
+//#ifdef SIMPOINT_BB
+        FILE *file = fopen(simpoint_file, "r");
+        if (file == 0) {
+            fprintf(stderr, "could not open simpoint file %s\n", simpoint_file);
+            exit(1);
+        }
+        int distance;
+        int num;
+        while (fscanf(file, "%d %d", &distance, &num) == 2) {
+            uint64_t start = distance * s->common.simpoint_size;
+
+            if (start == 0) {  // skip boot ROM
+                start = ROM_SIZE;
+            }
+
+            s->common.simpoints.push_back({start, num});
+            //printf("simpoint %ld * %d = %ld ---- %d\n", s->common.simpoint_size, distance, start, num);
+        }
+
+        std::sort(s->common.simpoints.begin(), s->common.simpoints.end());
+        for (auto sp : s->common.simpoints) {
+            printf("simpoint %d starts at %ldM\n", sp.id, (uint64_t) (sp.start / 1000000));
+        }
+
+        if (s->common.simpoints.empty()) {
+            fprintf(stderr, "simpoint file %s appears empty or invalid\n", simpoint_file);
+            exit(1);
+        }
+        s->common.simpoint_next = 0;
+//#else
+//        fprintf(stderr, "simpoint flag requires to recompile with SIMPOINT_BB\n");
+//        exit(1);
+//#endif
     }
 
     for (int i = 0; i < s->ncpus; ++i) s->cpu_state[i]->ignore_sbi_shutdown = ignore_sbi_shutdown;
