@@ -95,19 +95,35 @@ void stf_trace_element(RISCVMachine * m, int hartid, int priv, uint64_t last_pc,
 #endif
         // Memory reads
         for(auto mem_read : cpu->stf_mem_reads) {
+
             stf_writer << stf::InstMemAccessRecord(mem_read.vaddr,
                                                    mem_read.size,
                                                    0,
                                                    stf::INST_MEM_ACCESS::READ);
             stf_writer << stf::InstMemContentRecord(mem_read.value);
+
+            stf_writer << stf::InstMemAccessRecord(mem_read.paddr,
+                                                   mem_read.size,
+                                                   0,
+                                                   stf::INST_MEM_ACCESS::READ);
+            stf_writer << stf::InstMemContentRecord(mem_read.value);
+
         }
         // Memory writes
         for(auto mem_write : cpu->stf_mem_writes) {
+
             stf_writer << stf::InstMemAccessRecord(mem_write.vaddr,
                                                    mem_write.size,
                                                    0,
                                                    stf::INST_MEM_ACCESS::WRITE);
             stf_writer << stf::InstMemContentRecord(mem_write.value); // empty content for now
+
+            stf_writer << stf::InstMemAccessRecord(mem_write.paddr,
+                                                   mem_write.size,
+                                                   0,
+                                                   stf::INST_MEM_ACCESS::WRITE);
+            stf_writer << stf::InstMemContentRecord(mem_write.value); // empty content for now
+
         }
     }
 

@@ -345,11 +345,13 @@ typedef struct RISCVCPUState {
     struct stf_mem_access
     {
         target_ulong vaddr;
+        target_ulong paddr;
         target_ulong size;
         target_ulong value;
 
-        stf_mem_access(target_ulong va, target_ulong s, target_ulong val) :
+        stf_mem_access(target_ulong va, target_ulong pa, target_ulong s, target_ulong val) :
             vaddr(va),
+            paddr(pa),
             size(s),
             value(val)
         {}

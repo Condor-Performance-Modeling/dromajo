@@ -1,6 +1,7 @@
 #! /bin/bash
 
-export OPT='--stf_essential_mode --stf_tracepoint --stf_priv_modes USHM'
+#export OPT='--stf_essential_mode --stf_tracepoint --stf_priv_modes USHM'
+export OPT='--stf_tracepoint --stf_priv_modes USHM'
 export DRO=../../bin/cpm_dromajo
 
 echo "clean previous traces"
