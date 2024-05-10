@@ -79,6 +79,7 @@
 #include "elf64.h"
 
 #include "dromajo_stf.h"
+#include "dromajo_sha.h"
 
 FILE *dromajo_stdout;
 FILE *dromajo_stderr;
@@ -550,44 +551,65 @@ static BOOL net_poll_cb(void *arg) { return net_completed; }
 
 static void usage(const char *prog, const char *msg) {
     fprintf(dromajo_stderr,
-            "error: %s\n"
-            "%s, Copyright (c) 2016-2017 Fabrice Bellard,"
-            " Copyright (c) 2018,2019 Esperanto Technologies\n"
-            "usage: %s {options} [config|elf-file]\n"
-            "       --cmdline Kernel command line arguments to append\n"
-            "       --ncpus number of cpus to simulate (default 1)\n"
-            "       --load resumes a previously saved snapshot\n"
-            "       --simpoint reads a simpoint file to create multiple checkpoints\n"
-            "       --save saves a snapshot upon exit\n"
-            "       --maxinsns terminates execution after a number of instructions\n"
-            "       --terminate-event name of the validate event to terminate execution\n"
-            "       --trace start trace dump after a number of instructions. Trace disabled by default\n"
+        "\nmessage: %s\n\n"
+        "    Dromajo version:  %s\n"
+        "    Dromajo SHA:      %s\n\n"
+        "    Copyright (c) 2016-2017 Fabrice Bellard\n"
+        "    Copyright (c) 2018,2019 Esperanto Technologies\n"
+        "    Copyright (c) 2023-2024 Condor Computing\n"
+        "\n"
+        "usage: %s {options} [config|elf-file]\n\n"
+        "    --help ...\n"
+        "    --cmdline Kernel command line arguments to append\n"
+        "    --ncpus number of cpus to simulate (default 1)\n"
+        "    --load resumes a previously saved snapshot\n"
+        "    --simpoint reads a simpoint file to create multiple checkpoints\n"
+        "    --save saves a snapshot upon exit\n"
+        "    --maxinsns terminates execution after a number of instructions\n"
+        "    --terminate-event name of the validate event to terminate \n"
+        "                  execution\n"
+        "    --trace start trace dump after a number of instructions.\n"
+        "                  Trace disabled by default\n"
+        "    --stf_exit_on_stop_opc Terminate the simulation after \n"
+        "                  detecting a STOP_TRACE opcode\n"
+        "    --stf_trace <filename> Dump an STF trace to the given file\n"
+//            "       --stf_essential_mode Only include essential records in the STF trace\n"
+        "    --stf_tracepoint Enable tracepoint detection for STF trace \n"
+        "                  generation\n"
+        "    --stf_include_stop_tracepoint Include the stop tracepoint \n"
+        "                  in the STF trace\n"
+        "    --stf_priv_modes <USHM|USH|US|U> Specify which privilege \n"
+        "                  modes to include for STF trace generation\n"
+//            "       --stf_no_priv_check Turn off the privledge check in STF generation\n"
 
-            "       --stf_exit_on_stop_opc Terminate the simulation after detecting a STOP_TRACE opcode\n"
-            "       --stf_trace <filename> Dump an STF trace to the given file\n"
-            "       --stf_essential_mode Only include essential records in the STF trace\n"
-            "       --stf_tracepoint Enable tracepoint detection for STF trace generation\n"
-            "       --stf_include_stop_tracepoint Include the stop tracepoint in the STF trace\n"
-            "       --stf_priv_modes <USHM|USH|US|U> Specify which privilege modes to include for STF trace generation\n"
-            "       --stf_no_priv_check Turn off the privledge check in STF generation\n"
-
-            "       --ignore_sbi_shutdown continue simulation even upon seeing the SBI_SHUTDOWN call\n"
-            "       --dump_memories dump memories that could be used to load a cosimulation\n"
-            "       --memory_size sets the memory size in MiB (default 256 MiB)\n"
-            "       --memory_addr sets the memory start address (default 0x%lx)\n"
-            "       --bootrom load in a bootrom img file (default is dromajo bootrom)\n"
-            "       --dtb load in a dtb file (default is dromajo dtb)\n"
-            "       --compact_bootrom have dtb be directly after bootrom (default 256B after boot base)\n"
-            "       --reset_vector set reset vector for all cores (default 0x%lx)\n"
-            "       --plic START:SIZE set PLIC start address and size in B (defaults to 0x%lx:0x%lx)\n"
-            "       --clint START:SIZE set CLINT start address and size in B (defaults to 0x%lx:0x%lx)\n"
-            "       --custom_extension add X extension to misa for all cores\n"
+        "    --ignore_sbi_shutdown continue simulation even upon seeing \n"
+        "                  the SBI_SHUTDOWN call\n"
+        "    --dump_memories dump memories that could be used to load \n"
+        "                  a cosimulation\n"
+        "    --memory_size sets the memory size in MiB \n"
+        "                  (default 256 MiB)\n"
+        "    --memory_addr sets the memory start address \n"
+        "                  (default 0x%lx)\n"
+        "    --bootrom load in a bootrom img file \n"
+        "                  (default is dromajo bootrom)\n"
+        "    --dtb load in a dtb file (default is dromajo dtb)\n"
+        "    --compact_bootrom have dtb be directly after bootrom \n"
+        "                  (default 256B after boot base)\n"
+        "    --reset_vector set reset vector for all cores \n"
+        "                  (default 0x%lx)\n"
+        "    --plic START:SIZE set PLIC start address and size in B\n"
+        "                  (defaults to 0x%lx:0x%lx)\n"
+        "    --clint START:SIZE set CLINT start address and size in B\n"
+        "                  (defaults to 0x%lx:0x%lx)\n"
+        "    --custom_extension add X extension to misa for all cores\n"
 #ifdef LIVECACHE
-            "       --live_cache_size live cache warmup for checkpoint (default 8M)\n"
+        "    --live_cache_size live cache warmup for checkpoint \n"
+        "                  (default 8M)\n"
 #endif
-            "       --clear_ids clear mvendorid, marchid, mimpid for all cores\n",
+        "    --clear_ids clear mvendorid, marchid, mimpid for all cores\n\n",
             msg,
             CONFIG_VERSION,
+            DROMAJO_GIT_SHA,
             prog,
             (long)BOOT_BASE_ADDR,
             (long)RAM_BASE_ADDR,
@@ -632,11 +654,12 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
 
     const char *stf_trace                   = nullptr;
     bool        stf_exit_on_stop_opc        = false;
-    bool        stf_essential_mode          = false;
+//    bool        stf_essential_mode          = false;
+    bool        stf_trace_register_state    = false;
     bool        stf_tracepoints_enabled     = false;
     bool        stf_include_stop_tracepoint = false;
     const char *stf_priv_modes              = "USHM";
-    bool        stf_no_priv_check           = false;
+//    bool        stf_no_priv_check           = false;
 
     long        memory_size_override     = 0;
     uint64_t    memory_addr_override     = 0;
@@ -668,6 +691,7 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
         int option_index = 0;
         // clang-format off
         static struct option long_options[] = {
+            {"help",                          no_argument, 0,  'h' },
             {"cmdline",                 required_argument, 0,  'c' }, // CFG
             {"ncpus",                   required_argument, 0,  'n' }, // CFG
             {"load",                    required_argument, 0,  'l' },
@@ -678,11 +702,12 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
 
             {"stf_trace",                   required_argument, 0,  'z' },
             {"stf_exit_on_stop_opc",              no_argument, 0,  'e' },
-            {"stf_essential_mode",                no_argument, 0,  'y' },
+//            {"stf_essential_mode",                no_argument, 0,  'y' },
+            {"stf_trace_register_state",          no_argument, 0,  'y' },
             {"stf_tracepoint",                    no_argument, 0,  'x' },
             {"stf_include_stop_tracepoint",       no_argument, 0,  'w' },
-            {"stf_priv_modes",              required_argument, 0,  'Q' },
-            {"stf_no_priv_check",             no_argument,     0,  'a' },
+            {"stf_priv_modes",              required_argument, 0,  'a' },
+//            {"stf_no_priv_check",             no_argument,     0,  'a' },
 
             {"ignore_sbi_shutdown",     required_argument, 0,  'P' }, // CFG
             {"dump_memories",                 no_argument, 0,  'D' }, // CFG
@@ -709,6 +734,9 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
             break;
 
         switch (c) {
+            case 'h':
+                usage(prog, "Show usage");
+                break;
             case 'X':
                 allow_ctrlc = true;
                 break;
@@ -764,12 +792,13 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
                 break;
 
             case 'z': stf_trace = strdup(optarg); break;
-            case 'a': stf_no_priv_check = true; break;
+//            case 'a': stf_no_priv_check = true; break;
             case 'e': stf_exit_on_stop_opc = true; break;
-            case 'y': stf_essential_mode = true; break;
+            case 'y': stf_trace_register_state = true; break;
+//            case 'y': stf_essential_mode = true; break;
             case 'x': stf_tracepoints_enabled = true; break;
             case 'w': stf_include_stop_tracepoint = true; break;
-            case 'Q': stf_priv_modes = strdup(optarg); break;
+            case 'a': stf_priv_modes = strdup(optarg); break;
 
             case 'P': ignore_sbi_shutdown = true; break;
 
@@ -867,7 +896,7 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
                 break;
 #endif
 
-            default: usage(prog, "I'm not having this argument");
+            default: usage(prog, "Unknown command line argument");
         }
     }
 
@@ -1118,7 +1147,8 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
 
     s->common.stf_trace                   = stf_trace;
     s->common.stf_exit_on_stop_opc        = stf_exit_on_stop_opc;
-    s->common.stf_essential_mode          = stf_essential_mode;
+//    s->common.stf_essential_mode          = stf_essential_mode;
+    s->common.stf_trace_register_state    = stf_trace_register_state;
     s->common.stf_tracepoints_enabled     = stf_tracepoints_enabled;
     s->common.stf_include_stop_tracepoint = stf_include_stop_tracepoint;
     s->common.stf_highest_priv_mode       = get_stf_highest_priv_mode(stf_priv_modes);
@@ -1126,7 +1156,7 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
     s->common.stf_in_traceable_region     = false;
     s->common.stf_in_tracepoint_region    = !stf_tracepoints_enabled;
 
-    s->common.stf_no_priv_check  = stf_no_priv_check;
+//    s->common.stf_no_priv_check  = stf_no_priv_check;
     s->common.stf_tracing_enabled = false;
     s->common.stf_is_start_opc    = false;
     s->common.stf_is_stop_opc     = false;

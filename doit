@@ -1,0 +1,55 @@
+#! /bin/bash
+#set -x
+#cp /data/users/jeffnye/condor/cpm.dromajo/run/Image .
+#cp /data/users/jeffnye/condor/cpm.dromajo/run/cpm.boot.cfg .
+#cp /data/users/jeffnye/condor/cpm.dromajo/run/fw_jump.bin .
+#cp /data/users/jeffnye/condor/cpm.dromajo/run/rootfs.cpio .
+#cp /data/users/jeffnye/condor/benchmarks/bin/bmi_median.bare.riscv .
+#cp /data/users/jeffnye/condor/benchmarks/bin/bmi_median.linux.riscv .
+
+#--stf_no_priv_check \
+
+#rm -f bare.example.*stf
+#../build/dromajo \
+#--ctrlc \
+#--stf_priv_modes USHM \
+#--stf_trace=bare.example.stf \
+#bmi_median.bare.riscv
+
+#rm -f linux.example.*stf
+#../build/dromajo \
+#--ctrlc \
+#--stf_priv_modes USHM \
+#--stf_trace=linux.example.stf \
+#cpm.boot.cfg
+
+$CONDOR_TOP/stf_tools/release/tools/stf_diff/stf_diff -C bare.example.stf \
+$CONDOR_TOP/cpm.dromajo.head/build/bare.example.stf
+
+echo "TRY 1"
+$CONDOR_TOP/stf_tools/release/tools/stf_diff/stf_diff -MpRS bare.example.stf \
+$CONDOR_TOP/cpm.dromajo.head/build/bare.example.stf
+
+echo "TRY 2"
+$CONDOR_TOP/stf_tools/release/tools/stf_diff/stf_diff -u bare.example.stf \
+$CONDOR_TOP/cpm.dromajo.head/build/bare.example.stf
+
+echo "TRY 3"
+$CONDOR_TOP/stf_tools/release/tools/stf_trace_info/stf_trace_info -d bare.example.stf 
+echo "TRY 4"
+$CONDOR_TOP/stf_tools/release/tools/stf_trace_info/stf_trace_info -d $CONDOR_TOP/cpm.dromajo.head/build/bare.example.stf
+
+echo "TRY 5"
+$CONDOR_TOP/stf_tools/release/tools/stf_record_dump/stf_record_dump -p bare.example.stf > dump1
+
+echo "TRY 6"
+$CONDOR_TOP/stf_tools/release/tools/stf_record_dump/stf_record_dump -p $CONDOR_TOP/cpm.dromajo.head/build/bare.example.stf > dump2
+echo "TRY DIFF"
+diff dump1 dump2
+
+echo "TRY 7"
+ls -lh bare.example.stf 
+ls -lh $CONDOR_TOP/cpm.dromajo.head/build/bare.example.stf
+ls -lh linux.example.stf 
+#ls -lh $CONDOR_TOP/cpm.dromajo.head/build/linux.example.stf
+

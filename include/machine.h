@@ -208,7 +208,8 @@ typedef struct VirtMachine {
     uint64_t trace;
     /* STF Trace Generation */
     const char * stf_trace = nullptr;         // STF trace file name
-    bool         stf_essential_mode;          // Only include essential records in STF trace
+//    bool         stf_essential_mode;          // Only include essential records in STF trace
+    bool         stf_trace_register_state; // Enable register records
     bool         stf_tracepoints_enabled;     // Enable detection of start and stop tracepoints
     bool         stf_include_stop_tracepoint; // Include the stop tracepoint in the STF trace
     int          stf_highest_priv_mode;       // Highest privilege mode to trace
@@ -220,7 +221,7 @@ typedef struct VirtMachine {
     uint64_t     stf_count;                   // Number of traced instructions
 
     bool         stf_tracing_enabled;
-    bool         stf_no_priv_check;   // override the priv==0 check
+//    bool         stf_no_priv_check;   // override the priv==0 check
     bool         stf_is_start_opc;    // detected the START_TRACE opcode
     bool         stf_is_stop_opc;     // detected the STOP_TRACE opcode
 

@@ -138,6 +138,7 @@ static int iterate_core(RISCVMachine *m, int hartid, int n_cycles) {
      */
     uint64_t last_pc  = virt_machine_get_pc(m, hartid);
     int      priv     = riscv_get_priv_level(cpu);
+//    bool     traceable_priv_level = priv <= m->common.stf_highest_priv_mode;
     uint32_t insn_raw = -1;
     bool     do_trace = false;
 
@@ -162,64 +163,65 @@ static int iterate_core(RISCVMachine *m, int hartid, int n_cycles) {
        && !m->common.stf_is_start_opc
        && !m->common.stf_is_stop_opc)
     {
-        RISCVCPUState *cpu = m->cpu_state[hartid];
-
-        if((priv == 0 || m->common.stf_no_priv_check)
-               && (cpu->pending_exception == -1)
-               && (m->common.stf_prog_asid == ((cpu->satp >> 4) & 0xFFFF)))
-        {
-
-            ++m->common.stf_count;
-            const uint32_t inst_width = ((insn_raw & 0x3) == 0x3) ? 4 : 2;
-            bool skip_record = false;
-
-            // See if the instruction changed control flow or a
-            // possible not-taken branch conditional
-            if(cpu->info != ctf_nop) {
-                stf_writer << stf::InstPCTargetRecord(virt_machine_get_pc(m, 0));
-            }
-            else {
-                // Not sure what's going on, but there's a
-                // possibility that the current instruction will
-                // cause a page fault or a timer interrupt or
-                // process switch so the next instruction might
-                // not be on the program's path
-                if(cpu->pc != last_pc + inst_width) {
-                    skip_record = true;
-                }
-            }
-
-            // Record the instruction trace record
-            if(false == skip_record)
-            {
-                // If the last instruction were a load/store,
-                // record the last vaddr, size, and if it were a
-                // read or write.
-
-                if(cpu->last_data_vaddr
-                    != std::numeric_limits<decltype(cpu->last_data_vaddr)>::max())
-                {
-                    //If not a read to the tohost address then trace it
-                    if(cpu->last_data_type != 0 || cpu->last_data_vaddr != m->htif_tohost_addr)
-                    {
-                        stf_writer << stf::InstMemAccessRecord(cpu->last_data_vaddr,
-                                                               cpu->last_data_size,
-                                                               0,
-                                                               (cpu->last_data_type == 0) ?
-                                                               stf::INST_MEM_ACCESS::READ :
-                                                               stf::INST_MEM_ACCESS::WRITE);
-                        stf_writer << stf::InstMemContentRecord(0); // empty content for now
-                    }
-                }
-
-                if(inst_width == 4) {
-                   stf_writer << stf::InstOpcode32Record(insn_raw);
-                }
-                else {
-                   stf_writer << stf::InstOpcode16Record(insn_raw & 0xFFFF);
-                }
-            }
-        }
+        stf_trace_element(m,hartid,priv,last_pc,insn_raw);
+//        RISCVCPUState *cpu = m->cpu_state[hartid];
+//
+//        if(traceable_priv_level
+//           && (cpu->pending_exception == -1)
+//           && (m->common.stf_prog_asid == ((cpu->satp >> 4) & 0xFFFF)))
+//        {
+//
+//            ++m->common.stf_count;
+//            const uint32_t inst_width = ((insn_raw & 0x3) == 0x3) ? 4 : 2;
+//            bool skip_record = false;
+//
+//            // See if the instruction changed control flow or a
+//            // possible not-taken branch conditional
+//            if(cpu->info != ctf_nop) {
+//                stf_writer << stf::InstPCTargetRecord(virt_machine_get_pc(m, 0));
+//            }
+//            else {
+//                // Not sure what's going on, but there's a
+//                // possibility that the current instruction will
+//                // cause a page fault or a timer interrupt or
+//                // process switch so the next instruction might
+//                // not be on the program's path
+//                if(cpu->pc != last_pc + inst_width) {
+//                    skip_record = true;
+//                }
+//            }
+//
+//            // Record the instruction trace record
+//            if(false == skip_record)
+//            {
+//                // If the last instruction were a load/store,
+//                // record the last vaddr, size, and if it were a
+//                // read or write.
+//
+//                if(cpu->last_data_vaddr
+//                    != std::numeric_limits<decltype(cpu->last_data_vaddr)>::max())
+//                {
+//                    //If not a read to the tohost address then trace it
+//                    if(cpu->last_data_type != 0 || cpu->last_data_vaddr != m->htif_tohost_addr)
+//                    {
+//                        stf_writer << stf::InstMemAccessRecord(cpu->last_data_vaddr,
+//                                                               cpu->last_data_size,
+//                                                               0,
+//                                                               (cpu->last_data_type == 0) ?
+//                                                               stf::INST_MEM_ACCESS::READ :
+//                                                               stf::INST_MEM_ACCESS::WRITE);
+//                        stf_writer << stf::InstMemContentRecord(0); // empty content for now
+//                    }
+//                }
+//
+//                if(inst_width == 4) {
+//                   stf_writer << stf::InstOpcode32Record(insn_raw);
+//                }
+//                else {
+//                   stf_writer << stf::InstOpcode16Record(insn_raw & 0xFFFF);
+//                }
+//            }
+//        }
     }
 
     if (!do_trace) {
