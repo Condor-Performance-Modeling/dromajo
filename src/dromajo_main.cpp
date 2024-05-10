@@ -562,7 +562,15 @@ static void usage(const char *prog, const char *msg) {
             "       --maxinsns terminates execution after a number of instructions\n"
             "       --terminate-event name of the validate event to terminate execution\n"
             "       --trace start trace dump after a number of instructions. Trace disabled by default\n"
-            "       --stf_trace <filename>  Dump an STF trace to the given file\n"
+
+            "       --stf_exit_on_stop_opc Terminate the simulation after detecting a STOP_TRACE opcode\n"
+            "       --stf_trace <filename> Dump an STF trace to the given file\n"
+            "       --stf_essential_mode Only include essential records in the STF trace\n"
+            "       --stf_tracepoint Enable tracepoint detection for STF trace generation\n"
+            "       --stf_include_stop_tracepoint Include the stop tracepoint in the STF trace\n"
+            "       --stf_priv_modes <USHM|USH|US|U> Specify which privilege modes to include for STF trace generation\n"
+            "       --stf_no_priv_check Turn off the privledge check in STF generation\n"
+
             "       --ignore_sbi_shutdown continue simulation even upon seeing the SBI_SHUTDOWN call\n"
             "       --dump_memories dump memories that could be used to load a cosimulation\n"
             "       --memory_size sets the memory size in MiB (default 256 MiB)\n"
@@ -574,7 +582,6 @@ static void usage(const char *prog, const char *msg) {
             "       --plic START:SIZE set PLIC start address and size in B (defaults to 0x%lx:0x%lx)\n"
             "       --clint START:SIZE set CLINT start address and size in B (defaults to 0x%lx:0x%lx)\n"
             "       --custom_extension add X extension to misa for all cores\n"
-            "       --stf_no_priv_check Turn off the privledge check in STF generation\n"
 #ifdef LIVECACHE
             "       --live_cache_size live cache warmup for checkpoint (default 8M)\n"
 #endif
@@ -622,12 +629,19 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
     long        ncpus                    = 0;
     uint64_t    maxinsns                 = 0;
     uint64_t    trace                    = UINT64_MAX;
-    const char *stf_trace                = nullptr;
+
+    const char *stf_trace                   = nullptr;
+    bool        stf_exit_on_stop_opc        = false;
+    bool        stf_essential_mode          = false;
+    bool        stf_tracepoints_enabled     = false;
+    bool        stf_include_stop_tracepoint = false;
+    const char *stf_priv_modes              = "USHM";
+    bool        stf_no_priv_check           = false;
+
     long        memory_size_override     = 0;
     uint64_t    memory_addr_override     = 0;
     bool        ignore_sbi_shutdown      = false;
     bool        dump_memories            = false;
-    bool        stf_no_priv_check        = false;
     char *      bootrom_name             = 0;
     char *      dtb_name                 = 0;
     bool        compact_bootrom          = false;
@@ -661,7 +675,15 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
             {"simpoint",                required_argument, 0,  'S' },
             {"maxinsns",                required_argument, 0,  'm' }, // CFG
             {"trace   ",                required_argument, 0,  't' },
-            {"stf_trace",               required_argument, 0,  'z' },
+
+            {"stf_trace",                   required_argument, 0,  'z' },
+            {"stf_exit_on_stop_opc",              no_argument, 0,  'e' },
+            {"stf_essential_mode",                no_argument, 0,  'y' },
+            {"stf_tracepoint",                    no_argument, 0,  'x' },
+            {"stf_include_stop_tracepoint",       no_argument, 0,  'w' },
+            {"stf_priv_modes",              required_argument, 0,  'Q' },
+            {"stf_no_priv_check",             no_argument,     0,  'a' },
+
             {"ignore_sbi_shutdown",     required_argument, 0,  'P' }, // CFG
             {"dump_memories",                 no_argument, 0,  'D' }, // CFG
             {"memory_size",             required_argument, 0,  'M' }, // CFG
@@ -675,7 +697,6 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
             {"custom_extension",              no_argument, 0,  'u' }, // CFG
             {"clear_ids",                     no_argument, 0,  'L' }, // CFG
             {"ctrlc",                         no_argument, 0,  'X' },
-            {"stf_no_priv_check",             no_argument, 0,  'a' },
 #ifdef LIVECACHE
             {"live_cache_size",         required_argument, 0,  'w' }, // CFG
 #endif
@@ -744,6 +765,11 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
 
             case 'z': stf_trace = strdup(optarg); break;
             case 'a': stf_no_priv_check = true; break;
+            case 'e': stf_exit_on_stop_opc = true; break;
+            case 'y': stf_essential_mode = true; break;
+            case 'x': stf_tracepoints_enabled = true; break;
+            case 'w': stf_include_stop_tracepoint = true; break;
+            case 'Q': stf_priv_modes = strdup(optarg); break;
 
             case 'P': ignore_sbi_shutdown = true; break;
 
@@ -1069,7 +1095,37 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
 
     s->common.snapshot_save_name = snapshot_save_name;
     s->common.trace              = trace;
-    s->common.stf_trace          = stf_trace;
+
+    /* STF Trace Generation */
+    auto get_stf_highest_priv_mode = [](const char * stf_priv_modes) -> int {
+        if(strcmp(stf_priv_modes, "USHM") == 0) {
+            return PRV_M;
+        }
+        else if(strcmp(stf_priv_modes, "USH") == 0) {
+            return PRV_H;
+        }
+        else if(strcmp(stf_priv_modes, "US") == 0) {
+            return PRV_S;
+        }
+        else if(strcmp(stf_priv_modes, "U") == 0) {
+            return PRV_U;
+        }
+        else {
+            fprintf(stderr, "invalid stf privilege modes '%s'\n", stf_priv_modes);
+            exit(1);
+        }
+    };
+
+    s->common.stf_trace                   = stf_trace;
+    s->common.stf_exit_on_stop_opc        = stf_exit_on_stop_opc;
+    s->common.stf_essential_mode          = stf_essential_mode;
+    s->common.stf_tracepoints_enabled     = stf_tracepoints_enabled;
+    s->common.stf_include_stop_tracepoint = stf_include_stop_tracepoint;
+    s->common.stf_highest_priv_mode       = get_stf_highest_priv_mode(stf_priv_modes);
+    s->common.stf_trace_open              = false;
+    s->common.stf_in_traceable_region     = false;
+    s->common.stf_in_tracepoint_region    = !stf_tracepoints_enabled;
+
     s->common.stf_no_priv_check  = stf_no_priv_check;
     s->common.stf_tracing_enabled = false;
     s->common.stf_is_start_opc    = false;

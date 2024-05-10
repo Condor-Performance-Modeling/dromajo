@@ -139,7 +139,23 @@ else ()
   target_link_libraries(dromajo_cosim_test dromajo_cosim)
 endif ()
 
-################################################################################
+# -------------------------------------------------------------------
+# Change the name of the copied file if SIMPOINT option is enabled
+# -------------------------------------------------------------------
+if(SIMPOINT)
+    set(DROMAJO_NAME cpm_simpoint_dromajo)
+else()
+    set(DROMAJO_NAME cpm_dromajo)
+endif()
+
+set(LOCAL_BIN_DIR ../bin)
+add_custom_command(TARGET dromajo POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${LOCAL_BIN_DIR}
+    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:dromajo>
+                                     ${LOCAL_BIN_DIR}/${DROMAJO_NAME}
+    COMMENT "Copying dromajo to ${LOCAL_BIN_DIR} as ${DROMAJO_NAME}")
+
+# -------------------------------------------------------------------
 # STF
 set(DISABLE_STF_DOXYGEN 1)
 set(NO_STF_LTO 1)
@@ -156,8 +172,7 @@ target_link_libraries(dromajo_cosim ${STF_LINK_LIBS})
 # Add STF library to the build
 add_subdirectory (${STF_LIB_BASE})
 
-################################################################################
-
+# -------------------------------------------------------------------
 if (${CMAKE_HOST_APPLE})
     include_directories(/usr/local/include /usr/local/include/libelf /opt/homebrew/include /opt/homebrew/include/libelf)
     target_link_libraries(dromajo_cosim -L/usr/local/lib -L/opt/homebrew/lib -lelf)

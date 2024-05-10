@@ -172,7 +172,6 @@ static inline uint64_t track_dread(RISCVCPUState *s, uint64_t vaddr, uint64_t pa
     s->last_data_size  = size;
     s->last_data_type  = 0;
     //printf("track.ld[%llx:%llx]=%llx\n", paddr, paddr+size-1, data);
-
     return data;
 }
 

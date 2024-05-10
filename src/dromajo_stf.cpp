@@ -39,7 +39,7 @@ bool stf_trace_trigger(RISCVCPUState *s,target_ulong PC,uint32_t insn)
         if((bool)stf_writer == false) {
             stf_writer.open(s->machine->common.stf_trace);
             stf_writer.addTraceInfo(stf::TraceInfoRecord(
-                       stf::STF_GEN::STF_GEN_DROMAJO, 1, 1, 0,"Trace from Dromajo"));
+               stf::STF_GEN::STF_GEN_DROMAJO, 1, 1, 0,"Trace from Dromajo"));
             stf_writer.setISA(stf::ISA::RISCV);
             stf_writer.setHeaderIEM(stf::INST_IEM::STF_INST_IEM_RV64);
             stf_writer.setTraceFeature(stf::TRACE_FEATURES::STF_CONTAIN_RV64);

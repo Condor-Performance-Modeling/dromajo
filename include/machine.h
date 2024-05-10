@@ -206,13 +206,23 @@ typedef struct VirtMachine {
     char *   terminate_event;
     uint64_t maxinsns;
     uint64_t trace;
-    const char * stf_trace = nullptr; // stf file name
-    bool         stf_tracing_enabled; // stf tracing is active
+    /* STF Trace Generation */
+    const char * stf_trace = nullptr;         // STF trace file name
+    bool         stf_essential_mode;          // Only include essential records in STF trace
+    bool         stf_tracepoints_enabled;     // Enable detection of start and stop tracepoints
+    bool         stf_include_stop_tracepoint; // Include the stop tracepoint in the STF trace
+    int          stf_highest_priv_mode;       // Highest privilege mode to trace
+    bool         stf_trace_open;              // STF trace is open (tracing has begun)
+    bool         stf_in_traceable_region;     // STF tracing is enabled (all conditions met)
+    bool         stf_in_tracepoint_region;    // Are we in the tracepoionted region of the workload?
+    bool         stf_exit_on_stop_opc;// terminate the simulation after detecting STOP_TRACE opcode
+    uint64_t     stf_prog_asid;               // STF program asid
+    uint64_t     stf_count;                   // Number of traced instructions
+
+    bool         stf_tracing_enabled;
     bool         stf_no_priv_check;   // override the priv==0 check
     bool         stf_is_start_opc;    // detected the START_TRACE opcode
     bool         stf_is_stop_opc;     // detected the STOP_TRACE opcode
-    uint64_t     stf_prog_asid;       // as named
-    uint64_t     stf_count;           // running number of traced insn's
 
     /* For co-simulation only, they are -1 if nothing is pending. */
     bool cosim;

@@ -199,13 +199,17 @@ static int iterate_core(RISCVMachine *m, int hartid, int n_cycles) {
                 if(cpu->last_data_vaddr
                     != std::numeric_limits<decltype(cpu->last_data_vaddr)>::max())
                 {
-                    stf_writer << stf::InstMemAccessRecord(cpu->last_data_vaddr,
-                                                           cpu->last_data_size,
-                                                           0,
-                                                           (cpu->last_data_type == 0) ?
-                                                           stf::INST_MEM_ACCESS::READ :
-                                                           stf::INST_MEM_ACCESS::WRITE);
-                    stf_writer << stf::InstMemContentRecord(0); // empty content for now
+                    //If not a read to the tohost address then trace it
+                    if(cpu->last_data_type != 0 || cpu->last_data_vaddr != m->htif_tohost_addr)
+                    {
+                        stf_writer << stf::InstMemAccessRecord(cpu->last_data_vaddr,
+                                                               cpu->last_data_size,
+                                                               0,
+                                                               (cpu->last_data_type == 0) ?
+                                                               stf::INST_MEM_ACCESS::READ :
+                                                               stf::INST_MEM_ACCESS::WRITE);
+                        stf_writer << stf::InstMemContentRecord(0); // empty content for now
+                    }
                 }
 
                 if(inst_width == 4) {
