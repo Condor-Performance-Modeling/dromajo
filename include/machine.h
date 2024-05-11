@@ -211,7 +211,7 @@ typedef struct VirtMachine {
 //    bool         stf_essential_mode;          // Only include essential records in STF trace
     bool         stf_trace_register_state; // Enable register records
     bool         stf_tracepoints_enabled;     // Enable detection of start and stop tracepoints
-    bool         stf_include_stop_tracepoint; // Include the stop tracepoint in the STF trace
+    bool         stf_include_tracepoints; // Include the trace markers in STF
     int          stf_highest_priv_mode;       // Highest privilege mode to trace
     bool         stf_trace_open;              // STF trace is open (tracing has begun)
     bool         stf_in_traceable_region;     // STF tracing is enabled (all conditions met)

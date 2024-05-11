@@ -152,76 +152,26 @@ static int iterate_core(RISCVMachine *m, int hartid, int n_cycles) {
     if (m->common.trace < (unsigned) n_cycles) {
         n_cycles = 1;
         do_trace = true;
-    } else
-      m->common.trace -= n_cycles;
+    } else {
+        m->common.trace -= n_cycles;
+    }
 
     int keep_going = virt_machine_run(m, hartid, n_cycles);
 
     //STF:Trace the insn if the start OPC has been detected,
-    //do not trace the start or stop insn's
-    if(m->common.stf_tracing_enabled
-       && !m->common.stf_is_start_opc
-       && !m->common.stf_is_stop_opc)
+    //do not trace the start or stop insn's unless enabled
+    if(m->common.stf_tracing_enabled)
+//       && !m->common.stf_is_start_opc 
+//       && !m->common.stf_is_stop_opc)
+//       (m->common.stf_include_tracepoints ||
+//       (!m->common.stf_is_start_opc && !m->common.stf_is_stop_opc)))
     {
+//      if(m->common.stf_include_tracepoints) {
+//        stf_trace_element(m,hartid,priv,last_pc,insn_raw);
+//      } else if(!m->common.stf_is_start_opc && !m->common.stf_is_stop_opc) {
+      if(!m->common.stf_is_start_opc && !m->common.stf_is_stop_opc) {
         stf_trace_element(m,hartid,priv,last_pc,insn_raw);
-//        RISCVCPUState *cpu = m->cpu_state[hartid];
-//
-//        if(traceable_priv_level
-//           && (cpu->pending_exception == -1)
-//           && (m->common.stf_prog_asid == ((cpu->satp >> 4) & 0xFFFF)))
-//        {
-//
-//            ++m->common.stf_count;
-//            const uint32_t inst_width = ((insn_raw & 0x3) == 0x3) ? 4 : 2;
-//            bool skip_record = false;
-//
-//            // See if the instruction changed control flow or a
-//            // possible not-taken branch conditional
-//            if(cpu->info != ctf_nop) {
-//                stf_writer << stf::InstPCTargetRecord(virt_machine_get_pc(m, 0));
-//            }
-//            else {
-//                // Not sure what's going on, but there's a
-//                // possibility that the current instruction will
-//                // cause a page fault or a timer interrupt or
-//                // process switch so the next instruction might
-//                // not be on the program's path
-//                if(cpu->pc != last_pc + inst_width) {
-//                    skip_record = true;
-//                }
-//            }
-//
-//            // Record the instruction trace record
-//            if(false == skip_record)
-//            {
-//                // If the last instruction were a load/store,
-//                // record the last vaddr, size, and if it were a
-//                // read or write.
-//
-//                if(cpu->last_data_vaddr
-//                    != std::numeric_limits<decltype(cpu->last_data_vaddr)>::max())
-//                {
-//                    //If not a read to the tohost address then trace it
-//                    if(cpu->last_data_type != 0 || cpu->last_data_vaddr != m->htif_tohost_addr)
-//                    {
-//                        stf_writer << stf::InstMemAccessRecord(cpu->last_data_vaddr,
-//                                                               cpu->last_data_size,
-//                                                               0,
-//                                                               (cpu->last_data_type == 0) ?
-//                                                               stf::INST_MEM_ACCESS::READ :
-//                                                               stf::INST_MEM_ACCESS::WRITE);
-//                        stf_writer << stf::InstMemContentRecord(0); // empty content for now
-//                    }
-//                }
-//
-//                if(inst_width == 4) {
-//                   stf_writer << stf::InstOpcode32Record(insn_raw);
-//                }
-//                else {
-//                   stf_writer << stf::InstOpcode16Record(insn_raw & 0xFFFF);
-//                }
-//            }
-//        }
+      }
     }
 
     if (!do_trace) {
@@ -230,31 +180,32 @@ static int iterate_core(RISCVMachine *m, int hartid, int n_cycles) {
 
     fprintf(dromajo_stderr,
             "%d %d 0x%016" PRIx64 " (0x%08x)",
-            hartid,
-            priv,
-            last_pc,
+            hartid, priv, last_pc,
             (insn_raw & 3) == 3 ? insn_raw : (uint16_t)insn_raw);
 
     int iregno = riscv_get_most_recently_written_reg(cpu);
     int fregno = riscv_get_most_recently_written_fp_reg(cpu);
 
-    if (cpu->pending_exception != -1)
-        fprintf(dromajo_stderr,
-                " exception %d, tval %016" PRIx64,
+    if (cpu->pending_exception != -1) {
+        fprintf(dromajo_stderr, " exception %d, tval %016" PRIx64,
                 cpu->pending_exception,
                 riscv_get_priv_level(cpu) == PRV_M ? cpu->mtval : cpu->stval);
-    else if (iregno > 0)
-        fprintf(dromajo_stderr, " x%2d 0x%016" PRIx64, iregno, virt_machine_get_reg(m, hartid, iregno));
-    else if (fregno >= 0)
-        fprintf(dromajo_stderr, " f%2d 0x%016" PRIx64, fregno, virt_machine_get_fpreg(m, hartid, fregno));
-    else
-        for (int i = 31; i >= 0; i--)
+    } else if (iregno > 0) {
+        fprintf(dromajo_stderr, " x%2d 0x%016" PRIx64, 
+                iregno, virt_machine_get_reg(m, hartid, iregno));
+    } else if (fregno >= 0) {
+        fprintf(dromajo_stderr, " f%2d 0x%016" PRIx64, 
+                fregno, virt_machine_get_fpreg(m, hartid, fregno));
+    } else {
+        for (int i = 31; i >= 0; i--) {
             if (cpu->most_recently_written_vregs[i]) {
                 fprintf(dromajo_stderr, " v%2d 0x", i);
                 for (int j = VLEN / 8 - 1; j >= 0; j--) {
                     fprintf(dromajo_stderr, "%02" PRIx8, cpu->v_reg[i][j]);
                 }
             }
+         }
+    }
 
 
     putc('\n', dromajo_stderr);
@@ -265,7 +216,6 @@ static int iterate_core(RISCVMachine *m, int hartid, int n_cycles) {
 static double execution_start_ts;
 static uint64_t *execution_progress_meassure;
 
-
 static void sigintr_handler(int dummy) {
     double t = get_current_time_in_seconds();
     fprintf(dromajo_stderr, "Simulation speed: %5.2f MIPS (single-core)\n",
@@ -274,31 +224,31 @@ static void sigintr_handler(int dummy) {
 }
 
 int main(int argc, char **argv) {
+
 #ifdef REGRESS_COSIM
+
     dromajo_cosim_state_t *costate = 0;
-    costate                        = dromajo_cosim_init(argc, argv);
-
-    if (!costate)
-        return 1;
-
-    while (!dromajo_cosim_step(costate, 0, 0, 0, 0, 0, false))
-        ;
+    costate = dromajo_cosim_init(argc, argv);
+    if (!costate) return 1;
+    while (!dromajo_cosim_step(costate, 0, 0, 0, 0, 0, false)) ;
     dromajo_cosim_fini(costate);
+
 #else
+
     RISCVMachine *m = virt_machine_main(argc, argv);
 
-#ifdef SIMPOINT_BB
+    #ifdef SIMPOINT_BB
     if (m->common.simpoints.empty()) {
         simpoint_bb_file = fopen("dromajo_simpoint.bb", "w");
         if (simpoint_bb_file == nullptr) {
-            fprintf(dromajo_stderr, "\nerror: could not open dromajo_simpoint.bb for dumping trace\n");
+            fprintf(dromajo_stderr, "\nerror: could not "
+                    "open dromajo_simpoint.bb for dumping trace\n");
             exit(-3);
         }
     }
-#endif
+    #endif
 
-    if (!m)
-        return 1;
+    if (!m) return 1;
 
     int n_cycles = 10000;
     execution_start_ts = get_current_time_in_seconds();
@@ -308,13 +258,15 @@ int main(int argc, char **argv) {
     int keep_going;
     do {
         keep_going = 0;
-        for (int i = 0; i < m->ncpus; ++i) keep_going |= iterate_core(m, i, n_cycles);
-#ifdef SIMPOINT_BB
-        if (simpoint_roi) {
-            if (!simpoint_step(m, 0))
-                break;
+        for (int i = 0; i < m->ncpus; ++i) {
+            keep_going |= iterate_core(m, i, n_cycles);
         }
-#endif
+
+        #ifdef SIMPOINT_BB
+        if (simpoint_roi) {
+            if (!simpoint_step(m, 0)) break;
+        }
+        #endif
     } while (keep_going);
 
     double t = get_current_time_in_seconds();
@@ -322,9 +274,15 @@ int main(int argc, char **argv) {
     for (int i = 0; i < m->ncpus; ++i) {
         int benchmark_exit_code = riscv_benchmark_exit_code(m->cpu_state[i]);
         if (benchmark_exit_code != 0) {
-            fprintf(dromajo_stderr, "\nBenchmark exited with code: %i \n", benchmark_exit_code);
+            fprintf(dromajo_stderr, "\nBenchmark exited with code: %i \n",
+                    benchmark_exit_code);
             return 1;
         }
+    }
+
+    //Close STF file
+    if(stf_writer) {
+        stf_trace_close();
     }
 
     fprintf(dromajo_stderr, "Simulation speed: %5.2f MIPS (single-core)\n",

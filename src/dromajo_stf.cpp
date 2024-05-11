@@ -35,10 +35,12 @@ bool stf_trace_trigger(RISCVCPUState *s,target_ulong PC,uint32_t insn)
     } else if(s->machine->common.stf_is_stop_opc) {
 
         s->machine->common.stf_tracing_enabled = false;
+        fprintf(dromajo_stderr,"HERE\n");
         fprintf(dromajo_stderr, ">>> DROMAJO: Tracing Stopped at 0x%lx\n", PC);
         fprintf(dromajo_stderr, ">>> DROMAJO: Traced %ld insts\n",
                              s->machine->common.stf_count);
-        stf_writer.close();
+        //Let main close the file
+        //stf_writer.close();
         return false;
     }
 
@@ -55,6 +57,7 @@ void stf_trace_open(RISCVCPUState *s, target_ulong PC)
 
     s->machine->common.stf_prog_asid = (cpu->satp >> 4) & 0xFFFF;
 
+    //Do not re-open stf_writer
     if((bool)stf_writer == false) {
         stf_writer.open(s->machine->common.stf_trace);
         std::string SHA(std::string("SHA:")+std::string(DROMAJO_GIT_SHA));
@@ -81,13 +84,18 @@ void stf_trace_open(RISCVCPUState *s, target_ulong PC)
     }
 }
 
-void stf_trace_close(RISCVCPUState *s, target_ulong PC)
+//void stf_trace_close(RISCVMachine *m, target_ulong PC)
+void stf_trace_close()
 {
-    s->machine->common.stf_tracing_enabled = false;
-    fprintf(dromajo_stderr,">>> DROMAJO: Tracing Stopped at 0x%lx\n", PC);
-    fprintf(dromajo_stderr,">>> DROMAJO: Traced %ld insts\n",
-                            s->machine->common.stf_count);
-    stf_writer.close();
+//    m->common.stf_tracing_enabled = false;
+
+//    fprintf(dromajo_stderr,">>> DROMAJO: Tracing Stopped at 0x%lx\n", PC);
+//    fprintf(dromajo_stderr,">>> DROMAJO: Traced %ld insts\n",
+//                           m->common.stf_count);
+    if(stf_writer) {
+        stf_writer.close();
+        fprintf(dromajo_stderr,"-I: closed STF file\n");
+    }
 }
 
 void stf_trace_element(RISCVMachine *m,int hartid,int priv,uint64_t last_pc,uint32_t insn_raw)

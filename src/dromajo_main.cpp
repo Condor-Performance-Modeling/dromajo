@@ -576,7 +576,7 @@ static void usage(const char *prog, const char *msg) {
 //            "       --stf_essential_mode Only include essential records in the STF trace\n"
         "    --stf_tracepoint Enable tracepoint detection for STF trace \n"
         "                  generation\n"
-        "    --stf_include_stop_tracepoint Include the stop tracepoint \n"
+        "    --stf_include_tracepoints Include the start/stop tracepoints \n"
         "                  in the STF trace\n"
         "    --stf_priv_modes <USHM|USH|US|U> Specify which privilege \n"
         "                  modes to include for STF trace generation\n"
@@ -657,7 +657,7 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
 //    bool        stf_essential_mode          = false;
     bool        stf_trace_register_state    = false;
     bool        stf_tracepoints_enabled     = false;
-    bool        stf_include_stop_tracepoint = false;
+    bool        stf_include_tracepoints      = false;
     const char *stf_priv_modes              = "USHM";
 //    bool        stf_no_priv_check           = false;
 
@@ -705,7 +705,7 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
 //            {"stf_essential_mode",                no_argument, 0,  'y' },
             {"stf_trace_register_state",          no_argument, 0,  'y' },
             {"stf_tracepoint",                    no_argument, 0,  'x' },
-            {"stf_include_stop_tracepoint",       no_argument, 0,  'w' },
+            {"stf_include_tracepoints",       no_argument, 0,  'w' },
             {"stf_priv_modes",              required_argument, 0,  'a' },
 //            {"stf_no_priv_check",             no_argument,     0,  'a' },
 
@@ -797,7 +797,7 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
             case 'y': stf_trace_register_state = true; break;
 //            case 'y': stf_essential_mode = true; break;
             case 'x': stf_tracepoints_enabled = true; break;
-            case 'w': stf_include_stop_tracepoint = true; break;
+            case 'w': stf_include_tracepoints = true; break;
             case 'a': stf_priv_modes = strdup(optarg); break;
 
             case 'P': ignore_sbi_shutdown = true; break;
@@ -1145,12 +1145,12 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
         }
     };
 
-    s->common.stf_trace                   = stf_trace;
-    s->common.stf_exit_on_stop_opc        = stf_exit_on_stop_opc;
+    s->common.stf_trace                = stf_trace;
+    s->common.stf_exit_on_stop_opc     = stf_exit_on_stop_opc;
 //    s->common.stf_essential_mode          = stf_essential_mode;
-    s->common.stf_trace_register_state    = stf_trace_register_state;
-    s->common.stf_tracepoints_enabled     = stf_tracepoints_enabled;
-    s->common.stf_include_stop_tracepoint = stf_include_stop_tracepoint;
+    s->common.stf_trace_register_state = stf_trace_register_state;
+    s->common.stf_tracepoints_enabled  = stf_tracepoints_enabled;
+    s->common.stf_include_tracepoints  = stf_include_tracepoints;
     s->common.stf_highest_priv_mode       = get_stf_highest_priv_mode(stf_priv_modes);
     s->common.stf_trace_open              = false;
     s->common.stf_in_traceable_region     = false;
