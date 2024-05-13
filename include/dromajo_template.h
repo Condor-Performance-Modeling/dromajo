@@ -1812,6 +1812,13 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
         /* update PC for next instruction */
     jump_insn:;
 
+        if(s->machine->common.stf_trace) {
+            if(stf_trace_trigger(s,GET_PC(),insn)) {
+              s->pc = GET_PC();
+              return insn_executed;
+            }
+        }
+
     } /* end of main loop */
 illegal_insn:
     s->pending_exception = CAUSE_ILLEGAL_INSTRUCTION;

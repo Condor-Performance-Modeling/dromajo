@@ -25,7 +25,7 @@ stf_file_type="stf"
 runRegression()
 {
   echo "create the bare metal traces"
-  echo "$@\n"
+  echo "$@"
   for i in $@; do
     $DRO $OPT --stf_trace traces/$i.$stf_file_type  elf/$i.riscv
     echo ""
@@ -43,11 +43,15 @@ runRegression()
 runRegression illegal bmi_mm.bare bmi_towers.bare
 
 # Compressed with new stf features
-export OPT='--stf_include_stop_tracepoint --stf_tracepoint --stf_priv_modes USHM'
+#export OPT='--stf_include_stop_tracepoint --stf_tracepoint \
+#            --stf_priv_modes USHM'
+
+export OPT='--stf_tracepoint --stf_priv_modes USHM --stf_force_zero_sha'
+
 stf_file_type="zstf"
 #FIXME: mm fails the zstf comparison
 #runRegression illegal bmi_mm.bare bmi_towers.bare
-runRegression illegal bmi_towers.bare
+runRegression illegal bmi_mm.bare bmi_towers.bare
 echo "number of diffs = $diffs"
 
 exit $diffs
