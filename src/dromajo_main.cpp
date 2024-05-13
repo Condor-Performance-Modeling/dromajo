@@ -600,7 +600,6 @@ static void usage(const char *prog, const char *msg) {
         "                  DISABLED IN THIS VERSION.\n"
         "    --stf_priv_modes <USHM|USH|US|U> Specify which privilege \n"
         "                  modes to include for STF trace generation\n"
-//            "       --stf_no_priv_check Turn off the privledge check in STF generation\n"
         "    --stf_force_zero_sha Emit a 0 SHA in the STF. This is a \n"
         "                  debug option. Also clears the version placed in\n"
         "                  the STF output.\n"

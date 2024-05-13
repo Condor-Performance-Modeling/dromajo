@@ -223,7 +223,6 @@ typedef struct VirtMachine {
     uint64_t     stf_count;                   // Number of traced instructions
 
     bool         stf_tracing_enabled;
-//    bool         stf_no_priv_check;   // override the priv==0 check
     bool         stf_is_start_opc;    // detected the START_TRACE opcode
     bool         stf_is_stop_opc;     // detected the STOP_TRACE opcode
 
