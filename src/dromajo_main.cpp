@@ -78,6 +78,7 @@
 #endif
 #include "elf64.h"
 
+#include "dromajo_sha.h"
 #include "dromajo_stf.h"
 
 FILE *dromajo_stdout;
@@ -550,48 +551,55 @@ static BOOL net_poll_cb(void *arg) { return net_completed; }
 
 static void usage(const char *prog, const char *msg) {
     fprintf(dromajo_stderr,
-            "error: %s\n"
-            "%s, Copyright (c) 2016-2017 Fabrice Bellard,"
-            " Copyright (c) 2018,2019 Esperanto Technologies\n"
-            "usage: %s {options} [config|elf-file]\n"
-            "       --cmdline Kernel command line arguments to append\n"
-            "       --ncpus number of cpus to simulate (default 1)\n"
-            "       --load resumes a previously saved snapshot\n"
-            "       --simpoint reads a simpoint file to create multiple checkpoints\n"
-            "       --save saves a snapshot upon exit\n"
-            "       --maxinsns terminates execution after a number of instructions\n"
-            "       --terminate-event name of the validate event to terminate execution\n"
-            "       --trace start trace dump after a number of instructions. Trace disabled by default\n"
-            "       --stf_exit_on_stop_opc Terminate the simulation after detecting a STOP_TRACE opcode\n"
-            "       --stf_trace <filename> Dump an STF trace to the given file\n"
-            "       --stf_essential_mode Only include essential records in the STF trace\n"
-            "       --stf_tracepoint Enable tracepoint detection for STF trace generation\n"
-            "       --stf_include_stop_tracepoint Include the stop tracepoint in the STF trace\n"
-            "       --stf_priv_modes <USHM|USH|US|U> Specify which privilege modes to include for STF trace generation\n"
-            "       --ignore_sbi_shutdown continue simulation even upon seeing the SBI_SHUTDOWN call\n"
-            "       --dump_memories dump memories that could be used to load a cosimulation\n"
-            "       --memory_size sets the memory size in MiB (default 256 MiB)\n"
-            "       --memory_addr sets the memory start address (default 0x%lx)\n"
-            "       --bootrom load in a bootrom img file (default is dromajo bootrom)\n"
-            "       --dtb load in a dtb file (default is dromajo dtb)\n"
-            "       --compact_bootrom have dtb be directly after bootrom (default 256B after boot base)\n"
-            "       --reset_vector set reset vector for all cores (default 0x%lx)\n"
-            "       --plic START:SIZE set PLIC start address and size in B (defaults to 0x%lx:0x%lx)\n"
-            "       --clint START:SIZE set CLINT start address and size in B (defaults to 0x%lx:0x%lx)\n"
-            "       --custom_extension add X extension to misa for all cores\n"
-#ifdef LIVECACHE
-            "       --live_cache_size live cache warmup for checkpoint (default 8M)\n"
+        "\nmessage: %s\n\n"
+        "    Dromajo version:  %s\n"
+        "    Dromajo SHA:      %s\n\n"
+        "    Copyright (c) 2016-2017 Fabrice Bellard\n"
+        "    Copyright (c) 2018,2019 Esperanto Technologies\n"
+        "    Copyright (c) 2023-2024 Condor Computing\n"
+        "\n"
+        "usage: %s {options} [config|elf-file]\n\n"
+        "       --help ...\n"
+        "       --cmdline Kernel command line arguments to append\n"
+        "       --ncpus number of cpus to simulate (default 1)\n"
+        "       --load resumes a previously saved snapshot\n"
+        "       --simpoint reads a simpoint file to create multiple checkpoints\n"
+        "       --save saves a snapshot upon exit\n"
+        "       --maxinsns terminates execution after a number of instructions\n"
+        "       --terminate-event name of the validate event to terminate execution\n"
+        "       --trace start trace dump after a number of instructions. Trace disabled by default\n"
+        "       --stf_exit_on_stop_opc Terminate the simulation after detecting a STOP_TRACE opcode\n"
+        "       --stf_trace <filename> Dump an STF trace to the given file\n"
+        "       --stf_essential_mode Only include essential records in the STF trace\n"
+        "       --stf_tracepoint Enable tracepoint detection for STF trace generation\n"
+        "       --stf_include_stop_tracepoint Include the stop tracepoint in the STF trace\n"
+        "       --stf_priv_modes <USHM|USH|US|U> Specify which privilege modes to include for STF trace generation\n"
+        "       --stf_force_zero_sha Emit a 0 SHA in the STF. This is a debug option\n"
+        "       --ignore_sbi_shutdown continue simulation even upon seeing the SBI_SHUTDOWN call\n"
+        "       --dump_memories dump memories that could be used to load a cosimulation\n"
+        "       --memory_size sets the memory size in MiB (default 256 MiB)\n"
+        "       --memory_addr sets the memory start address (default 0x%lx)\n"
+        "       --bootrom load in a bootrom img file (default is dromajo bootrom)\n"
+        "       --dtb load in a dtb file (default is dromajo dtb)\n"
+        "       --compact_bootrom have dtb be directly after bootrom (default 256B after boot base)\n"
+        "       --reset_vector set reset vector for all cores (default 0x%lx)\n"
+        "       --plic START:SIZE set PLIC start address and size in B (defaults to 0x%lx:0x%lx)\n"
+        "       --clint START:SIZE set CLINT start address and size in B (defaults to 0x%lx:0x%lx)\n"
+        "       --custom_extension add X extension to misa for all cores\n"
+#ifdef LACHE
+        "       --live_cache_size live cache warmup for checkpoint (default 8M)\n"
 #endif
-            "       --clear_ids clear mvendorid, marchid, mimpid for all cores\n",
-            msg,
-            CONFIG_VERSION,
-            prog,
-            (long)BOOT_BASE_ADDR,
-            (long)RAM_BASE_ADDR,
-            (long)PLIC_BASE_ADDR,
-            (long)PLIC_SIZE,
-            (long)CLINT_BASE_ADDR,
-            (long)CLINT_SIZE);
+        "       --clear_ids clear mvendorid, marchid, mimpid for all cores\n",
+        msg,
+        CONFIG_VERSION,
+        DROMAJO_GIT_SHA,
+        prog,
+        (long)BOOT_BASE_ADDR,
+        (long)RAM_BASE_ADDR,
+        (long)PLIC_BASE_ADDR,
+        (long)PLIC_SIZE,
+        (long)CLINT_BASE_ADDR,
+        (long)CLINT_SIZE);
 
     exit(EXIT_FAILURE);
 }
@@ -632,6 +640,7 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
     bool        stf_tracepoints_enabled     = false;
     bool        stf_include_stop_tracepoint = false;
     const char *stf_priv_modes              = "USHM";
+    bool        stf_force_zero_sha          = false;
 
     long        memory_size_override     = 0;
     uint64_t    memory_addr_override     = 0;
@@ -676,6 +685,7 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
             {"stf_tracepoint",                    no_argument, 0,  'x' },
             {"stf_include_stop_tracepoint",       no_argument, 0,  'w' },
             {"stf_priv_modes",              required_argument, 0,  'a' },
+            {"stf_force_zero_sha",                no_argument, 0,  'Z' },
             {"ignore_sbi_shutdown",         required_argument, 0,  'P' }, // CFG
             {"dump_memories",                     no_argument, 0,  'D' }, // CFG
             {"memory_size",                 required_argument, 0,  'M' }, // CFG
@@ -761,6 +771,7 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
             case 'x': stf_tracepoints_enabled = true; break;
             case 'w': stf_include_stop_tracepoint = true; break;
             case 'a': stf_priv_modes = strdup(optarg); break;
+            case 'Z': stf_force_zero_sha = true; break;
 
             case 'P': ignore_sbi_shutdown = true; break;
 
@@ -1112,6 +1123,7 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
     s->common.stf_essential_mode          = stf_essential_mode;
     s->common.stf_tracepoints_enabled     = stf_tracepoints_enabled;
     s->common.stf_include_stop_tracepoint = stf_include_stop_tracepoint;
+    s->common.stf_force_zero_sha          = stf_force_zero_sha;
     s->common.stf_highest_priv_mode       = get_stf_highest_priv_mode(stf_priv_modes);
     s->common.stf_trace_open              = false;
     s->common.stf_in_traceable_region     = false;

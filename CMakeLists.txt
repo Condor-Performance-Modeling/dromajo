@@ -3,6 +3,7 @@
 #
 # Copyright (c) 2016-2017 Fabrice Bellard
 # Copyright (c) 2018,2019,2020 Esperanto Technology
+# Copyright (c) 2023-2024 Condor Computing
 #
 # Licensed under the Apache License, Version 2.0 (the "License")
 # you may not use this file except in compliance with the License.
@@ -46,8 +47,35 @@ option(SIMPOINT "SIMPOINT" OFF)
 option(GOLDMEM "GOLDMEM" OFF)
 option(WARMUP "WARMUP" OFF)
 
-#set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+# -------------------------------------------------------------------------
+# Capture GIT SHA in include/dromajo_sha.h
+# -------------------------------------------------------------------------
+# Set version numbers
+set(VERSION_MAJOR 2)
+set(VERSION_MINOR 0)
+set(VERSION_PATCH 0)
 
+# Verify Git - should never fail
+find_package(Git REQUIRED)
+
+# Get current hash
+execute_process(
+    COMMAND ${GIT_EXECUTABLE} rev-parse HEAD
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    OUTPUT_VARIABLE DROMAJO_GIT_SHA
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+# SHA header config file
+configure_file(
+    "${CMAKE_SOURCE_DIR}/include/dromajo_sha.h.in"
+    "${CMAKE_BINARY_DIR}/dromajo_sha.h"
+)
+
+# Include the current build directory 
+include_directories("${CMAKE_BINARY_DIR}")
+
+# -------------------------------------------------------------------------
 add_compile_options(
         -g
         -std=c++17

@@ -14,12 +14,14 @@
  * limitations under the License.
  */
 #include "dromajo.h"
+#include "dromajo_sha.h"
 
 #ifdef REGRESS_COSIM
 #include "dromajo_cosim.h"
 #endif
 
 #include "dromajo_stf.h"
+
 stf::STFWriter stf_writer;
 
 void stf_record_state(RISCVMachine * m, int hartid, uint64_t last_pc)
@@ -196,9 +198,18 @@ void stf_trace_open(RISCVMachine * m, int hartid, target_ulong pc)
     s->stf_prev_priv_mode = s->priv;
 
     if((bool)stf_writer == false) {
+        std::string SHA = m->common.stf_force_zero_sha
+                        ? "SHA:0"
+                        : std::string("SHA:")+std::string(DROMAJO_GIT_SHA);
+//        std::string SHA(std::string("SHA:")+std::string(DROMAJO_GIT_SHA));
+//        if(m->common.stf_force_zero_sha) SHA = "SHA:0";
         stf_writer.open(m->common.stf_trace);
         stf_writer.addTraceInfo(stf::TraceInfoRecord(
-                   stf::STF_GEN::STF_GEN_DROMAJO, 1, 1, 0,"Trace from Dromajo"));
+                   stf::STF_GEN::STF_GEN_DROMAJO,
+                   VERSION_MAJOR,
+                   VERSION_MINOR,
+                   VERSION_PATCH,
+                   SHA));
         stf_writer.setISA(stf::ISA::RISCV);
         stf_writer.setHeaderIEM(stf::INST_IEM::STF_INST_IEM_RV64);
         stf_writer.setTraceFeature(stf::TRACE_FEATURES::STF_CONTAIN_RV64);

@@ -212,6 +212,7 @@ typedef struct VirtMachine {
     bool         stf_tracepoints_enabled;     // Enable detection of start and stop tracepoints
     bool         stf_include_stop_tracepoint; // Include the stop tracepoint in the STF trace
     int          stf_highest_priv_mode;       // Highest privilege mode to trace
+    bool         stf_force_zero_sha;          // Emit 0 for the SHA in debug tests
     bool         stf_trace_open;              // STF trace is open (tracing has begun)
     bool         stf_in_traceable_region;     // STF tracing is enabled (all conditions met)
     bool         stf_in_tracepoint_region;    // Are we in the tracepoionted region of the workload?
