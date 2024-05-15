@@ -18,7 +18,6 @@
 
 #include <stdio.h>
 
-#include "config.h"
 #include "riscv_machine.h"
 
 extern FILE *dromajo_stdout;

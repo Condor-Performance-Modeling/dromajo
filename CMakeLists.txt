@@ -109,8 +109,8 @@ if (SIMPOINT)
 endif ()
 
 # Set Version Header
-set(CONFIG_VERSION "Dromajo-0.1")
-configure_file(include/config.h.in config.h @ONLY)
+#set(CONFIG_VERSION "Dromajo 2.0.0")
+#configure_file(include/config.h.in config.h @ONLY)
 
 if (WARMUP)
   message(STATUS "Checkpoint with WARMUP is on (typically for simpoints, but any checkpoint can use it).")

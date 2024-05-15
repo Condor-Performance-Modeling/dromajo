@@ -629,7 +629,7 @@ static void usage(const char *prog, const char *msg) {
 #endif
         "    --clear_ids clear mvendorid, marchid, mimpid for all cores\n\n",
         msg,
-        CONFIG_VERSION,
+        DROMAJO_VERSION_STRING,
         DROMAJO_GIT_SHA,
         prog,
         (long)BOOT_BASE_ADDR,
