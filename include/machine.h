@@ -206,25 +206,28 @@ typedef struct VirtMachine {
     char *   terminate_event;
     uint64_t maxinsns;
     uint64_t trace;
-    /* STF Trace Generation */
-    const char * stf_trace = nullptr;         // STF trace file name
-    bool         stf_essential_mode;          // Only include essential records in STF trace
-    bool         stf_trace_register_state;    // Enable register records, IN PROGRESS
-    bool         stf_tracepoints_enabled;     // Enable detection of start and stop tracepoints
-    bool         stf_include_tracepoints; // Include the trace markers in STF, IN PROGRESS
-    bool         stf_include_stop_tracepoint; // Include the stop tracepoint in the STF trace
-    int          stf_highest_priv_mode;       // Highest privilege mode to trace
-    bool         stf_force_zero_sha;          // Emit 0 for the SHA in debug tests
-    bool         stf_trace_open;              // STF trace is open (tracing has begun)
-    bool         stf_in_traceable_region;     // STF tracing is enabled (all conditions met)
-    bool         stf_in_tracepoint_region;    // Are we in the tracepoionted region of the workload?
-    bool         stf_exit_on_stop_opc;// terminate the simulation after detecting STOP_TRACE opcode
-    uint64_t     stf_prog_asid;               // STF program asid
-    uint64_t     stf_count;                   // Number of traced instructions
 
-    bool         stf_tracing_enabled;
-    bool         stf_is_start_opc;    // detected the START_TRACE opcode
-    bool         stf_is_stop_opc;     // detected the STOP_TRACE opcode
+    /* STF Trace Generation */
+    //FIXME: delete the unused variables below once other 
+    //       deprecated functions are removed
+    const char * stf_trace = nullptr; // STF trace file name
+    bool stf_exit_on_stop_opc;        // terminate the sim after detecting STOP_TRACE opcode
+    bool stf_trace_register_state;    // Enable register records, IN PROGRESS
+    bool stf_disable_memory_records;  // Do not place memory accesses into the STF
+    bool stf_tracepoints_enabled;     // Enable detection of start and stop tracepoints
+    bool stf_include_tracepoints;     // Include the trace markers in STF, IN PROGRESS
+    int  stf_highest_priv_mode;       // Highest privilege mode to trace
+    bool stf_force_zero_sha;          // Emit 0 for the SHA in debug tests
+
+    bool stf_trace_open;              // STF trace is open (tracing has begun)
+    bool stf_include_stop_tracepoint; // FIXME: no longer used
+    bool stf_in_traceable_region;     // FIXME: no longer used
+    bool stf_in_tracepoint_region;    // FIXME: no longer used
+    bool stf_tracing_enabled;         // Tracing is active
+    bool stf_is_start_opc;            // detected the START_TRACE opcode
+    bool stf_is_stop_opc;             // detected the STOP_TRACE opcode
+    uint64_t stf_prog_asid;           // STF program asid
+    uint64_t stf_count;               // Number of traced instructions
 
     /* For co-simulation only, they are -1 if nothing is pending. */
     bool cosim;

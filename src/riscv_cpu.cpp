@@ -178,7 +178,8 @@ static inline void track_write(RISCVCPUState *s, uint64_t vaddr, uint64_t paddr,
 #ifdef GOLDMEM_INORDER
     s->last_data_value = data;
 #endif
-    if(s->machine->common.stf_in_traceable_region) {
+//    if(s->machine->common.stf_in_traceable_region) {
+    if(s->machine->common.stf_tracing_enabled) {
        s->stf_mem_writes.emplace_back(vaddr, size, data);
     }
 }
@@ -193,7 +194,8 @@ static inline uint64_t track_dread(RISCVCPUState *s, uint64_t vaddr, uint64_t pa
     s->last_data_type  = 0;
     //printf("track.ld[%llx:%llx]=%llx\n", paddr, paddr+size-1, data);
 
-    if(s->machine->common.stf_in_traceable_region) {
+//    if(s->machine->common.stf_in_traceable_region) {
+    if(s->machine->common.stf_tracing_enabled) {
         // FIXME: Hack to prevent the tohost read from being traced everytime
         if(vaddr != s->machine->htif_tohost_addr) {
             s->stf_mem_reads.emplace_back(vaddr, size, data);

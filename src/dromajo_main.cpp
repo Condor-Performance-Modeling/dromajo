@@ -575,23 +575,17 @@ static void usage(const char *prog, const char *msg) {
         "\n"
         "usage: %s {options} [config|elf-file]\n\n"
         "    --help ...\n"
-        "    --cmdline Kernel command line arguments to append\n"
-        "    --ncpus number of cpus to simulate (default 1)\n"
-        "    --load resumes a previously saved snapshot\n"
-        "    --simpoint reads a simpoint file to create multiple checkpoints\n"
-        "    --save saves a snapshot upon exit\n"
-        "    --maxinsns terminates execution after a number of instructions\n"
-        "    --terminate-event name of the validate event to terminate \n"
-        "                  execution\n"
-        "    --trace start trace dump after a number of instructions.\n"
-        "                  Trace disabled by default\n"
+
+        "  STF options\n" 
+        "    --stf_trace <filename> Dump an STF trace to the given file\n"
         "    --stf_exit_on_stop_opc Terminate the simulation after \n"
         "                  detecting a STOP_TRACE opcode\n"
         "                  DISABLED IN THIS VERSION.\n"
         "    --stf_trace_register_state include register state in the STF\n"
-        "                  DISABLED IN THIS VERSION.\n"
-        "    --stf_trace <filename> Dump an STF trace to the given file\n"
-        "    --stf_essential_mode Only include essential records in the STF trace\n"
+        "                   (default false)\n"
+        "    --stf_disable_memory_records Do not add memory records to STF trace.\n"
+        "                   By default memory records are always traced.\n"
+        "                   (default false)\n"
         "    --stf_tracepoint Enable tracepoint detection for STF trace \n"
         "                  generation.\n"
         "                  ALWAYS ENABLED IN THIS VERSION.\n"
@@ -600,9 +594,24 @@ static void usage(const char *prog, const char *msg) {
         "                  DISABLED IN THIS VERSION.\n"
         "    --stf_priv_modes <USHM|USH|US|U> Specify which privilege \n"
         "                  modes to include for STF trace generation\n"
-        "    --stf_force_zero_sha Emit a 0 SHA in the STF. This is a \n"
-        "                  debug option. Also clears the version placed in\n"
-        "                  the STF output.\n"
+        "    --stf_force_zero_sha Emit 0 for all SHA's in the STF header. This is a \n"
+        "                  debug option. Also clears the dromajo version placed in\n"
+        "                  the STF header.\n"
+        "    --stf_essential_mode DEPRECATED. NO LONGER NECESSARY. \n"
+        "                  The behavior controlled by this switch is now on by default.\n"
+        "                  See: --stf_disable_memory_records, --stf_trace_register_state\n"
+
+        "  Standard options\n" 
+        "    --cmdline Kernel command line arguments to append\n"
+        "    --simpoint reads a simpoint file to create multiple checkpoints\n"
+        "    --ncpus number of cpus to simulate (default 1)\n"
+        "    --load resumes a previously saved snapshot\n"
+        "    --save saves a snapshot upon exit\n"
+        "    --maxinsns terminates execution after a number of instructions\n"
+        "    --terminate-event name of the validate event to terminate \n"
+        "                  execution\n"
+        "    --trace start trace dump after a number of instructions.\n"
+        "                  Trace disabled by default\n"
         "    --ignore_sbi_shutdown continue simulation even upon seeing \n"
         "                  the SBI_SHUTDOWN call\n"
         "    --dump_memories dump memories that could be used to load \n"
@@ -673,14 +682,15 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
     uint64_t    maxinsns                 = 0;
     uint64_t    trace                    = UINT64_MAX;
 
-    const char *stf_trace                = nullptr;
-    bool        stf_exit_on_stop_opc     = false;
-    bool        stf_essential_mode       = false;
-    bool        stf_trace_register_state = false;
-    bool        stf_tracepoint           = false;
-    bool        stf_include_tracepoints  = false;
-    const char *stf_priv_modes           = "USHM";
-    bool        stf_force_zero_sha       = false;
+    const char *stf_trace                  = nullptr;
+    bool        stf_exit_on_stop_opc       = false;
+    bool        stf_trace_register_state   = false;
+    bool        stf_disable_memory_records = false;
+    bool        stf_tracepoint             = false;
+    bool        stf_include_tracepoints    = false;
+    const char *stf_priv_modes             = "USHM";
+    bool        stf_force_zero_sha         = false;
+    bool        stf_essential_mode         = false; //makes no difference
 
     long        memory_size_override     = 0;
     uint64_t    memory_addr_override     = 0;
@@ -724,11 +734,12 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
             {"stf_trace",                   required_argument, 0,  'z' },
             {"stf_exit_on_stop_opc",              no_argument, 0,  'e' },
             {"stf_trace_register_state",          no_argument, 0,  'y' },
-            {"stf_essential_mode",                no_argument, 0,  'Y' },
+            {"stf_disable_memory_records",        no_argument, 0,  'f' },
             {"stf_tracepoint",                    no_argument, 0,  'x' },
             {"stf_include_tracepoints",           no_argument, 0,  'w' },
             {"stf_priv_modes",              required_argument, 0,  'a' },
             {"stf_force_zero_sha",                no_argument, 0,  'Z' },
+            {"stf_essential_mode",                no_argument, 0,  'Y' },
 
             {"ignore_sbi_shutdown",         required_argument, 0,  'P' }, // CFG
             {"dump_memories",                     no_argument, 0,  'D' }, // CFG
@@ -815,11 +826,12 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
             case 'z': stf_trace = strdup(optarg); break;
             case 'e': stf_exit_on_stop_opc = true; break;
             case 'y': stf_trace_register_state = true; break;
-            case 'Y': stf_essential_mode = true; break;
+            case 'f': stf_disable_memory_records = true; break;
             case 'x': stf_tracepoint  = true; break;
             case 'w': stf_include_tracepoints = true; break;
             case 'a': stf_priv_modes = strdup(optarg); break;
             case 'Z': stf_force_zero_sha = true; break;
+            case 'Y': stf_essential_mode = true; break;
 
             case 'P': ignore_sbi_shutdown = true; break;
 
@@ -967,7 +979,7 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
     if (ncpus)
         p->ncpus = ncpus;
     if (p->ncpus >= MAX_CPUS)
-        usage(prog, "ncpus limit reached (MAX_CPUS).  Increase MAX_CPUS");
+        usage(prog, "ncpus limit reached (MAX_CPUS). Increase MAX_CPUS");
 
     if (p->ncpus == 0)
         p->ncpus = 1;
@@ -983,7 +995,8 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
 #ifdef CONFIG_FS_NET
         if (is_url(fname)) {
             net_completed = FALSE;
-            drive         = block_device_init_http(fname, 128 * 1024, net_start_cb, NULL);
+            drive = block_device_init_http(fname, 128 * 1024, 
+                                           net_start_cb, NULL);
             /* wait until the drive is initialized */
             fs_net_event_loop(net_poll_cb, NULL);
         } else
@@ -1041,7 +1054,8 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
         } else
 #endif
         {
-            fprintf(dromajo_stderr, "Unsupported network driver '%s'\n", p->tab_eth[i].driver);
+            fprintf(dromajo_stderr, "Unsupported network driver '%s'\n",
+                    p->tab_eth[i].driver);
             exit(1);
         }
     }
@@ -1082,7 +1096,8 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
 
 #ifdef LIVECACHE
     // LiveCache (should be ~2x larger than real LLC)
-    s->llc = new LiveCache("LiveCache", live_cache_size, p->ram_base_addr, p->ram_size);
+    s->llc = new LiveCache("LiveCache", live_cache_size, 
+                           p->ram_base_addr, p->ram_size);
 #endif
 
     if (elf_based) {
@@ -1112,7 +1127,8 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
 #ifdef SIMPOINT_BB
         FILE *file = fopen(simpoint_file, "r");
         if (file == 0) {
-            fprintf(stderr, "could not open simpoint file %s\n", simpoint_file);
+            fprintf(stderr, "could not open simpoint file %s\n",
+                    simpoint_file);
             exit(1);
         }
         int distance;
@@ -1133,12 +1149,14 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
         }
 
         if (s->common.simpoints.empty()) {
-            fprintf(stderr, "simpoint file %s appears empty or invalid\n", simpoint_file);
+            fprintf(stderr, "simpoint file %s appears empty or invalid\n",
+                    simpoint_file);
             exit(1);
         }
         s->common.simpoint_next = 0;
 #else
-        fprintf(stderr, "simpoint flag requires to recompile with SIMPOINT_BB\n");
+        fprintf(stderr, "simpoint flag requires to recompile "
+                        "with SIMPOINT_BB\n");
         exit(1);
 #endif
     }
@@ -1161,24 +1179,30 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
             return PRV_U;
         }
         else {
-            fprintf(stderr, "invalid stf privilege modes '%s'\n", stf_priv_modes);
+            fprintf(stderr, "invalid stf privilege modes '%s'\n", 
+                    stf_priv_modes);
             exit(1);
         }
     };
 
-    s->common.stf_trace                = stf_trace;
-    s->common.stf_exit_on_stop_opc     = stf_exit_on_stop_opc;
-    s->common.stf_trace_register_state = false; //!stf_essential_mode;
-    s->common.stf_tracepoints_enabled  = stf_tracepoint;
-    s->common.stf_include_tracepoints  = false; //stf_include_tracepoints;
-    s->common.stf_force_zero_sha       = stf_force_zero_sha;
+    s->common.stf_trace                  = stf_trace;
+    s->common.stf_exit_on_stop_opc       = stf_exit_on_stop_opc;
+    s->common.stf_trace_register_state   = false;
+    s->common.stf_disable_memory_records = stf_disable_memory_records;
+    s->common.stf_tracepoints_enabled    = stf_tracepoint;
+    s->common.stf_include_tracepoints    = false;
     s->common.stf_highest_priv_mode = get_stf_highest_priv_mode(stf_priv_modes);
+    s->common.stf_force_zero_sha         = stf_force_zero_sha;
+
     s->common.stf_trace_open           = false;
-    s->common.stf_in_traceable_region  = false;
-    s->common.stf_in_tracepoint_region = false; //!stf_tracepoint;
+    s->common.stf_in_traceable_region  = false; //FIXME IN PROGRESS
+    s->common.stf_in_tracepoint_region = false; //FIXME IN PROGRESS
     s->common.stf_tracing_enabled      = false;
     s->common.stf_is_start_opc         = false;
     s->common.stf_is_stop_opc          = false;
+
+    s->common.stf_prog_asid            = 0;
+    s->common.stf_count                = 0;
 
     //FIXME:  forcing an exit on these previously supported switches
     //FIXME - restore this feature
