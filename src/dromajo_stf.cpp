@@ -52,21 +52,31 @@ void stf_record_state(RISCVMachine * m, int hartid, uint64_t last_pc)
 
 bool stf_trace_trigger(RISCVCPUState *s,target_ulong PC,uint32_t insn) 
 {
-    s->machine->common.stf_is_start_opc = insn == START_TRACE_OPC;
-    s->machine->common.stf_is_stop_opc  = insn == STOP_TRACE_OPC;
+    s->machine->common.stf_is_start_opc     = insn == START_TRACE_OPC;
+    s->machine->common.stf_is_stop_opc      = insn == STOP_TRACE_OPC;
+    s->machine->common.stf_has_exit_pending = insn == STOP_TRACE_OPC
+                               && s->machine->common.stf_exit_on_stop_opc;
 
+    bool isStop =  (s->machine->common.stf_tracing_enabled
+                &&  s->machine->common.stf_is_stop_opc)
+                ||  s->machine->common.stf_has_exit_pending;
+
+if(s->machine->common.stf_has_exit_pending)
+{
+        fprintf(dromajo_stderr, "@@@ DROMAJO: STOP OPC \n");
+}
     if(s->machine->common.stf_is_start_opc) {
         stf_trace_open(s, PC);
         return true;
 
-    } else if(s->machine->common.stf_tracing_enabled
-              && s->machine->common.stf_is_stop_opc)
-    {
+//    } else if(s->machine->common.stf_tracing_enabled
+//              && s->machine->common.stf_is_stop_opc)
+    } else if(isStop) {
         s->machine->common.stf_tracing_enabled = false;
         fprintf(dromajo_stderr, ">>> DROMAJO: Tracing Stopped at 0x%lx\n", PC);
         fprintf(dromajo_stderr, ">>> DROMAJO: Traced %ld insts\n\n",
                              s->machine->common.stf_count);
-        //Let main decide to close the file if we are done
+        //Else Let main decide to close the file if we are done
         //stf_writer.close();
         return false;
     }
@@ -198,7 +208,8 @@ void stf_emit_register_records(RISCVCPUState *cpu)
 }
 
 
-void stf_trace_element(RISCVMachine *m,int hartid,int priv,uint64_t last_pc,uint32_t insn_raw)
+void stf_trace_element(RISCVMachine *m,int hartid,int priv,
+                       uint64_t last_pc,uint32_t insn_raw)
 {
     RISCVCPUState *cpu = m->cpu_state[hartid];
 

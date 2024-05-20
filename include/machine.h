@@ -226,6 +226,7 @@ typedef struct VirtMachine {
     bool stf_tracing_enabled;         // Tracing is active
     bool stf_is_start_opc;            // detected the START_TRACE opcode
     bool stf_is_stop_opc;             // detected the STOP_TRACE opcode
+    bool stf_has_exit_pending;        // 
     uint64_t stf_prog_asid;           // STF program asid
     uint64_t stf_count;               // Number of traced instructions
 

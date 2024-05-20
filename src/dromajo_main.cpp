@@ -579,12 +579,15 @@ static void usage(const char *prog, const char *msg) {
         "  STF options\n" 
         "    --stf_trace <filename> Dump an STF trace to the given file\n"
         "    --stf_exit_on_stop_opc Terminate the simulation after \n"
-        "                  detecting a STOP_TRACE opcode\n"
-        "                  DISABLED IN THIS VERSION.\n"
+        "                  detecting a STOP_TRACE opcode. Using this\n"
+        "                  switch will disable non-contiguous region\n"
+        "                  tracing. The first STOP_TRACE opcode will \n"
+        "                  terminate the simulator.\n"
         "    --stf_trace_register_state include register state in the STF\n"
         "                   (default false)\n"
-        "    --stf_disable_memory_records Do not add memory records to STF trace.\n"
-        "                   By default memory records are always traced.\n"
+        "    --stf_disable_memory_records Do not add memory records to \n"
+        "                   STF trace. By default memory records are \n"
+        "                   always traced.\n"
         "                   (default false)\n"
         "    --stf_tracepoint Enable tracepoint detection for STF trace \n"
         "                  generation.\n"
@@ -1187,7 +1190,7 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
 
     s->common.stf_trace                  = stf_trace;
     s->common.stf_exit_on_stop_opc       = stf_exit_on_stop_opc;
-    s->common.stf_trace_register_state   = false;
+    s->common.stf_trace_register_state   = stf_trace_register_state;
     s->common.stf_disable_memory_records = stf_disable_memory_records;
     s->common.stf_tracepoints_enabled    = stf_tracepoint;
     s->common.stf_include_tracepoints    = false;
@@ -1200,30 +1203,17 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
     s->common.stf_tracing_enabled      = false;
     s->common.stf_is_start_opc         = false;
     s->common.stf_is_stop_opc          = false;
+    s->common.stf_has_exit_pending     = false;
 
     s->common.stf_prog_asid            = 0;
     s->common.stf_count                = 0;
 
     //FIXME:  forcing an exit on these previously supported switches
     //FIXME - restore this feature
-    if(stf_exit_on_stop_opc) {
-      nonfunctional_argument("stf_exit_on_stop_opc");
-    }
-
-    //FIXME - restore this feature
-    if(stf_trace_register_state) {
-      nonfunctional_argument("stf_trace_register_state");
-    }
 
     //FIXME - restore this feature
     if(stf_essential_mode) {
       deprecated_argument("stf_essential_mode");
-    }
-
-    //FIXME - restore this feature
-    (void) stf_trace_register_state;
-    if(stf_trace_register_state) {
-      nonfunctional_argument("stf_trace_register_state");
     }
 
     //FIXME - trace points should always be enabled, full trace should be

@@ -138,7 +138,6 @@ static int iterate_core(RISCVMachine *m, int hartid, int n_cycles) {
      */
     uint64_t last_pc  = virt_machine_get_pc(m, hartid);
     int      priv     = riscv_get_priv_level(cpu);
-//    bool     traceable_priv_level = priv <= m->common.stf_highest_priv_mode;
     uint32_t insn_raw = -1;
     bool     do_trace = false;
 
@@ -161,25 +160,11 @@ static int iterate_core(RISCVMachine *m, int hartid, int n_cycles) {
     //STF:Trace the insn if the start OPC has been detected,
     //do not trace the start or stop insn's unless enabled
     if(m->common.stf_tracing_enabled)
-//       && !m->common.stf_is_start_opc 
-//       && !m->common.stf_is_stop_opc)
-//       (m->common.stf_include_tracepoints ||
-//       (!m->common.stf_is_start_opc && !m->common.stf_is_stop_opc)))
     {
-//      if(m->common.stf_include_tracepoints) {
-//        stf_trace_element(m,hartid,priv,last_pc,insn_raw);
-//      } else if(!m->common.stf_is_start_opc && !m->common.stf_is_stop_opc) {
-      if(!m->common.stf_is_start_opc && !m->common.stf_is_stop_opc) {
-        stf_trace_element(m,hartid,priv,last_pc,insn_raw);
-      }
+        if(!m->common.stf_is_start_opc && !m->common.stf_is_stop_opc) {
+            stf_trace_element(m,hartid,priv,last_pc,insn_raw);
+        }
     }
-
-//    if(m->common.stf_trace) {
-//        // Returns true if current instruction should be traced
-//        if(stf_trace_trigger(m, hartid, insn_raw)) {
-//            stf_trace_element(m, hartid, priv, last_pc, insn_raw);
-//        }
-//    }
 
     if (!do_trace) {
         return keep_going;
@@ -215,7 +200,6 @@ static int iterate_core(RISCVMachine *m, int hartid, int n_cycles) {
             }
         }
     }
-
 
     putc('\n', dromajo_stderr);
 
@@ -264,19 +248,6 @@ int main(int argc, char **argv) {
     execution_progress_meassure = &m->cpu_state[0]->minstret;
     signal(SIGINT, sigintr_handler);
 
-//    /* STF Trace Generation */
-//    if(m->common.stf_trace) {
-//        // Throttle back n_cycles
-//        n_cycles = 1;
-//
-//  /* If STF tracing is configured to trace the entire workload (i.e. no tracepoints,
-//  * no privilege mode checks) then the trace can be opened before execution starts.
-//  */
-//  const int hartid = 0;
-//  const uint32_t insn_raw = 0x0;
-//        stf_trace_trigger(m, hartid, insn_raw);
-//    }
-
     int keep_going;
     do {
         keep_going = 0;
@@ -289,7 +260,7 @@ int main(int argc, char **argv) {
             if (!simpoint_step(m, 0)) break;
         }
         #endif
-    } while (keep_going);
+    } while (keep_going && !m->common.stf_has_exit_pending);
 
     double t = get_current_time_in_seconds();
 
@@ -302,13 +273,9 @@ int main(int argc, char **argv) {
         }
     }
 
-    //Close STF file
     if(stf_writer) {
         stf_trace_close();
     }
-//    if(m->common.stf_trace_open) {
-//        stf_trace_close(m, m->cpu_state[0]->last_pc);
-//    }
 
     fprintf(dromajo_stderr, "Simulation speed: %5.2f MIPS (single-core)\n",
             1e-6 * *execution_progress_meassure / (t - execution_start_ts));
