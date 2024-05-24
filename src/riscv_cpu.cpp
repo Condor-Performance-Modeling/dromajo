@@ -529,7 +529,7 @@ no_inline int riscv_cpu_read_memory(RISCVCPUState *s, mem_uint_t *pval, target_u
     bool             pmp_blocked = false;
 
     /* first handle unaligned accesses */
-    size = 1 << size_log2;
+    size = 1 << size_log2; // size in bytes
     al   = addr & (size - 1);
     if (!CONFIG_ALLOW_MISALIGNED_ACCESS && al != 0) {
         s->pending_tval      = addr;
@@ -664,7 +664,9 @@ no_inline int riscv_cpu_read_memory(RISCVCPUState *s, mem_uint_t *pval, target_u
             }
         }
     }
-    *pval = track_dread(s, addr, paddr, ret, size);
+
+    const int size_in_bits = size * 8;
+    *pval = track_dread(s, addr, paddr, ret, size_in_bits);
     return 0;
 }
 
@@ -677,7 +679,7 @@ no_inline int riscv_cpu_write_memory(RISCVCPUState *s, target_ulong addr, mem_ui
     bool             pmp_blocked = false;
 
     /* first handle unaligned accesses */
-    size = 1 << size_log2;
+    size = 1 << size_log2; // size in bytes
     if (!CONFIG_ALLOW_MISALIGNED_ACCESS && (addr & (size - 1)) != 0) {
         s->pending_tval      = addr;
         s->pending_exception = CAUSE_MISALIGNED_STORE;
@@ -759,7 +761,9 @@ no_inline int riscv_cpu_write_memory(RISCVCPUState *s, target_ulong addr, mem_ui
             }
         }
     }
-    track_write(s, addr, paddr, val, size);
+
+    const int size_in_bits = size * 8;
+    track_write(s, addr, paddr, val, size_in_bits);
     return 0;
 }
 
