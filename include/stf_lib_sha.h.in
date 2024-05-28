@@ -1,0 +1,2 @@
+#pragma once
+#define STF_LIB_GIT_SHA "@STF_LIB_GIT_SHA@"

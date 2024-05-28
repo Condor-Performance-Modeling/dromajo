@@ -568,7 +568,9 @@ static void usage(const char *prog, const char *msg) {
     fprintf(dromajo_stderr,
         "\nmessage: %s\n\n"
         "    Dromajo version:  %s\n"
-        "    Dromajo SHA:      %s\n\n"
+        "    Dromajo SHA:      %s\n"
+        "    STF_LIB SHA:      %s\n"
+        "\n"
         "    Copyright (c) 2016-2017 Fabrice Bellard\n"
         "    Copyright (c) 2018,2019 Esperanto Technologies\n"
         "    Copyright (c) 2023-2024 Condor Computing\n"
@@ -643,6 +645,7 @@ static void usage(const char *prog, const char *msg) {
         msg,
         DROMAJO_VERSION_STRING,
         DROMAJO_GIT_SHA,
+        STF_LIB_GIT_SHA,
         prog,
         (long)BOOT_BASE_ADDR,
         (long)RAM_BASE_ADDR,

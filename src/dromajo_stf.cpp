@@ -97,23 +97,30 @@ void stf_trace_open(RISCVCPUState *s, target_ulong PC)
     //Do not re-open stf_writer
     if((bool)stf_writer == false) {
         stf_writer.open(s->machine->common.stf_trace);
-        std::string sha;
+        std::string drom_sha,stflib_sha;
         uint32_t vMajor,vMinor,vPatch;
         if(s->machine->common.stf_force_zero_sha) {
-          sha = "SHA:0";
+          drom_sha   = "DROMAJO SHA:0";
+          stflib_sha = "STF_LIB SHA:0";
           vMajor = 0;
           vMinor = 0;
           vPatch = 0;
         } else {
-          sha = std::string("SHA:")+std::string(DROMAJO_GIT_SHA);
+          drom_sha   = std::string("DROMAJO SHA:")+std::string(DROMAJO_GIT_SHA);
+          stflib_sha = std::string("STF_LIB SHA:")+std::string(STF_LIB_GIT_SHA);
           vMajor = VERSION_MAJOR;
           vMinor = VERSION_MINOR;
           vPatch = VERSION_PATCH;
         }
 
         stf_writer.addTraceInfo(stf::TraceInfoRecord(
-           stf::STF_GEN::STF_GEN_DROMAJO,vMajor,vMinor,vPatch,sha)
+           stf::STF_GEN::STF_GEN_DROMAJO,vMajor,vMinor,vPatch,drom_sha)
         );
+
+        stf_writer.addHeaderComment(stflib_sha);
+//        stf_writer.addTraceInfo(stf::CommentRecord(stflib_sha));
+//           stf::STF_COMMENT,stflib_sha)
+//        );
 
         stf_writer.setISA(stf::ISA::RISCV);
         stf_writer.setHeaderIEM(stf::INST_IEM::STF_INST_IEM_RV64);

@@ -39,7 +39,7 @@
 # THE SOFTWARE.
 #
 
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.1)
 set(CMAKE_CXX_STANDARD 17)
 project(dromajo)
 option(TRACEOS "TRACEOS" OFF)
@@ -47,14 +47,14 @@ option(SIMPOINT "SIMPOINT" OFF)
 option(GOLDMEM "GOLDMEM" OFF)
 option(WARMUP "WARMUP" OFF)
 
+# Set version numbers
+set(VERSION_MAJOR 2)
+set(VERSION_MINOR 2)
+set(VERSION_PATCH 0)
+
 # -------------------------------------------------------------------------
 # Capture GIT SHA in include/dromajo_sha.h
 # -------------------------------------------------------------------------
-# Set version numbers
-set(VERSION_MAJOR 2)
-set(VERSION_MINOR 1)
-set(VERSION_PATCH 0)
-
 # Verify Git - should never fail
 find_package(Git REQUIRED)
 
@@ -74,6 +74,21 @@ configure_file(
 
 # Include the current build directory 
 include_directories("${CMAKE_BINARY_DIR}")
+
+# -------------------------------------------------------------------------
+# Capture GIT SHA of stf_lib in include/stf_lib_sha.h
+# -------------------------------------------------------------------------
+execute_process(
+    COMMAND ${GIT_EXECUTABLE} rev-parse HEAD
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/stf_lib
+    OUTPUT_VARIABLE STF_LIB_GIT_SHA
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+configure_file(
+    "${CMAKE_SOURCE_DIR}/include/stf_lib_sha.h.in"
+    "${CMAKE_BINARY_DIR}/stf_lib_sha.h"
+)
 
 # -------------------------------------------------------------------------
 add_compile_options(

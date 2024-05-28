@@ -8,6 +8,7 @@
 #include "trace_macros.h"
 #include "stf-inc/stf_writer.hpp"
 #include "stf-inc/stf_record_types.hpp"
+#include "stf_lib_sha.h"
 
 extern stf::STFWriter stf_writer;
 
