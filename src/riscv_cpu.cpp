@@ -167,6 +167,9 @@ static void         dump_regs(RISCVCPUState *s) {
 }
 
 static inline void track_write(RISCVCPUState *s, uint64_t vaddr, uint64_t paddr, uint64_t data, int size) {
+    // Track write gets size in bits
+    // Convert size to bytes if stf_memrecord_size_in_bits is false
+    size = s->machine->common.stf_memrecord_size_in_bits ? size : size / 8;
 #ifdef LIVECACHE
     s->machine->llc->write(paddr);
 #endif
@@ -185,6 +188,9 @@ static inline void track_write(RISCVCPUState *s, uint64_t vaddr, uint64_t paddr,
 }
 
 static inline uint64_t track_dread(RISCVCPUState *s, uint64_t vaddr, uint64_t paddr, uint64_t data, int size) {
+    // Track write gets size in bits
+    // Convert size to bytes if stf_memrecord_size_in_bits is false
+    size = s->machine->common.stf_memrecord_size_in_bits ? size : size / 8;
 #ifdef LIVECACHE
     s->machine->llc->read(paddr);
 #endif
