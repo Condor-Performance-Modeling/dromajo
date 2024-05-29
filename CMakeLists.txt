@@ -50,7 +50,7 @@ option(WARMUP "WARMUP" OFF)
 # Set version numbers
 set(VERSION_MAJOR 2)
 set(VERSION_MINOR 2)
-set(VERSION_PATCH 0)
+set(VERSION_PATCH 1)
 
 # -------------------------------------------------------------------------
 # Capture GIT SHA in include/dromajo_sha.h
