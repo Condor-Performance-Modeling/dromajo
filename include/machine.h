@@ -212,6 +212,7 @@ typedef struct VirtMachine {
     //       deprecated functions are removed
     const char * stf_trace = nullptr; // STF trace file name
     bool stf_exit_on_stop_opc;        // terminate the sim after detecting STOP_TRACE opcode
+    bool stf_memrecord_size_in_bits;  // write memory access size in bits instead of bytes
     bool stf_trace_register_state;    // Enable register records, IN PROGRESS
     bool stf_disable_memory_records;  // Do not place memory accesses into the STF
     bool stf_tracepoints_enabled;     // Enable detection of start and stop tracepoints

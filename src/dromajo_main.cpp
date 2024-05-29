@@ -585,6 +585,7 @@ static void usage(const char *prog, const char *msg) {
         "                  switch will disable non-contiguous region\n"
         "                  tracing. The first STOP_TRACE opcode will \n"
         "                  terminate the simulator.\n"
+        "    --stf_memrecord_size_in_bits write memory access size in bits instead of bytes\n"
         "    --stf_trace_register_state include register state in the STF\n"
         "                   (default false)\n"
         "    --stf_disable_memory_records Do not add memory records to \n"
@@ -690,6 +691,7 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
 
     const char *stf_trace                  = nullptr;
     bool        stf_exit_on_stop_opc       = false;
+    bool        stf_memrecord_size_in_bits = false;
     bool        stf_trace_register_state   = false;
     bool        stf_disable_memory_records = false;
     bool        stf_tracepoint             = false;
@@ -739,6 +741,7 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
 
             {"stf_trace",                   required_argument, 0,  'z' },
             {"stf_exit_on_stop_opc",              no_argument, 0,  'e' },
+            {"stf_memrecord_size_in_bits",        no_argument, 0,  'B' },
             {"stf_trace_register_state",          no_argument, 0,  'y' },
             {"stf_disable_memory_records",        no_argument, 0,  'f' },
             {"stf_tracepoint",                    no_argument, 0,  'x' },
@@ -831,6 +834,7 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
 
             case 'z': stf_trace = strdup(optarg); break;
             case 'e': stf_exit_on_stop_opc = true; break;
+            case 'B': stf_memrecord_size_in_bits = true; break;
             case 'y': stf_trace_register_state = true; break;
             case 'f': stf_disable_memory_records = true; break;
             case 'x': stf_tracepoint  = true; break;
@@ -1193,6 +1197,7 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
 
     s->common.stf_trace                  = stf_trace;
     s->common.stf_exit_on_stop_opc       = stf_exit_on_stop_opc;
+    s->common.stf_memrecord_size_in_bits = stf_memrecord_size_in_bits;
     s->common.stf_trace_register_state   = stf_trace_register_state;
     s->common.stf_disable_memory_records = stf_disable_memory_records;
     s->common.stf_tracepoints_enabled    = stf_tracepoint;
