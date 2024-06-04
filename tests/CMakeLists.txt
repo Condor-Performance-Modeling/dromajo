@@ -18,4 +18,8 @@ message(STATUS "Found " ${NUM_CORES} " cores in machine (for ctest)")
 
 add_custom_target (regress DEPENDS dromajo)
 
+add_custom_command(TARGET regress POST_BUILD
+                   COMMAND ${CMAKE_COMMAND} -E echo "Running run_bare_metal.sh script for regress target..."
+                   COMMAND ${CMAKE_COMMAND} -E env bash ${PROJECT_SOURCE_DIR}/stf_gen/run_bare_metal.sh)
+
 include_directories(${PROJECT_SOURCE_DIR}/..)
