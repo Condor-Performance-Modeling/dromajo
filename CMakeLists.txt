@@ -216,6 +216,12 @@ target_link_libraries(dromajo_cosim ${STF_LINK_LIBS})
 add_subdirectory (${STF_LIB_BASE})
 
 # -------------------------------------------------------------------
+# TESTS
+
+# Add tests subdirectory to the build
+add_subdirectory (tests)
+
+# -------------------------------------------------------------------
 if (${CMAKE_HOST_APPLE})
     include_directories(/usr/local/include /usr/local/include/libelf /opt/homebrew/include /opt/homebrew/include/libelf)
     target_link_libraries(dromajo_cosim -L/usr/local/lib -L/opt/homebrew/lib -lelf)
