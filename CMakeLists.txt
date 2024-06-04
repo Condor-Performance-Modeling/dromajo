@@ -218,6 +218,8 @@ add_subdirectory (${STF_LIB_BASE})
 # -------------------------------------------------------------------
 # TESTS
 
+enable_testing()
+
 # Add tests subdirectory to the build
 add_subdirectory (tests)
 
