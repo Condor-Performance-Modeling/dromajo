@@ -13,7 +13,7 @@ ProcessorCount(NUM_CORES)
 
 if (NOT NUM_CORES EQUAL 0)
   set(CTEST_BUILD_FLAGS -j${NUM_CORES})
-  set(ctest_test_args ${ctest_test_args} PARALLEL_LEVEL ${NUM_CORES})
+  set(ctest_test_args "--parallel ${NUM_CORES}")
 endif()
 
 message(STATUS "Found " ${NUM_CORES} " cores in machine (for ctest)")
@@ -21,8 +21,9 @@ message(STATUS "Found " ${NUM_CORES} " cores in machine (for ctest)")
 add_custom_target (regress DEPENDS dromajo)
 
 add_custom_command(TARGET regress POST_BUILD
-                   COMMAND ctest --output-on-failure)
+                   COMMAND ${CMAKE_COMMAND} -E echo "Running tests..."
+                   COMMAND ${CMAKE_CTEST_COMMAND} ${ctest_test_args})
 
-add_test(NAME stf_gen_test
+add_test(NAME stf_gen_ad_hoc_test
          COMMAND ${CMAKE_COMMAND} -E env bash -c "bash run_bare_metal.sh 2>&1"
          WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/stf_gen)
