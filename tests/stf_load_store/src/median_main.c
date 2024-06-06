@@ -26,7 +26,7 @@ extern volatile uint64_t tohost;
 int main( int argc, char* argv[] )
 {
   START_TRACE;
-  int results_data[DATA_SIZE;
+  int results_data[DATA_SIZE];
 
 #if PREALLOCATE
   // If needed we preallocate everything in the caches

@@ -1,25 +1,34 @@
 cmake_minimum_required(VERSION 3.10)
 
-# Set the project name and language
-project(bmi_median C)
+project(stf_load_store)
 
-# Specify the compiler
-set(CMAKE_C_COMPILER "/data/tools/riscv64-unknown-elf/bin/riscv64-unknown-elf-gcc")
+# Gather source files
+file(GLOB SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
+file(GLOB COMMON_DIR ${CMAKE_CURRENT_SOURCE_DIR}/common)
+file(GLOB LINKER_DIR ${CMAKE_CURRENT_SOURCE_DIR}/linker)
 
-# Set the compile flags
-set(CMAKE_C_FLAGS "-march=rv64gc -mabi=lp64d -nostdlib -nostartfiles -mcmodel=medany -O3 -ffast-math -funsafe-math-optimizations -finline-functions -fno-common -fno-builtin-printf -flto -fno-tree-loop-distribute-patterns -static -std=gnu99")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DPREALLOCATE=1 -D__riscv=1")
+# Debug messages to confirm paths
+message(STATUS "Source files: ${SOURCE_DIR}")
+message(STATUS "Common files: ${COMMON_DIR}")
+message(STATUS "Linker script: ${LINKER_DIR}")
 
-# Include directories
-include_directories(${PROJECT_SOURCE_DIR}/common)
+# Custom command to run the known working command
+add_custom_command(
+    OUTPUT ${CMAKE_BINARY_DIR}/bin/stf_load_store.bare.riscv
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/bin
+    COMMAND /data/tools/riscv64-unknown-elf/bin/riscv64-unknown-elf-gcc 
+    -march=rv64gc -mabi=lp64d -nostdlib -nostartfiles -mcmodel=medany  
+    -O3 -ffast-math -funsafe-math-optimizations -finline-functions 
+    -fno-common -fno-builtin-printf -flto -fno-tree-loop-distribute-patterns  
+    -I${COMMON_DIR} -DPREALLOCATE=1 -D__riscv=1 -static -std=gnu99 
+    -T${LINKER_DIR}/common_proposed.ld ${COMMON_DIR}/syscalls.c ${COMMON_DIR}/crt.S 
+    ${SOURCE_DIR}/*.c -o ${CMAKE_BINARY_DIR}/bin/stf_load_store.bare.riscv -lm -lgcc
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    DEPENDS ${COMMON_DIR}/syscalls.c ${COMMON_DIR}/crt.S ${SOURCE_DIR}/*.c
+)
 
-# Linker script
-set(LINKER_SCRIPT "${PROJECT_SOURCE_DIR}/common/linker/common_proposed.ld")
-set(CMAKE_EXE_LINKER_FLAGS "-T${LINKER_SCRIPT} -lm -lgcc")
+# Add a custom target to build the project
+add_custom_target(stf_load_store ALL DEPENDS ${CMAKE_BINARY_DIR}/bin/stf_load_store.bare.riscv)
 
-# Source files
-file(GLOB COMMON_SOURCES "${PROJECT_SOURCE_DIR}/common/*.c" "${PROJECT_SOURCE_DIR}/common/*.S")
-file(GLOB MEDIAN_SOURCES "${PROJECT_SOURCE_DIR}/src/*.c")
-
-# Add the executable
-add_executable(bmi_median.bare.riscv ${COMMON_SOURCES} ${MEDIAN_SOURCES})
+# Specify the output directory for the binary
+set_target_properties(stf_load_store PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
