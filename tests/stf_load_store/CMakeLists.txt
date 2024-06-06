@@ -28,7 +28,7 @@ add_custom_command(
 )
 
 # Add a custom target to build the project
-add_custom_target(stf_load_store ALL DEPENDS ${CMAKE_BINARY_DIR}/bin/stf_load_store.bare.riscv)
+add_custom_target(stf_load_store DEPENDS ${CMAKE_BINARY_DIR}/bin/stf_load_store.bare.riscv)
 
 # Specify the output directory for the binary
 set_target_properties(stf_load_store PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
