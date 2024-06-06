@@ -5,7 +5,7 @@ if [ -z "$1" ]; then
   exit 1
 fi
 
-export OPT='--ctrlc --stf_essential_mode --stf_tracepoint --stf_priv_modes USHM'
+export OPT='--ctrlc --stf_force_zero_sha --stf_tracepoint --stf_priv_modes USHM'
 export DRO=../../bin/cpm_dromajo
 INPUT_FILE=$1
 

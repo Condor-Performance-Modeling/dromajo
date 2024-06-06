@@ -272,4 +272,7 @@ void stf_trace_element(RISCVMachine *m,int hartid,int priv,
             stf_writer << stf::EventRecord(stf::EventRecord::TYPE(cpu->pending_exception), (uint64_t)0);
         }
     }
+
+    cpu->stf_mem_reads.clear();
+    cpu->stf_mem_writes.clear();
 }
