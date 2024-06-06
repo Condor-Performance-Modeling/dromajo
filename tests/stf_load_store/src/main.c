@@ -45,11 +45,11 @@ int main(int argc, char* argv[])
     asm volatile (
         // Load operations
         //FIXME do not use pseudo ops you want 1:1 in the stf
-        //"li t0, 0x123456789ABCDEF0;" // Load immediate 64-bit value into t0
-        "lui t0, 0x12345"         // Load upper immediate
-        "addi t0, t0, 0x678"      // Add the remaining bits of the high part
-        "slli t0, t0, 32"         // SHL by 32 to prepare for the lower 32 bits
-        "addi t0, t0, 0x9ABCDEF0" // Add the lower 32 bits
+        "li t0, 0x123456789ABCDEF0;" // Load immediate 64-bit value into t0
+//        "lui t0, 0x12345"    // Load upper immediate
+//        "addi t0, t0, 0x678" // Add the remaining bits of the high part
+//        "slli t0, t0, 32"    // SHL by 32 to prepare for the lower 32 bits
+//        "addi t0, t0, 0x9ABCDEF0" // Add the lower 32 bits
 
         //FIXME: SP is not initialized
         "sd t0, 0(sp);"           // Store t0 value to stack 
