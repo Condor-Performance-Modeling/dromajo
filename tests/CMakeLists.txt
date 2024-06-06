@@ -26,6 +26,10 @@ add_custom_command(TARGET regress POST_BUILD
                    COMMAND ${CMAKE_COMMAND} -E echo "Running tests..."
                    COMMAND ${CMAKE_CTEST_COMMAND} ${ctest_test_args})
 
+add_test(NAME stf_load_store_test
+         COMMAND ${CMAKE_COMMAND} -E env bash -c "bash run_load_store_test.sh ${CMAKE_BINARY_DIR}/bin/stf_load_store.bare.riscv 2>&1"
+         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/stf_load_store)
+
 add_test(NAME stf_gen_ad_hoc_test
          COMMAND ${CMAKE_COMMAND} -E env bash -c "bash run_bare_metal.sh 2>&1"
          WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/stf_gen)
