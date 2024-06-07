@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.10)
 
 project(stf_load_store)
 
+set(COMPILER "/data/tools/riscv64-unknown-elf/bin/riscv64-unknown-elf-gcc")
+
 # Gather source files
 file(GLOB SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
 file(GLOB COMMON_DIR ${CMAKE_CURRENT_SOURCE_DIR}/common)
@@ -16,15 +18,16 @@ message(STATUS "Linker script: ${LINKER_DIR}")
 add_custom_command(
     OUTPUT ${CMAKE_BINARY_DIR}/bin/stf_load_store.bare.riscv
     COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/bin
-    COMMAND /data/tools/riscv64-unknown-elf/bin/riscv64-unknown-elf-gcc 
-    -march=rv64gc -mabi=lp64d -nostdlib -nostartfiles -mcmodel=medany  
-    -O3 -ffast-math -funsafe-math-optimizations -finline-functions 
-    -fno-common -fno-builtin-printf -flto -fno-tree-loop-distribute-patterns  
-    -I${COMMON_DIR} -DPREALLOCATE=1 -D__riscv=1 -static -std=gnu99 
+    COMMAND ${COMPILER}
+    -nostartfiles -mcmodel=medany  
+    -O3 
+    -fno-builtin-printf -flto -fno-tree-loop-distribute-patterns  
+    -I${COMMON_DIR}
     -T${LINKER_DIR}/common_proposed.ld ${COMMON_DIR}/syscalls.c ${COMMON_DIR}/crt.S 
-    ${SOURCE_DIR}/*.c -o ${CMAKE_BINARY_DIR}/bin/stf_load_store.bare.riscv -lm -lgcc
+    ${SOURCE_DIR}/*.c 
+    -o ${CMAKE_BINARY_DIR}/bin/stf_load_store.bare.riscv
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-    DEPENDS ${COMMON_DIR}/syscalls.c ${COMMON_DIR}/crt.S ${SOURCE_DIR}/*.c
+    DEPENDS ${COMMON_DIR}/syscalls.c ${COMMON_DIR}/crt.S ${SOURCE_DIR}/*.c ${COMPILER}
 )
 
 # Add a custom target to build the project
