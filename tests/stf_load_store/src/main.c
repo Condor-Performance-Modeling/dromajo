@@ -4,14 +4,16 @@
 
 int main(int argc, char* argv[])
 {
-    START_TRACE;
-
     asm volatile (
         "li sp, 0x80000000;"       // Set stack pointer to an address
         "li t0, 0x123456789ABCDEF0;" // Load immediate 64-bit value into t0
 
         "sd t0, 0(sp);"            // Store t0 value to stack 
+    );
+    
+    START_TRACE;
 
+    asm volatile (
         // Load operations
         //"c.lb t1, 0(sp);"
         //"c.lbu t2, 0(sp);"
