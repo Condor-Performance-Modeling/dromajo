@@ -19,6 +19,7 @@ add_custom_command(
     OUTPUT ${CMAKE_BINARY_DIR}/bin/stf_load_store.bare.riscv
     COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/bin
     COMMAND ${COMPILER}
+    -march=rv64gc_zfhmin
     -nostartfiles -mcmodel=medany  
     -O3 
     -fno-builtin-printf -flto -fno-tree-loop-distribute-patterns  
