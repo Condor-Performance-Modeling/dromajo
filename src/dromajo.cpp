@@ -274,6 +274,7 @@ int main(int argc, char **argv) {
     }
 
     if(stf_writer) {
+        stf_writer.flush();
         stf_trace_close();
     }
 

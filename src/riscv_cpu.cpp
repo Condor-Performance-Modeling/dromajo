@@ -166,7 +166,7 @@ static void         dump_regs(RISCVCPUState *s) {
 #endif
 }
 
-static inline void track_write(RISCVCPUState *s, uint64_t vaddr, uint64_t paddr, uint64_t data, int size) {
+static inline void track_write(RISCVCPUState *s, uint64_t vaddr, uint64_t paddr, uint64_t data, int size,bool trace_en = false) {
     // Track write gets size in bits
     // Convert size to bytes if stf_memrecord_size_in_bits is false
     size = s->machine->common.stf_memrecord_size_in_bits ? size : size / 8;
@@ -181,13 +181,18 @@ static inline void track_write(RISCVCPUState *s, uint64_t vaddr, uint64_t paddr,
 #ifdef GOLDMEM_INORDER
     s->last_data_value = data;
 #endif
-//    if(s->machine->common.stf_in_traceable_region) {
-    if(s->machine->common.stf_tracing_enabled) {
-       s->stf_mem_writes.emplace_back(vaddr, size, data);
+    //FIXME: marshall these calls, here and in track_dread when 
+    // the regression has more complete tests
+    if(trace_en && s->machine->common.stf_tracing_enabled) {
+        RISCVCPUState *cpu = s->machine->cpu_state[0];
+        int  priv       = riscv_get_priv_level(cpu);
+        bool priv_ok    = priv  <= s->machine->common.stf_highest_priv_mode;
+        bool trace_this = priv_ok;
+        if(trace_this) s->stf_mem_writes.emplace_back(vaddr, size, data);
     }
 }
 
-static inline uint64_t track_dread(RISCVCPUState *s, uint64_t vaddr, uint64_t paddr, uint64_t data, int size) {
+static inline uint64_t track_dread(RISCVCPUState *s, uint64_t vaddr, uint64_t paddr, uint64_t data, int size,bool trace_en = false) {
     // Track write gets size in bits
     // Convert size to bytes if stf_memrecord_size_in_bits is false
     size = s->machine->common.stf_memrecord_size_in_bits ? size : size / 8;
@@ -200,12 +205,15 @@ static inline uint64_t track_dread(RISCVCPUState *s, uint64_t vaddr, uint64_t pa
     s->last_data_type  = 0;
     //printf("track.ld[%llx:%llx]=%llx\n", paddr, paddr+size-1, data);
 
-//    if(s->machine->common.stf_in_traceable_region) {
-    if(s->machine->common.stf_tracing_enabled) {
-        // FIXME: Hack to prevent the tohost read from being traced everytime
-        if(vaddr != s->machine->htif_tohost_addr) {
-            s->stf_mem_reads.emplace_back(vaddr, size, data);
-        }
+    //FIXME: marshall these calls, here and in track_dread when 
+    // the regression has more complete tests
+    if(trace_en && s->machine->common.stf_tracing_enabled) {
+        RISCVCPUState *cpu = s->machine->cpu_state[0];
+        int  priv       = riscv_get_priv_level(cpu);
+        bool priv_ok    = priv  <= s->machine->common.stf_highest_priv_mode;
+        bool not_tohost = vaddr != s->machine->htif_tohost_addr;
+        bool trace_this = priv_ok && not_tohost;
+        if(trace_this) s->stf_mem_reads.emplace_back(vaddr, size, data);
     }
 
     return data;
@@ -353,7 +361,7 @@ PHYS_MEM_READ_WRITE(64, uint64_t)
         if (likely(s->tlb_read[tlb_idx].vaddr == (addr & ~(PG_MASK & ~((size / 8) - 1))))) {                                \
             uint64_t data  = *(uint_type *)(s->tlb_read[tlb_idx].mem_addend + (uintptr_t)addr);                             \
             uint64_t paddr = s->tlb_read_paddr_addend[tlb_idx] + addr;                                                      \
-            *pval          = track_dread(s, addr, paddr, data, size);                                                       \
+            *pval          = track_dread(s, addr, paddr, data, size,true);                                                       \
             return 0;                                                                                                       \
         }                                                                                                                   \
                                                                                                                             \
@@ -383,7 +391,7 @@ PHYS_MEM_READ_WRITE(64, uint64_t)
             ++s->machine->memseqno;                                                                                         \
             ++s->load_res_memseqno;                                                                                         \
                                                                                                                             \
-            track_write(s, addr, s->tlb_write_paddr_addend[tlb_idx] + addr, val, size);                                     \
+            track_write(s, addr, s->tlb_write_paddr_addend[tlb_idx] + addr, val, size,true);                                     \
             return 0;                                                                                                       \
         }                                                                                                                   \
                                                                                                                             \
@@ -672,7 +680,7 @@ no_inline int riscv_cpu_read_memory(RISCVCPUState *s, mem_uint_t *pval, target_u
     }
 
     const int size_in_bits = size * 8;
-    *pval = track_dread(s, addr, paddr, ret, size_in_bits);
+    *pval = track_dread(s, addr, paddr, ret, size_in_bits,true);
     return 0;
 }
 
@@ -769,7 +777,7 @@ no_inline int riscv_cpu_write_memory(RISCVCPUState *s, target_ulong addr, mem_ui
     }
 
     const int size_in_bits = size * 8;
-    track_write(s, addr, paddr, val, size_in_bits);
+    track_write(s, addr, paddr, val, size_in_bits,true);
     return 0;
 }
 

@@ -68,9 +68,6 @@ if(s->machine->common.stf_has_exit_pending)
     if(s->machine->common.stf_is_start_opc) {
         stf_trace_open(s, PC);
         return true;
-
-//    } else if(s->machine->common.stf_tracing_enabled
-//              && s->machine->common.stf_is_stop_opc)
     } else if(isStop) {
         s->machine->common.stf_tracing_enabled = false;
         fprintf(dromajo_stderr, ">>> DROMAJO: Tracing Stopped at 0x%lx\n", PC);
@@ -118,10 +115,6 @@ void stf_trace_open(RISCVCPUState *s, target_ulong PC)
         );
 
         stf_writer.addHeaderComment(stflib_sha);
-//        stf_writer.addTraceInfo(stf::CommentRecord(stflib_sha));
-//           stf::STF_COMMENT,stflib_sha)
-//        );
-
         stf_writer.setISA(stf::ISA::RISCV);
         stf_writer.setHeaderIEM(stf::INST_IEM::STF_INST_IEM_RV64);
         stf_writer.setTraceFeature(stf::TRACE_FEATURES::STF_CONTAIN_RV64);
@@ -146,7 +139,6 @@ void stf_trace_close()
 void stf_emit_memory_records(RISCVCPUState *cpu)
 {
     // Memory reads
-    
     for(auto mem_read : cpu->stf_mem_reads) {
         stf_writer << stf::InstMemAccessRecord(mem_read.vaddr,
                                                mem_read.size,
@@ -163,7 +155,8 @@ void stf_emit_memory_records(RISCVCPUState *cpu)
                                                mem_write.size,
                                                0,
                                                stf::INST_MEM_ACCESS::WRITE);
-        stf_writer << stf::InstMemContentRecord(mem_write.value); // empty content for now
+        // empty content for now
+        stf_writer << stf::InstMemContentRecord(mem_write.value);
     }
 
     cpu->stf_mem_writes.clear();
@@ -272,4 +265,7 @@ void stf_trace_element(RISCVMachine *m,int hartid,int priv,
             stf_writer << stf::EventRecord(stf::EventRecord::TYPE(cpu->pending_exception), (uint64_t)0);
         }
     }
+
+    cpu->stf_mem_reads.clear();
+    cpu->stf_mem_writes.clear();
 }
