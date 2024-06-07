@@ -181,6 +181,8 @@ static inline void track_write(RISCVCPUState *s, uint64_t vaddr, uint64_t paddr,
 #ifdef GOLDMEM_INORDER
     s->last_data_value = data;
 #endif
+    //FIXME: marshall these calls, here and in track_dread when 
+    // the regression has more complete tests
     if(trace_en && s->machine->common.stf_tracing_enabled) {
         RISCVCPUState *cpu = s->machine->cpu_state[0];
         int  priv       = riscv_get_priv_level(cpu);
@@ -203,6 +205,8 @@ static inline uint64_t track_dread(RISCVCPUState *s, uint64_t vaddr, uint64_t pa
     s->last_data_type  = 0;
     //printf("track.ld[%llx:%llx]=%llx\n", paddr, paddr+size-1, data);
 
+    //FIXME: marshall these calls, here and in track_dread when 
+    // the regression has more complete tests
     if(trace_en && s->machine->common.stf_tracing_enabled) {
         RISCVCPUState *cpu = s->machine->cpu_state[0];
         int  priv       = riscv_get_priv_level(cpu);
