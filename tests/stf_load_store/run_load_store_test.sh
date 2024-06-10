@@ -8,23 +8,30 @@ fi
 
 export OPT='--ctrlc --stf_force_zero_sha --stf_tracepoint --stf_priv_modes USHM'
 export DRO=../../bin/cpm_dromajo
+export STF_RECORD_DUMP=/data/tools/bin/stf_record_dump
 INPUT_FILE=$1
 
-echo "clean previous traces"
-mkdir -p traces
-rm -f traces/*
+echo "Cleaning previous traces..."
+mkdir -p traces temp_traces
+rm -f traces/* temp_traces/*
 echo "Previous traces cleaned."
 
-echo "create the bare metal traces"
+echo "Creating the bare metal traces..."
 $DRO $OPT --stf_trace traces/stf_load_store.zstf $INPUT_FILE
 echo "Bare metal traces created."
 
-echo "compare to the golden traces"
-if diff traces/stf_load_store.zstf golden/stf_load_store.zstf > /dev/null; then
+echo "Dumping traces to text files..."
+$STF_RECORD_DUMP traces/stf_load_store.zstf > temp_traces/new_trace.txt
+$STF_RECORD_DUMP golden/stf_load_store.zstf > temp_traces/golden_trace.txt
+echo "Traces dumped to text files."
+
+echo "Comparing text traces..."
+if diff temp_traces/new_trace.txt temp_traces/golden_trace.txt > temp_traces/diff_output.txt; then
   echo "Comparison successful: traces match the golden traces."
   exit 0
 else
   echo "Comparison failed: traces do not match the golden traces."
+  echo "Differences:"
+  cat temp_traces/diff_output.txt
   exit 1
 fi
-echo ""

@@ -21,8 +21,7 @@ add_custom_command(
     COMMAND ${COMPILER}
     -march=rv64gc_zfhmin
     -nostartfiles -mcmodel=medany  
-    -O3 
-    -fno-builtin-printf -flto -fno-tree-loop-distribute-patterns  
+    -fno-tree-loop-distribute-patterns  
     -I${COMMON_DIR}
     -T${LINKER_DIR}/common_proposed.ld ${COMMON_DIR}/syscalls.c ${COMMON_DIR}/crt.S 
     ${SOURCE_DIR}/*.c 
