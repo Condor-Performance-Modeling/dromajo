@@ -20,7 +20,7 @@ message(STATUS "Found " ${NUM_CORES} " cores in machine (for ctest)")
 
 add_subdirectory(stf_load_store)
 
-add_custom_target (regress DEPENDS dromajo stf_load_store)
+add_custom_target (regress DEPENDS dromajo stf_load_store_bare stf_load_store_linux)
 
 add_custom_command(TARGET regress POST_BUILD
                    COMMAND ${CMAKE_COMMAND} -E echo "Running tests..."
