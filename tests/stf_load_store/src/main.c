@@ -94,9 +94,16 @@ int main(int argc, char* argv[])
         "lw t0, 0(sp);"         // lw rd, offset(rs1)
         "lwu t0, 0(sp);"        // lwu rd, offset(rs1)
 
+        // RISC-V defines atomic operations only for words and doublewords
+        "lr.w t1, (sp);"
+        "sc.w t2, t1, (sp);"
+
+        "lr.d t1, (sp);"
+        "sc.d t2, t1, (sp);"
+
         // Store operations
         // FIXME: should be one of each of these:
-        
+
         //"c.sb t0, 0(sp);"    //x c.sb rs2, offset(rs1)
         //"c.sd t0, 0(sp);"    //x c.sd rs2, offset(rs1)
         //"c.sh t0, 0(sp);"    //x c.sh rs2, offset(rs1)
