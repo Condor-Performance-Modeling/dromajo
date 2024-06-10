@@ -57,13 +57,23 @@
 //FIXME: code should fit in 80 columns max
 int main(int argc, char* argv[])
 {
-    // Load operations
+    // Initialize memory
     //FIXME do not use pseudo ops you want 1:1 in the stf
     asm volatile (
-        "li sp, 0x80000000;"       // Set stack pointer to an address
-        "li t0, 0x123456789ABCDEF0;" // Load immediate 64-bit value into t0
+        "li sp, 0x80000000;"
 
-        "sd t0, 0(sp);"            // Store t0 value to stack 
+        "lui t0, 0x12345;"
+        "addi t0, t0, 0x678;"
+        "slli t0, t0, 8;" 
+        "addi t0, t0, 0x9A;" 
+        "slli t0, t0, 8;" 
+        "addi t0, t0, 0xBC;" 
+        "slli t0, t0, 8;" 
+        "addi t0, t0, 0xDE;" 
+        "slli t0, t0, 8;" 
+        "addi t0, t0, 0xF0;" 
+
+        "sd t0, 0(sp);"
     );
     
     START_TRACE;
