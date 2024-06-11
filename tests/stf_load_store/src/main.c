@@ -54,13 +54,12 @@
 //sh rs2, offset(rs1)
 //sw rs2, offset(rs1)
 
-//FIXME: code should fit in 80 columns max
 int main(int argc, char* argv[])
 {
-    // Initialize memory
-    //FIXME do not use pseudo ops you want 1:1 in the stf
+    //Initialize memory - this instructions are not being traced
+    //FIXME do not use pseudo ops for initializing stack pointer
     asm volatile (
-        "li sp, 0x80000000;"
+        "li sp, 0xA0000000;"
 
         "lui t0, 0x12345;"
         "addi t0, t0, 0x678;"
