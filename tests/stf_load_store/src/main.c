@@ -57,10 +57,7 @@
 int main(int argc, char* argv[])
 {
     //Initialize memory - this instructions are not being traced
-    //FIXME do not use pseudo ops for initializing stack pointer
     asm volatile (
-        "li sp, 0xA0000000;"
-
         "lui t0, 0x12345;"
         "addi t0, t0, 0x678;"
         "slli t0, t0, 8;" 
