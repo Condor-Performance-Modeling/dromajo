@@ -24,7 +24,8 @@ add_custom_command(
     -fno-tree-loop-distribute-patterns  
     -I${COMMON_DIR}
     -T${LINKER_DIR}/common_proposed.ld ${COMMON_DIR}/syscalls.c ${COMMON_DIR}/crt.S 
-    ${SOURCE_DIR}/*.c 
+    ${SOURCE_DIR}/*.c
+    -DBAREMETAL_BUILD
     -o ${CMAKE_BINARY_DIR}/bin/stf_load_store.bare.riscv
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     DEPENDS ${COMMON_DIR}/syscalls.c ${COMMON_DIR}/crt.S ${SOURCE_DIR}/*.c ${COMPILER_BARE}

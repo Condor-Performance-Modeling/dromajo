@@ -58,6 +58,10 @@ int main(int argc, char* argv[])
 {
     //Initialize memory - this instructions are not being traced
     asm volatile (
+        #ifdef BAREMETAL_BUILD
+        "li sp, 0xA0000000;"
+        #endif
+
         "lui t0, 0x12345;"
         "addi t0, t0, 0x678;"
         "slli t0, t0, 8;" 
