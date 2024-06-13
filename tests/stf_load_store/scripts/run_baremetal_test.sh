@@ -1,15 +1,9 @@
 #!/bin/bash
 
-# Check if the argument is provided
-if [ -z "$1" ]; then
-  echo "Usage: $0 <path_to_stf_load_store.bare.riscv>"
-  exit 1
-fi
-
 export OPT='--ctrlc --stf_force_zero_sha --stf_tracepoint --stf_priv_modes USHM'
 export DRO=../../bin/cpm_dromajo
 export STF_RECORD_DUMP=/data/tools/bin/stf_record_dump
-INPUT_FILE=$1
+INPUT_FILE=common/stf_load_store.bare.riscv
 
 echo "Cleaning previous traces..."
 mkdir -p traces temp_traces

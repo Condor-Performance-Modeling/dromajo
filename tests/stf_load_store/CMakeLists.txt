@@ -32,8 +32,11 @@ add_custom_command(
 )
 
 add_custom_target(stf_load_store_bare DEPENDS ${CMAKE_BINARY_DIR}/bin/stf_load_store.bare.riscv)
-
 set_target_properties(stf_load_store_bare PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+
+add_custom_command(TARGET stf_load_store_bare POST_BUILD
+                   COMMAND ${CMAKE_COMMAND} -E echo "Copying bare metal elf..."
+                   COMMAND cp ${CMAKE_BINARY_DIR}/bin/stf_load_store.bare.riscv ${PROJECT_SOURCE_DIR}/common)
 
 # LINUX:
 # Custom command to run Linux build
@@ -56,5 +59,8 @@ add_custom_command(
 )
 
 add_custom_target(stf_load_store_linux DEPENDS ${CMAKE_BINARY_DIR}/bin/stf_load_store.linux.riscv)
-
 set_target_properties(stf_load_store_linux PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+
+add_custom_command(TARGET stf_load_store_linux POST_BUILD
+                   COMMAND ${CMAKE_COMMAND} -E echo "Copying linux elf..."
+                   COMMAND cp ${CMAKE_BINARY_DIR}/bin/stf_load_store.linux.riscv ${PROJECT_SOURCE_DIR}/common)

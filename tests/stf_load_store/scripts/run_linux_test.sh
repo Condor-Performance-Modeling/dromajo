@@ -1,32 +1,16 @@
 #!/bin/bash
 
-# Check if the argument is provided
-if [ -z "$1" ]; then
-  echo "Usage: $0 <path_to_stf_load_store.linux.riscv>"
-  exit 1
-fi
-
-if [ -z "$TOP" ]; then
-    echo "Required environment variable TOP is not set."
-    echo "To set the required environment variables, cd into your work area and run: source how-to/env/setuprc.sh"
-    exit 1
-fi
-
 export OPT='--ctrlc --stf_exit_on_stop_opc --stf_tracepoint --stf_priv_modes USHM'
 export DRO=../../bin/cpm_dromajo
 export STF_RECORD_DUMP=/data/tools/bin/stf_record_dump
 export SCRIPTS_DIR=scripts
 export COLLATERAL_SCRIPT=scripts/create_linux_collateral.sh
-INPUT_FILE=$1
+INPUT_FILE=common/stf_load_store.linux.riscv
 
 echo "Cleaning previous traces..."
 mkdir -p traces temp_traces
 rm -f traces/* temp_traces/*
 echo "Previous traces cleaned."
-
-echo "Creating the linux collateral..."
-bash $COLLATERAL_SCRIPT $INPUT_FILE
-echo "Linux collateral created."
 
 echo "Creating the linux traces..."
 pwd
