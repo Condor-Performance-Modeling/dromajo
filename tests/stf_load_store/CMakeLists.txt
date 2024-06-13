@@ -63,4 +63,6 @@ set_target_properties(stf_load_store_linux PROPERTIES RUNTIME_OUTPUT_DIRECTORY "
 
 add_custom_command(TARGET stf_load_store_linux POST_BUILD
                    COMMAND ${CMAKE_COMMAND} -E echo "Copying linux elf..."
-                   COMMAND cp ${CMAKE_BINARY_DIR}/bin/stf_load_store.linux.riscv ${PROJECT_SOURCE_DIR}/common)
+                   COMMAND cp ${CMAKE_BINARY_DIR}/bin/stf_load_store.linux.riscv ${PROJECT_SOURCE_DIR}/common
+                   COMMAND ${CMAKE_COMMAND} -E env bash -c "bash scripts/create_linux_collateral.sh 2>&1"
+                   WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})

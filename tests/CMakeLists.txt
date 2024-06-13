@@ -30,8 +30,8 @@ add_custom_command(TARGET regress POST_BUILD
                    COMMAND ${CMAKE_CTEST_COMMAND} ${ctest_test_args})
 
 #Target to be run after changes in tests, e.g. changes to stf_load_store sourcs
-add_custom_target(update_regress)
-add_dependencies(regress stf_load_store_bare stf_load_store_linux)
+add_custom_target(regress_update)
+add_dependencies(regress_update stf_load_store_bare stf_load_store_linux)
 
 add_test(NAME stf_load_store_baremetal
          COMMAND ${CMAKE_COMMAND} -E env bash -c "bash scripts/run_baremetal_test.sh 2>&1"

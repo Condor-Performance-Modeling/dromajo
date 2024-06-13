@@ -1,18 +1,7 @@
 #!/bin/bash
 
-# Check if the argument is provided
-if [ -z "$1" ]; then
-  echo "Usage: $0 <path_to_stf_load_store.linux.riscv>"
-  exit 1
-fi
-
-INPUT_FILE=$1
 export COMMON_DIR=common
-
-if [ -f "$COMMON_DIR/rootfs.cpio" ]; then
-  echo "rootfs.cpio already exists in $COMMON_DIR. Exiting."
-  exit 0
-fi
+INPUT_FILE=$COMMON_DIR/stf_load_store.linux.riscv
 
 if [ -z "$BUILDROOT" ]; then
     echo "Required environment variable BUILDROOT is not set."
