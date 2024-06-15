@@ -1,6 +1,6 @@
 #!/bin/bash
 
-export OPT='--ctrlc --stf_exit_on_stop_opc --stf_tracepoint --stf_priv_modes USHM'
+export OPT='--ctrlc --stf_force_zero_sha --stf_exit_on_stop_opc --stf_tracepoint --stf_priv_modes USHM'
 export DRO=../../bin/cpm_dromajo
 export STF_RECORD_DUMP=/data/tools/bin/stf_record_dump
 export SCRIPTS_DIR=scripts
