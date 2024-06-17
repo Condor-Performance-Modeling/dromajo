@@ -1,5 +1,3 @@
-# See LICENSE for license details.
-
 #define MSTATUS_MPP         0x00001800
 #define MSTATUS_FS          0x00006000
 #define MSTATUS_XS          0x00018000
