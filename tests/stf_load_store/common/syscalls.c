@@ -6,12 +6,12 @@
 #include <stdio.h>
 #include <limits.h>
 #include <sys/signal.h>
-#include "encoding.h"
-#include "util.h"
 
 #define SYS_write 64
 
 #undef strcmp
+
+#define static_assert(cond) switch(0) { case 0: case !!(long)(cond): ; }
 
 extern volatile uint64_t tohost;
 extern volatile uint64_t fromhost;

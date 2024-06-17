@@ -57,3 +57,30 @@ usage: ./dromajo [--load snapshot_name] [--save snapshot_name] [--maxinsns N] [-
 ./dromajo path/to/your/coremark.riscv
 ...
 ```
+
+## Testing
+
+This project includes a set of unit tests and custom targets to ensure the reliability and correctness of the Dromajo. Tests are defined in the `tests` directory and can be run using CTest.
+
+### Test Targets
+
+We have defined two custom targets to manage the testing process:
+
+1. **regress**: This target runs the regression tests against the simulator.
+2. **update_test_files**: This target updates the test files after changes to the project sources.
+
+Important Note: The update_test_files target does not update the golden files. These files need to be manually regenerated before running the regression tests again.
+
+### Running the Tests
+
+To run the regression tests, use the following command in the top level directory:
+
+```
+mkdir build
+cd build
+# Debug build
+cmake ..
+# Release build Ofast compile option
+cmake -DCMAKE_BUILD_TYPE=Release ..
+make regress
+```

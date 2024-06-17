@@ -1,6 +1,6 @@
-# See LICENSE for license details.
-
-#include "encoding.h"
+#define MSTATUS_MPP         0x00001800
+#define MSTATUS_FS          0x00006000
+#define MSTATUS_XS          0x00018000
 
 #if __riscv_xlen == 64
 # define LREG ld
