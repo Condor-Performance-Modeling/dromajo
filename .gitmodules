@@ -1,0 +1,3 @@
+[submodule "stf_lib"]
+	path = stf_lib
+	url = https://github.com/sparcians/stf_lib
