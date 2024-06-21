@@ -58,6 +58,46 @@ usage: ./dromajo [--load snapshot_name] [--save snapshot_name] [--maxinsns N] [-
 ...
 ```
 
+### Running Dromajo with custom Start of Program Memory
+
+By default, Dromajo uses 0x80000000 as the start of program memory. If you need to specify a different start address, you can do so using the specific set of program options. Here's how you can run Dromajo with a custom start address for the program memory:
+
+1. **Create your .elf with custom start address:**
+
+Modify your linker script (`.ld`) to set the desired start address. For example, to set the start address to `0x20000000`, include the following line:
+
+```ld
+/* set loc counter */
+. = 0x20000000;
+```
+
+2. **Modify and build Bootrom**
+
+You need to  provide a custom bootrom via the `--bootrom` option to run dromajo with custom base address. Modify the Makefile in the bootrom subdirectory to your desired start address. Update the MEMORY_START variable in the Makefile, for example:
+
+```Makefile
+MEMORY_START=0x15000000
+```
+
+Bootrom uses `CC=$(RISCV)/bin/riscv64-unknown-elf-gcc` to build custom bootrom. `RISCV` environment veriable is not set by default so it must be set manually before building bootrom. To build the bootrom:
+
+```bash
+cd bootrom
+make
+```
+
+This wil generate `bootrom.elf` file to be used in `--bootrom` program option.
+
+3. **Run Dromajo with custom options**
+
+Use the `--reset_vector`, `--memory_addr`, and `--bootrom` switches to run Dromajo with the desired start address. For example, to set the start address to `0x20000000`, run:
+
+```bash
+./dromajo --stf_trace /path/to/traces/trace.zstf --reset_vector "0x20000000" --memory_addr "0x20000000" --bootrom /path/to/bootrom/bootrom.elf /path/to/your/program.elf
+```
+
+**Note:** The start address in the linker script, the `--reset_vector` value, and the `--memory_addr` value **must** all be the same for Dromajo to run correctly.
+
 ## Testing
 
 This project includes a set of unit tests and custom targets to ensure the reliability and correctness of the Dromajo. Tests are defined in the `tests` directory and can be run using CTest.
