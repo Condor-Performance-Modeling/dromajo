@@ -12,6 +12,9 @@ jobs:
       with:
         submodules: true  # Ensure stf_lib is checked out
 
+    - name: Install dependencies
+      run: sudo apt-get update && sudo apt-get install -y libboost-all-dev
+
     - name: Build Project
       run: |
         mkdir -p release && cd release
