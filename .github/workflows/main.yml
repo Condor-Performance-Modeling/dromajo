@@ -8,7 +8,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-      name: Checkout code
+      name: Checkout code 
+      with:
+        submodules: true  # Ensure stf_lib is checked out
 
     - name: Build Project
       run: |
