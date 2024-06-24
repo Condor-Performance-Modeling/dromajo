@@ -1,0 +1,33 @@
+name: dromajo-CI
+
+on: 
+  workflow_dispatch:
+
+jobs:
+  build_and_test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+      name: Checkout code
+
+    - name: Build Project
+      run: |
+        mkdir -p release && cd release
+        cmake .. -DCMAKE_BUILD_TYPE=Release
+        if [ $? -ne 0 ]; then
+          echo "ERROR: Cmake framework failed"
+          exit 1
+        fi
+        make -j$(nproc --all) 
+        if [ $? -ne 0 ]; then
+          echo "ERROR: Build failed"
+          exit 1
+        fi
+    - name: Regression Test
+      run: |
+        cd release
+        make -j$(nproc --all) regress
+        if [ $? -ne 0 ]; then
+            echo "ERROR: Regression tests failed"
+            exit 1
+        fi
