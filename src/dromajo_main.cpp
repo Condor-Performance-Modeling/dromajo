@@ -648,7 +648,7 @@ static void usage(const char *prog, const char *msg) {
         DROMAJO_GIT_SHA,
         STF_LIB_GIT_SHA,
         prog,
-        (long)BOOT_BASE_ADDR,
+        (long)RAM_BASE_ADDR,
         (long)RAM_BASE_ADDR,
         (long)PLIC_BASE_ADDR,
         (long)PLIC_SIZE,
