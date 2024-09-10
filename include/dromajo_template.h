@@ -55,9 +55,28 @@
 #include "dromajo_stf.h"
 #include <limits>
 
+//TODO: put these into a proper structure add
+//support to unpack an ISA string from the command
+//line.
 #define EN_ZBB 1
-#define CAPTURE_LOG    1
-#define REPORT_ILLEGAL 1
+
+//TODO: Create a map for these
+#define F12_CLZx    0x600
+#define F12_CTZx    0x601
+#define F12_CPOPx   0x602
+
+#define F12_ZEXT_H  0x080
+#define F3_ZEXT_H   0x4
+
+#define F12_SEXT_H  0x605
+#define F12_SEXT_B  0x604
+
+#define F3_SEXT     0x1
+
+#define HALF_WORD_MASK 0xFFFF
+
+#define CAPTURE_LOG    0
+#define REPORT_ILLEGAL 0
 
 #if REPORT_ILLEGAL == 1
 #define ILLEGAL_INSTR(S) { \
@@ -78,8 +97,8 @@
 #define CAPTURED_INSTR(S)
 #endif
 
-
-
+// =====================================================================================
+// =====================================================================================
 static inline intx_t glue(div, XLEN)(intx_t a, intx_t b) {
     if (b == 0) {
         return -1;
@@ -89,7 +108,8 @@ static inline intx_t glue(div, XLEN)(intx_t a, intx_t b) {
         return a / b;
     }
 }
-
+// -------------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------
 static inline uintx_t glue(divu, XLEN)(uintx_t a, uintx_t b) {
     if (b == 0) {
         return -1;
@@ -97,7 +117,8 @@ static inline uintx_t glue(divu, XLEN)(uintx_t a, uintx_t b) {
         return a / b;
     }
 }
-
+// -------------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------
 static inline intx_t glue(rem, XLEN)(intx_t a, intx_t b) {
     if (b == 0) {
         return a;
@@ -107,7 +128,8 @@ static inline intx_t glue(rem, XLEN)(intx_t a, intx_t b) {
         return a % b;
     }
 }
-
+// -------------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------
 static inline uintx_t glue(remu, XLEN)(uintx_t a, uintx_t b) {
     if (b == 0) {
         return a;
@@ -115,7 +137,85 @@ static inline uintx_t glue(remu, XLEN)(uintx_t a, uintx_t b) {
         return a % b;
     }
 }
+// =====================================================================================
+// =====================================================================================
+#if EN_ZBB == 1
+static inline uintx_t glue(cpop,XLEN)(uintx_t val) { 
+    assert(XLEN == 32 || XLEN == 64 || XLEN == 128);
+    
+    if(XLEN == 32)      return __builtin_popcount(val);
+    else if(XLEN == 64) return __builtin_popcountl(val);
+    else {
+        uintx_t bit_count = 0;
+        while (val) {
+            val &= (val - 1);
+            bit_count++;
+        }
+        return bit_count;
+    } 
+}
+// -------------------------------------------------------------------------------------
+static inline uintx_t glue(cpopw,XLEN)(uintx_t val) {
+    uint32_t _val = (uint32_t) val;
+    return __builtin_popcount(_val);
+}
+// -------------------------------------------------------------------------------------
+static inline uintx_t glue(ctz_,XLEN)(uintx_t val) {
+    assert(XLEN == 32 || XLEN == 64 || XLEN == 128);
+    if(val == 0) return XLEN;
 
+    if(XLEN == 32) return __builtin_ctz(val);
+    else if(XLEN == 64) return __builtin_ctzl(val);
+    else {
+        uint64_t lo_val = val & 0xFFFFFFFFFFFFFFFF;
+        uint64_t hi_val = ((uint128_t)val >> 64);
+        if(lo_val != 0) return __builtin_ctzl(lo_val);
+        if(hi_val != 0) return __builtin_ctzl(hi_val);
+        return 128;
+    } 
+}
+// -------------------------------------------------------------------------------------
+static inline uintx_t glue(ctzw,XLEN)(uintx_t val) {
+    uint32_t _val = val;
+    return __builtin_ctz(_val);
+}
+// -------------------------------------------------------------------------------------
+static inline intx_t glue(sext_h,XLEN)(uintx_t val) { 
+    intx_t tmp = val << (XLEN-16);
+    return (intx_t) (((intx_t)tmp) >> (XLEN-16));
+}
+// -------------------------------------------------------------------------------------
+static inline intx_t glue(sext_b,XLEN)(uintx_t val) { 
+    intx_t tmp = val << (XLEN-8);
+    return (intx_t) (((intx_t)tmp) >> (XLEN-8));
+}
+// -------------------------------------------------------------------------------------
+static inline intx_t glue(clz,XLEN)(uintx_t val) { 
+    assert(XLEN == 32 || XLEN == 64 || XLEN == 128);
+    if(val == 0) return XLEN;
+    else if(XLEN == 32) return __builtin_ctz(val);
+    else if(XLEN == 64) return __builtin_ctzl(val);   
+    else {
+        for (int i = XLEN-1; i >= 0; i--) {
+            if (val & ((__uint128_t)1 << i)) {
+                return XLEN-1 - i;
+            }
+        }      
+    }
+}
+// -------------------------------------------------------------------------------------
+static inline intx_t glue(clzw,XLEN)(uintx_t val) { 
+    if(val == 0) return 32;
+    else {
+      uint32_t _val = (uint32_t)val;
+      return __builtin_ctz(_val);
+    }
+}
+
+#endif
+
+// =====================================================================================
+// =====================================================================================
 #if XLEN == 32
 
 static inline uint32_t mulh32(int32_t a, int32_t b) { return ((int64_t)a * (int64_t)b) >> 32; }
@@ -271,7 +371,8 @@ static uint32_t chkfp32(target_ulong a) {
 int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles);
 
 int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
-    uint32_t     opcode, insn, rd, rs1, rs2, funct3, _funct7, _funct3;
+    uint32_t     opcode, insn, rd, rs1, rs2, funct3;
+    uint32_t     _funct7, _funct12, _funct3;
     int32_t      imm, cond, err;
     target_ulong addr, val, val2;
     uint8_t *    code_ptr, *code_end;
@@ -943,18 +1044,51 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                 }
                 NEXT_INSN;
             case 0x13:
-                funct3 = (insn >> 12) & 7;
-                imm    = (int32_t)insn >> 20;
+                funct3   = (insn >> 12) & 7;
+                imm      = (int32_t)insn >> 20;
+                _funct12 = (insn >> 20) & 0xFFF;
+
                 switch (funct3) {
                     case 0: /* addi */ val = (intx_t)(read_reg(rs1) + imm); break;
-                    case 1: /* slli */
-                        if ((imm & ~(XLEN - 1)) != 0)
+                    case 1: /* cpop */
+                        if (EN_ZBB & (_funct12 == F12_CTZx)) {
+
+                            CAPTURED_INSTR("CTZ");
+                            val = (intx_t)glue(ctz_,XLEN)((intx_t)read_reg(rs1));
+
+                        } else if (EN_ZBB & (_funct12 == F12_CLZx)) {
+
+                            CAPTURED_INSTR("CLZ");
+                            val = (intx_t)glue(clz,XLEN)((intx_t)read_reg(rs1));
+
+                        } else if (EN_ZBB & (_funct12 == F12_CPOPx)) {
+
+                            CAPTURED_INSTR("CPOP");
+                            val = (intx_t)glue(cpop,XLEN)((uintx_t)read_reg(rs1));
+
+                        } else if ( EN_ZBB & (_funct12 == F12_SEXT_H)) {
+
+                            CAPTURED_INSTR("SEXT.H");
+                            val = (intx_t)glue(sext_h,XLEN)((intx_t)read_reg(rs1));
+
+                        } else if ( EN_ZBB & (_funct12 == F12_SEXT_B)) {
+
+                            CAPTURED_INSTR("SEXT.B");
+                            val = (intx_t)glue(sext_b,XLEN)((intx_t)read_reg(rs1));
+
+                        } else if ((imm & ~(XLEN - 1)) != 0) {
+
                             ILLEGAL_INSTR("027")
-                        val = (intx_t)(read_reg(rs1) << (imm & (XLEN - 1)));
+
+                        } else {
+
+                            val = (intx_t)(read_reg(rs1) << (imm & (XLEN - 1)));
+
+                        }
                         break;
-                    case 2: /* slti */ val = (target_long)read_reg(rs1) < (target_long)imm; break;
+                    case 2: /* slti  */ val = (target_long)read_reg(rs1) < (target_long)imm; break;
                     case 3: /* sltiu */ val = read_reg(rs1) < (target_ulong)imm; break;
-                    case 4: /* xori */ val = read_reg(rs1) ^ imm; break;
+                    case 4: /* xori  */ val = read_reg(rs1) ^ imm; break;
                     case 5: /* srli/srai */
                         if ((imm & ~((XLEN - 1) | 0x400)) != 0)
                             ILLEGAL_INSTR("028")
@@ -972,15 +1106,35 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                 NEXT_INSN;
 #if XLEN >= 64
             case 0x1b: /* OP-IMM-32 */
-                funct3 = (insn >> 12) & 7;
-                imm    = (int32_t)insn >> 20;
-                val    = read_reg(rs1);
+                funct3   = (insn >> 12) & 7;
+                imm      = (int32_t)insn >> 20;
+                val      = read_reg(rs1);
+                _funct12 = (insn >> 20) & 0xFFF;
+
                 switch (funct3) {
                     case 0: /* addiw */ val = (int32_t)(val + imm); break;
-                    case 1: /* slliw */
-                        if ((imm & ~31) != 0)
+                    case 1:
+                        if (EN_ZBB & (_funct12 == F12_CTZx)) {
+
+                            CAPTURED_INSTR("CTZW");
+                            val = (intx_t)glue(ctzw,XLEN)((intx_t)read_reg(rs1));
+
+                        } else if (EN_ZBB & (_funct12 == F12_CPOPx)) {
+
+                            CAPTURED_INSTR("CPOPW");
+                            val = (intx_t)glue(cpopw,XLEN)((intx_t)read_reg(rs1));
+
+                        } else if (EN_ZBB & (_funct12 == F12_CLZx)) {
+
+                            CAPTURED_INSTR("CLZW");
+                            val = (intx_t)glue(clzw,XLEN)((intx_t)read_reg(rs1));
+
+                        } else if ((imm & ~31) != 0) {
                             ILLEGAL_INSTR("029")
-                        val = (int32_t)(val << (imm & 31));
+                        } else {
+                          /* slliw */
+                          val = (int32_t)(val << (imm & 31));
+                        }
                         break;
                     case 5: /* srliw/sraiw */
                         if ((imm & ~(31 | 0x400)) != 0)
@@ -1029,8 +1183,9 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
 
                 //These are defined separately to avoid clashing with other vars of similar name.
                 //The imm variable name is unfortunate and confusing
-                _funct7 = (insn >> 25) & 0x7F; (void) _funct7;
-                _funct3 = (insn >> 12) & 0x7;  (void) _funct3;
+                _funct12 = (insn >> 25) & 0xFFF; (void) _funct12;
+                _funct7  = (insn >> 25) & 0x7F; (void) _funct7;
+                _funct3  = (insn >> 12) & 0x7;  (void) _funct3;
 
                 if (EN_ZBB & _funct7 == 0x05) {
 
@@ -1051,19 +1206,25 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                   }
 
                 } else if (EN_ZBB & _funct7 == 0x20) {
+
                   switch(_funct3) {
-                    case 0x7: CAPTURED_INSTR("ANDN");
-                              val = val & ~val2;
-                              break;
-                    case 0x6: CAPTURED_INSTR("ORN");
-                              val = val | ~val2;
+                    case 0x0: CAPTURED_INSTR("SUB");
+                              val = (intx_t)(val - val2);
                               break;
                     case 0x4: CAPTURED_INSTR("XNOR");
                               val = ~(val ^ val2);
                               break;
+                    case 0x6: CAPTURED_INSTR("ORN");
+                              val = val | ~val2;
+                              break;
+                    case 0x7: CAPTURED_INSTR("ANDN");
+                              val = val & ~val2;
+                              break;
                     default:  ILLEGAL_INSTR("X002")
                   }
+
                 } else if (imm == 1) {
+                    //TODO CAN BE REMOVED - this is the original code before zbb
                     funct3 = (insn >> 12) & 7;
                     switch (funct3) {
                         case 0: /* mul */ val = (intx_t)((intx_t)val * (intx_t)val2); break;
@@ -1103,7 +1264,15 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                 imm  = insn >> 25;
                 val  = read_reg(rs1);
                 val2 = read_reg(rs2);
-                if (imm == 1) {
+                _funct12 = (insn >> 20) & 0xFFF;
+                _funct3  = (insn >> 12) & 0x7;
+
+                if (EN_ZBB & _funct12 == 0x080 & _funct3 == 0x4) {
+
+                   CAPTURED_INSTR("ZEXT.H");
+                   val = val & HALF_WORD_MASK;
+ 
+                } else if (imm == 1) {
                     funct3 = (insn >> 12) & 7;
                     switch (funct3) {
                         case 0: /* mulw */ val = (int32_t)((int32_t)val * (int32_t)val2); break;
@@ -1114,8 +1283,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                         default: ILLEGAL_INSTR("038")
                     }
                 } else {
-                    if (imm & ~0x20)
-                        ILLEGAL_INSTR("039")
+                    if (imm & ~0x20) ILLEGAL_INSTR("039")
                     funct3 = ((insn >> 12) & 7) | ((insn >> (30 - 3)) & (1 << 3));
                     switch (funct3) {
                         case 0: /* addw */ val = (int32_t)(val + val2); break;
@@ -1130,6 +1298,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                     write_reg(rd, val);
                 NEXT_INSN;
 #endif
+
 #if XLEN >= 128
             case 0x7b: /* OP-64 */
                 imm  = insn >> 25;

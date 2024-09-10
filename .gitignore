@@ -1,3 +1,5 @@
+bin
+tests/isa/stfs
 *.o
 *.d
 snap.*
