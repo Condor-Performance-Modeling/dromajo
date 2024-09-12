@@ -5,25 +5,25 @@
 
 D=implemented but not validated, V= validated
 ```
--  ZBA
+D  ZBA
 D  ZBB
 -  ZBC
--  ZBS
+D  ZBS
 -  ROT These have no extension designation in known docs
 ```
 
 ## Instruction status
 ```
--  add.uw          zba   RV64
+D  add.uw/zext.w   zba   RV64
 D  andn            zbb   RV32 RV64
--  bclr            zbs   RV32 RV64
--  bclri           zbs   RV32 RV64
--  bext            zbs   RV32 RV64
--  bexti           zbs   RV32 RV64
--  binv            zbs   RV32 RV64
--  binvi           zbs   RV32 RV64
--  bset            zbs   RV32 RV64
--  bseti           zbs   RV32 RV64
+D  bclr            zbs   RV32 RV64
+D  bclri           zbs   RV32 RV64
+D  bext            zbs   RV32 RV64
+D  bexti           zbs   RV32 RV64
+D  binv            zbs   RV32 RV64
+D  binvi           zbs   RV32 RV64
+D  bset            zbs   RV32 RV64
+D  bseti           zbs   RV32 RV64
 -  clmul           zbc   RV32 RV64
 -  clmulh          zbc   RV32 RV64
 -  clmulr          zbc   RV32 RV64
@@ -48,13 +48,13 @@ D  orn             zbb   RV32 RV64
 -  rorw            ???   RV64
 D  sext.b          zbb   RV32 RV64
 D  sext.h          zbb   RV32 RV64
--  sh1add          zba   RV32 RV64
--  sh1add.uw       zba   RV64
--  sh2add          zba   RV32 RV64
--  sh2add.uw       zba   RV64
--  sh3add          zba   RV32 RV64
--  sh3add.uw       zba   RV64
--  slli.uw         zba   RV64
+D  sh1add          zba   RV32 RV64
+D  sh1add.uw       zba   RV64
+D  sh2add          zba   RV32 RV64
+D  sh2add.uw       zba   RV64
+D  sh3add          zba   RV32 RV64
+D  sh3add.uw       zba   RV64
+D  slli.uw         zba   RV64
 D  xnor            zbb   RV32 RV64
 D  zext.h          zbb   RV32 RV64
 ```
