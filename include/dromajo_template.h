@@ -97,8 +97,8 @@
 #define CAPTURED_INSTR(S)
 #endif
 
-// =====================================================================================
-// =====================================================================================
+// =========================================================================
+// =========================================================================
 static inline intx_t glue(div, XLEN)(intx_t a, intx_t b) {
     if (b == 0) {
         return -1;
@@ -108,8 +108,8 @@ static inline intx_t glue(div, XLEN)(intx_t a, intx_t b) {
         return a / b;
     }
 }
-// -------------------------------------------------------------------------------------
-// -------------------------------------------------------------------------------------
+// -------------------------------------------------------------------------
+// -------------------------------------------------------------------------
 static inline uintx_t glue(divu, XLEN)(uintx_t a, uintx_t b) {
     if (b == 0) {
         return -1;
@@ -117,8 +117,8 @@ static inline uintx_t glue(divu, XLEN)(uintx_t a, uintx_t b) {
         return a / b;
     }
 }
-// -------------------------------------------------------------------------------------
-// -------------------------------------------------------------------------------------
+// -------------------------------------------------------------------------
+// -------------------------------------------------------------------------
 static inline intx_t glue(rem, XLEN)(intx_t a, intx_t b) {
     if (b == 0) {
         return a;
@@ -128,8 +128,8 @@ static inline intx_t glue(rem, XLEN)(intx_t a, intx_t b) {
         return a % b;
     }
 }
-// -------------------------------------------------------------------------------------
-// -------------------------------------------------------------------------------------
+// -------------------------------------------------------------------------
+// -------------------------------------------------------------------------
 static inline uintx_t glue(remu, XLEN)(uintx_t a, uintx_t b) {
     if (b == 0) {
         return a;
@@ -137,8 +137,8 @@ static inline uintx_t glue(remu, XLEN)(uintx_t a, uintx_t b) {
         return a % b;
     }
 }
-// =====================================================================================
-// =====================================================================================
+// =========================================================================
+// =========================================================================
 #if EN_ZBB == 1
 static inline uintx_t glue(cpop,XLEN)(uintx_t val) { 
     assert(XLEN == 32 || XLEN == 64 || XLEN == 128);
@@ -154,12 +154,12 @@ static inline uintx_t glue(cpop,XLEN)(uintx_t val) {
         return bit_count;
     } 
 }
-// -------------------------------------------------------------------------------------
+// -------------------------------------------------------------------------
 static inline uintx_t glue(cpopw,XLEN)(uintx_t val) {
     uint32_t _val = (uint32_t) val;
     return __builtin_popcount(_val);
 }
-// -------------------------------------------------------------------------------------
+// -------------------------------------------------------------------------
 static inline uintx_t glue(ctz_,XLEN)(uintx_t val) {
     assert(XLEN == 32 || XLEN == 64 || XLEN == 128);
     if(val == 0) return XLEN;
@@ -174,22 +174,22 @@ static inline uintx_t glue(ctz_,XLEN)(uintx_t val) {
         return 128;
     } 
 }
-// -------------------------------------------------------------------------------------
+// -------------------------------------------------------------------------
 static inline uintx_t glue(ctzw,XLEN)(uintx_t val) {
     uint32_t _val = val;
     return __builtin_ctz(_val);
 }
-// -------------------------------------------------------------------------------------
+// -------------------------------------------------------------------------
 static inline intx_t glue(sext_h,XLEN)(uintx_t val) { 
     intx_t tmp = val << (XLEN-16);
     return (intx_t) (((intx_t)tmp) >> (XLEN-16));
 }
-// -------------------------------------------------------------------------------------
+// -------------------------------------------------------------------------
 static inline intx_t glue(sext_b,XLEN)(uintx_t val) { 
     intx_t tmp = val << (XLEN-8);
     return (intx_t) (((intx_t)tmp) >> (XLEN-8));
 }
-// -------------------------------------------------------------------------------------
+// -------------------------------------------------------------------------
 static inline intx_t glue(clz,XLEN)(uintx_t val) { 
     assert(XLEN == 32 || XLEN == 64 || XLEN == 128);
     if(val == 0) return XLEN;
@@ -203,7 +203,7 @@ static inline intx_t glue(clz,XLEN)(uintx_t val) {
         }      
     }
 }
-// -------------------------------------------------------------------------------------
+// -------------------------------------------------------------------------
 static inline intx_t glue(clzw,XLEN)(uintx_t val) { 
     if(val == 0) return 32;
     else {
@@ -214,8 +214,8 @@ static inline intx_t glue(clzw,XLEN)(uintx_t val) {
 
 #endif
 
-// =====================================================================================
-// =====================================================================================
+// =========================================================================
+// =========================================================================
 #if XLEN == 32
 
 static inline uint32_t mulh32(int32_t a, int32_t b) { return ((int64_t)a * (int64_t)b) >> 32; }
@@ -330,7 +330,7 @@ static inline uintx_t glue(mulhsu, XLEN)(intx_t a, uintx_t b) {
     case n + (30 << 2): \
     case n + (31 << 2):
 
-#define GET_PC()           (target_ulong)((uintptr_t)code_ptr + code_to_pc_addend)
+#define GET_PC() (target_ulong)((uintptr_t)code_ptr + code_to_pc_addend)
 #define GET_INSN_COUNTER() (insn_counter_addend - n_cycles)
 
 #define C_NEXT_INSN \
@@ -1051,27 +1051,27 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                 switch (funct3) {
                     case 0: /* addi */ val = (intx_t)(read_reg(rs1) + imm); break;
                     case 1: /* cpop */
-                        if (EN_ZBB & (_funct12 == F12_CTZx)) {
+                        if (EN_ZBB && (_funct12 == F12_CTZx)) {
 
                             CAPTURED_INSTR("CTZ");
                             val = (intx_t)glue(ctz_,XLEN)((intx_t)read_reg(rs1));
 
-                        } else if (EN_ZBB & (_funct12 == F12_CLZx)) {
+                        } else if (EN_ZBB && (_funct12 == F12_CLZx)) {
 
                             CAPTURED_INSTR("CLZ");
                             val = (intx_t)glue(clz,XLEN)((intx_t)read_reg(rs1));
 
-                        } else if (EN_ZBB & (_funct12 == F12_CPOPx)) {
+                        } else if (EN_ZBB && (_funct12 == F12_CPOPx)) {
 
                             CAPTURED_INSTR("CPOP");
                             val = (intx_t)glue(cpop,XLEN)((uintx_t)read_reg(rs1));
 
-                        } else if ( EN_ZBB & (_funct12 == F12_SEXT_H)) {
+                        } else if ( EN_ZBB && (_funct12 == F12_SEXT_H)) {
 
                             CAPTURED_INSTR("SEXT.H");
                             val = (intx_t)glue(sext_h,XLEN)((intx_t)read_reg(rs1));
 
-                        } else if ( EN_ZBB & (_funct12 == F12_SEXT_B)) {
+                        } else if ( EN_ZBB && (_funct12 == F12_SEXT_B)) {
 
                             CAPTURED_INSTR("SEXT.B");
                             val = (intx_t)glue(sext_b,XLEN)((intx_t)read_reg(rs1));
@@ -1114,17 +1114,17 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                 switch (funct3) {
                     case 0: /* addiw */ val = (int32_t)(val + imm); break;
                     case 1:
-                        if (EN_ZBB & (_funct12 == F12_CTZx)) {
+                        if (EN_ZBB && (_funct12 == F12_CTZx)) {
 
                             CAPTURED_INSTR("CTZW");
                             val = (intx_t)glue(ctzw,XLEN)((intx_t)read_reg(rs1));
 
-                        } else if (EN_ZBB & (_funct12 == F12_CPOPx)) {
+                        } else if (EN_ZBB && (_funct12 == F12_CPOPx)) {
 
                             CAPTURED_INSTR("CPOPW");
                             val = (intx_t)glue(cpopw,XLEN)((intx_t)read_reg(rs1));
 
-                        } else if (EN_ZBB & (_funct12 == F12_CLZx)) {
+                        } else if (EN_ZBB && (_funct12 == F12_CLZx)) {
 
                             CAPTURED_INSTR("CLZW");
                             val = (intx_t)glue(clzw,XLEN)((intx_t)read_reg(rs1));
@@ -1187,7 +1187,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                 _funct7  = (insn >> 25) & 0x7F; (void) _funct7;
                 _funct3  = (insn >> 12) & 0x7;  (void) _funct3;
 
-                if (EN_ZBB & _funct7 == 0x05) {
+                if (EN_ZBB && _funct7 == 0x05) {
 
                   switch(_funct3) {
                     case 0x4: CAPTURED_INSTR("MIN");
@@ -1205,7 +1205,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                     default:  ILLEGAL_INSTR("X001")
                   }
 
-                } else if (EN_ZBB & _funct7 == 0x20) {
+                } else if (EN_ZBB && _funct7 == 0x20) {
 
                   switch(_funct3) {
                     case 0x0: CAPTURED_INSTR("SUB");
@@ -1267,7 +1267,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                 _funct12 = (insn >> 20) & 0xFFF;
                 _funct3  = (insn >> 12) & 0x7;
 
-                if (EN_ZBB & _funct12 == 0x080 & _funct3 == 0x4) {
+                if (EN_ZBB && _funct12 == 0x080 & _funct3 == 0x4) {
 
                    CAPTURED_INSTR("ZEXT.H");
                    val = val & HALF_WORD_MASK;
