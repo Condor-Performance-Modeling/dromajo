@@ -3,6 +3,7 @@
  *
  * Copyright (c) 2016 Fabrice Bellard
  * Copyright (C) 2017,2018,2019, Esperanto Technologies Inc.
+ * Copyright (C) 2023-2024, Condor Computing Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License")
  * you may not use this file except in compliance with the License.
@@ -55,10 +56,7 @@
 #include "dromajo_stf.h"
 #include <limits>
 
-//TODO: put these into a proper structure add
-//support to unpack an ISA string from the command
-//line.
-#define EN_ZBB 1
+#define EN_ZBB (s->machine->common.ext_flags.zbb == true)
 
 //TODO: Create a map for these
 #define F12_CLZx    0x600
@@ -76,7 +74,7 @@
 #define HALF_WORD_MASK 0xFFFF
 
 #define CAPTURE_LOG    0
-#define REPORT_ILLEGAL 0
+#define REPORT_ILLEGAL 1
 
 #if REPORT_ILLEGAL == 1
 #define ILLEGAL_INSTR(S) { \
@@ -139,7 +137,7 @@ static inline uintx_t glue(remu, XLEN)(uintx_t a, uintx_t b) {
 }
 // =========================================================================
 // =========================================================================
-#if EN_ZBB == 1
+//#if EN_ZBB == 1
 static inline uintx_t glue(cpop,XLEN)(uintx_t val) { 
     assert(XLEN == 32 || XLEN == 64 || XLEN == 128);
     
@@ -212,7 +210,7 @@ static inline intx_t glue(clzw,XLEN)(uintx_t val) {
     }
 }
 
-#endif
+//#endif
 
 // =========================================================================
 // =========================================================================

@@ -166,6 +166,7 @@ add_library(dromajo_cosim STATIC
         src/dromajo_main.cpp
         src/dromajo_cosim.cpp
         src/dromajo_stf.cpp
+        src/dromajo_isa.cpp
         src/riscv_cpu.cpp
         )
 
