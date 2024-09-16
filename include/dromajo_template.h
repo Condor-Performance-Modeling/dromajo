@@ -78,7 +78,7 @@
 
 #if REPORT_ILLEGAL == 1
 #define ILLEGAL_INSTR(S) { \
-  fprintf(dromajo_stderr,"HERE %s PC:0x%lx ENC:0x%08x\n",S,s->pc,insn); \
+  fprintf(dromajo_stderr,"ILLEGAL INSTR %s PC:0x%lx ENC:0x%08x\n",S,s->pc,insn); \
   goto illegal_insn; \
 }
 #else
@@ -137,7 +137,6 @@ static inline uintx_t glue(remu, XLEN)(uintx_t a, uintx_t b) {
 }
 // =========================================================================
 // =========================================================================
-//#if EN_ZBB == 1
 static inline uintx_t glue(cpop,XLEN)(uintx_t val) { 
     assert(XLEN == 32 || XLEN == 64 || XLEN == 128);
     
@@ -209,9 +208,6 @@ static inline intx_t glue(clzw,XLEN)(uintx_t val) {
       return __builtin_ctz(_val);
     }
 }
-
-//#endif
-
 // =========================================================================
 // =========================================================================
 #if XLEN == 32

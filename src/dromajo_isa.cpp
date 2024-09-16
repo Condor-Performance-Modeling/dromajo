@@ -90,10 +90,10 @@ bool validateInitialSegment(const std::string& segment,ExtensionFlags &flags)
         flags.rv32 = true;
         base = "rv32";
     } else if (segment.compare(0, 4, "rv64") == 0) {
-        flags.rv32 = true;
+        flags.rv64 = true;
         base = "rv64";
     } else if (segment.compare(0, 5, "rv128") == 0) {
-        flags.rv32 = true;
+        flags.rv128 = true;
         base = "rv128";
     } else {
         fprintf(dromajo_stderr,"Invalid base prefix. Must start "

@@ -568,11 +568,11 @@ static BOOL net_poll_cb(void *arg) { return net_completed; }
 
 static void usage_isa()
 {
-//    fprintf(dromajo_stderr,"\nSupported/Implemented ISA Extensions\n");
-//    for (const auto& [key, _] : extensionMap) {
-//        fprintf(stdout, "  -  %s\n", key.c_str());
-//    }
-//    exit(1);
+    fprintf(dromajo_stderr,"\nSupported/Implemented ISA Extensions\n");
+    for (const auto& [key, _] : extensionMap) {
+        fprintf(stdout, "  -  %s\n", key.c_str());
+    }
+    exit(1);
 }
 
 static void usage(const char *prog, const char *msg) {
@@ -588,11 +588,13 @@ static void usage(const char *prog, const char *msg) {
         "\n"
         "usage: %s {options} [config|elf-file]\n\n"
         "    --help ...\n"
-
+        "\n"
         "  ISA selection options\n" 
         "    --march <string> Specify the architecture string to enable\n"
         "                  supported ISA extensions, default is rv64gc.\n"
         "                  --help-march to see currently supported set.\n"
+        "    --show-march  Takes a complete option set and shows the\n"
+        "                  enabled extensions. Then exits. \n"
         "  STF options\n" 
         "    --stf_trace <filename> Dump an STF trace to the given file\n"
         "    --stf_exit_on_stop_opc Terminate the simulation after \n"
@@ -974,10 +976,12 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
         }
     }
 
-    if (optind >= argc)
+    if (optind >= argc) {
+        fprintf(stderr, "optin %d argc %d\n",optind,argc);
         usage(prog, "missing config file");
-    else
+    } else {
         path = argv[optind++];
+    }
 
 /*
     if (optind < argc)
@@ -1202,7 +1206,11 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
 #endif
     }
 
-    if(!parse_isa_string(march_string,s->common.ext_flags)) exit(1);
+    if(!parse_isa_string(march_string,s->common.ext_flags)) {
+      fprintf(stderr, "Parsing --march string failed\n");
+      exit(1);
+    }
+
     if(show_enabled_extensions) {
       printExtensionFlags(s->common.ext_flags,false); //not verbose
       exit(1);
