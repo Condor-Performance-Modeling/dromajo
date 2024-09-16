@@ -3,6 +3,7 @@
  *
  * Copyright (c) 2016-2017 Fabrice Bellard
  * Copyright (C) 2017,2018,2019, Esperanto Technologies Inc.
+ * Copyright (C) 2023-2024, Condor Computing Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License")
  * you may not use this file except in compliance with the License.
@@ -80,6 +81,7 @@
 
 #include "dromajo_sha.h"
 #include "dromajo_stf.h"
+#include "dromajo_isa.h"
 
 FILE *dromajo_stdout;
 FILE *dromajo_stderr;
@@ -564,6 +566,15 @@ static BOOL net_poll_cb(void *arg) { return net_completed; }
 
 #endif
 
+static void usage_isa()
+{
+    fprintf(dromajo_stderr,"\nSupported/Implemented ISA Extensions\n");
+    for (const auto& [key, _] : extensionMap) {
+        fprintf(stdout, "  -  %s\n", key.c_str());
+    }
+    exit(1);
+}
+
 static void usage(const char *prog, const char *msg) {
     fprintf(dromajo_stderr,
         "\nmessage: %s\n\n"
@@ -577,7 +588,13 @@ static void usage(const char *prog, const char *msg) {
         "\n"
         "usage: %s {options} [config|elf-file]\n\n"
         "    --help ...\n"
-
+        "\n"
+        "  ISA selection options\n" 
+        "    --march <string> Specify the architecture string to enable\n"
+        "                  supported ISA extensions, default is rv64gc.\n"
+        "                  --help-march to see currently supported set.\n"
+        "    --show-march  Takes a complete option set and shows the\n"
+        "                  enabled extensions. Then exits. \n"
         "  STF options\n" 
         "    --stf_trace <filename> Dump an STF trace to the given file\n"
         "    --stf_exit_on_stop_opc Terminate the simulation after \n"
@@ -642,7 +659,10 @@ static void usage(const char *prog, const char *msg) {
         "    --live_cache_size live cache warmup for checkpoint \n"
         "                   (default 8M)\n"
 #endif
-        "    --clear_ids clear mvendorid, marchid, mimpid for all cores\n\n",
+        "    --clear_ids clear mvendorid, marchid, mimpid for all cores\n\n" 
+        "    --help-march   List the currently supported ISA extension set.\n"
+        "    --show-march   List the currently enabled ISA extensions.\n"
+        ,
         msg,
         DROMAJO_VERSION_STRING,
         DROMAJO_GIT_SHA,
@@ -720,6 +740,8 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
 #endif
     bool        elf_based                = false;
     bool        allow_ctrlc              = false;
+    bool        show_enabled_extensions  = false;
+    const char *march_string             = "rv64gc";
 
     dromajo_stdout = stdout;
     dromajo_stderr = stderr;
@@ -729,8 +751,11 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
     for (;;) {
         int option_index = 0;
         // clang-format off
+        // k q v E F G ...
         static struct option long_options[] = {
             {"help",                              no_argument, 0,  'h' },
+            {"help-march",                        no_argument, 0,  'g' },
+            {"show-march",                        no_argument, 0,  'j' },
             {"cmdline",                     required_argument, 0,  'c' }, // CFG
             {"ncpus",                       required_argument, 0,  'n' }, // CFG
             {"load",                        required_argument, 0,  'l' },
@@ -738,6 +763,7 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
             {"simpoint",                    required_argument, 0,  'S' },
             {"maxinsns",                    required_argument, 0,  'm' }, // CFG
             {"trace   ",                    required_argument, 0,  't' },
+            {"march   ",                    required_argument, 0,  'i' },
 
             {"stf_trace",                   required_argument, 0,  'z' },
             {"stf_exit_on_stop_opc",              no_argument, 0,  'e' },
@@ -777,6 +803,15 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
         switch (c) {
             case 'h':
                 usage(prog, "Show usage");
+                break;
+            case 'g':
+                usage_isa(); //Show supported extensions
+                break;
+            case 'j':
+                show_enabled_extensions= true;
+                break;
+            case 'i':
+                march_string = strdup(optarg);
                 break;
             case 'X':
                 allow_ctrlc = true;
@@ -842,9 +877,7 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
             case 'a': stf_priv_modes = strdup(optarg); break;
             case 'Z': stf_force_zero_sha = true; break;
             case 'Y': stf_essential_mode = true; break;
-
             case 'P': ignore_sbi_shutdown = true; break;
-
             case 'D': dump_memories = true; break;
 
             case 'M':
@@ -943,10 +976,12 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
         }
     }
 
-    if (optind >= argc)
+    if (optind >= argc) {
+        fprintf(stderr, "optin %d argc %d\n",optind,argc);
         usage(prog, "missing config file");
-    else
+    } else {
         path = argv[optind++];
+    }
 
 /*
     if (optind < argc)
@@ -1171,6 +1206,16 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
 #endif
     }
 
+    if(!parse_isa_string(march_string,s->common.ext_flags)) {
+      fprintf(stderr, "Parsing --march string failed\n");
+      exit(1);
+    }
+
+    if(show_enabled_extensions) {
+      printExtensionFlags(s->common.ext_flags,false); //not verbose
+      exit(1);
+    }
+
     s->common.snapshot_save_name = snapshot_save_name;
     s->common.trace              = trace;
 
@@ -1213,8 +1258,8 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
     s->common.stf_is_stop_opc          = false;
     s->common.stf_has_exit_pending     = false;
 
-    s->common.stf_prog_asid            = 0;
-    s->common.stf_count                = 0;
+    s->common.stf_prog_asid = 0;
+    s->common.stf_count     = 0;
 
     //FIXME:  forcing an exit on these previously supported switches
     //FIXME - restore this feature
@@ -1251,7 +1296,9 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
     if (s->common.maxinsns == 0)
         s->common.maxinsns = UINT64_MAX;
 
-    for (int i = 0; i < s->ncpus; ++i) s->cpu_state[i]->ignore_sbi_shutdown = ignore_sbi_shutdown;
+    for (int i = 0; i < s->ncpus; ++i) {
+        s->cpu_state[i]->ignore_sbi_shutdown = ignore_sbi_shutdown;
+    }
 
     virt_machine_free_config(p);
 

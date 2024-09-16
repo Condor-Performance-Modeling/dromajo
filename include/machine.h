@@ -3,6 +3,7 @@
  *
  * Copyright (c) 2016-2017 Fabrice Bellard
  * Copyright (C) 2018,2019, Esperanto Technologies Inc.
+ * Copyright (C) 2023-2024, Condor Computing Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License")
  * you may not use this file except in compliance with the License.
@@ -42,6 +43,7 @@
 
 #include "json.h"
 #include "dromajo_stf.h"
+#include "dromajo_isa.h"
 
 typedef struct RISCVMachine RISCVMachine;
 
@@ -239,6 +241,8 @@ typedef struct VirtMachine {
     /* Central logging facility, so far only used in dromajo_cosim */
     dromajo_logging_func_t *error_log;
     dromajo_logging_func_t *debug_log;
+
+    ExtensionFlags ext_flags;
 } VirtMachine;
 
 int load_file(uint8_t **pbuf, const char *filename);

@@ -3,6 +3,7 @@
  *
  * Copyright (c) 2016 Fabrice Bellard
  * Copyright (C) 2017,2018,2019, Esperanto Technologies Inc.
+ * Copyright (C) 2023-2024, Condor Computing Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License")
  * you may not use this file except in compliance with the License.
@@ -55,6 +56,47 @@
 #include "dromajo_stf.h"
 #include <limits>
 
+#define EN_ZBB (s->machine->common.ext_flags.zbb == true)
+
+//TODO: Create a map for these
+#define F12_CLZx    0x600
+#define F12_CTZx    0x601
+#define F12_CPOPx   0x602
+
+#define F12_ZEXT_H  0x080
+#define F3_ZEXT_H   0x4
+
+#define F12_SEXT_H  0x605
+#define F12_SEXT_B  0x604
+
+#define F3_SEXT     0x1
+
+#define HALF_WORD_MASK 0xFFFF
+
+#define CAPTURE_LOG    0
+#define REPORT_ILLEGAL 1
+
+#if REPORT_ILLEGAL == 1
+#define ILLEGAL_INSTR(S) { \
+  fprintf(dromajo_stderr,"ILLEGAL INSTR %s PC:0x%lx ENC:0x%08x\n",S,s->pc,insn); \
+  goto illegal_insn; \
+}
+#else
+#define ILLEGAL_INSTR(S) { \
+  goto illegal_insn; \
+}
+#endif
+
+#if CAPTURE_LOG == 1 
+#define CAPTURED_INSTR(S) { \
+  fprintf(dromajo_stderr,"HERE CAPTURED %s PC:0x%lx ENC:0x%08x\n",S,s->pc,insn);  \
+}
+#else
+#define CAPTURED_INSTR(S)
+#endif
+
+// =========================================================================
+// =========================================================================
 static inline intx_t glue(div, XLEN)(intx_t a, intx_t b) {
     if (b == 0) {
         return -1;
@@ -64,7 +106,8 @@ static inline intx_t glue(div, XLEN)(intx_t a, intx_t b) {
         return a / b;
     }
 }
-
+// -------------------------------------------------------------------------
+// -------------------------------------------------------------------------
 static inline uintx_t glue(divu, XLEN)(uintx_t a, uintx_t b) {
     if (b == 0) {
         return -1;
@@ -72,7 +115,8 @@ static inline uintx_t glue(divu, XLEN)(uintx_t a, uintx_t b) {
         return a / b;
     }
 }
-
+// -------------------------------------------------------------------------
+// -------------------------------------------------------------------------
 static inline intx_t glue(rem, XLEN)(intx_t a, intx_t b) {
     if (b == 0) {
         return a;
@@ -82,7 +126,8 @@ static inline intx_t glue(rem, XLEN)(intx_t a, intx_t b) {
         return a % b;
     }
 }
-
+// -------------------------------------------------------------------------
+// -------------------------------------------------------------------------
 static inline uintx_t glue(remu, XLEN)(uintx_t a, uintx_t b) {
     if (b == 0) {
         return a;
@@ -90,7 +135,81 @@ static inline uintx_t glue(remu, XLEN)(uintx_t a, uintx_t b) {
         return a % b;
     }
 }
+// =========================================================================
+// =========================================================================
+static inline uintx_t glue(cpop,XLEN)(uintx_t val) { 
+    assert(XLEN == 32 || XLEN == 64 || XLEN == 128);
+    
+    if(XLEN == 32)      return __builtin_popcount(val);
+    else if(XLEN == 64) return __builtin_popcountl(val);
+    else {
+        uintx_t bit_count = 0;
+        while (val) {
+            val &= (val - 1);
+            bit_count++;
+        }
+        return bit_count;
+    } 
+}
+// -------------------------------------------------------------------------
+static inline uintx_t glue(cpopw,XLEN)(uintx_t val) {
+    uint32_t _val = (uint32_t) val;
+    return __builtin_popcount(_val);
+}
+// -------------------------------------------------------------------------
+static inline uintx_t glue(ctz_,XLEN)(uintx_t val) {
+    assert(XLEN == 32 || XLEN == 64 || XLEN == 128);
+    if(val == 0) return XLEN;
 
+    if(XLEN == 32) return __builtin_ctz(val);
+    else if(XLEN == 64) return __builtin_ctzl(val);
+    else {
+        uint64_t lo_val = val & 0xFFFFFFFFFFFFFFFF;
+        uint64_t hi_val = ((uint128_t)val >> 64);
+        if(lo_val != 0) return __builtin_ctzl(lo_val);
+        if(hi_val != 0) return __builtin_ctzl(hi_val);
+        return 128;
+    } 
+}
+// -------------------------------------------------------------------------
+static inline uintx_t glue(ctzw,XLEN)(uintx_t val) {
+    uint32_t _val = val;
+    return __builtin_ctz(_val);
+}
+// -------------------------------------------------------------------------
+static inline intx_t glue(sext_h,XLEN)(uintx_t val) { 
+    intx_t tmp = val << (XLEN-16);
+    return (intx_t) (((intx_t)tmp) >> (XLEN-16));
+}
+// -------------------------------------------------------------------------
+static inline intx_t glue(sext_b,XLEN)(uintx_t val) { 
+    intx_t tmp = val << (XLEN-8);
+    return (intx_t) (((intx_t)tmp) >> (XLEN-8));
+}
+// -------------------------------------------------------------------------
+static inline intx_t glue(clz,XLEN)(uintx_t val) { 
+    assert(XLEN == 32 || XLEN == 64 || XLEN == 128);
+    if(val == 0) return XLEN;
+    else if(XLEN == 32) return __builtin_ctz(val);
+    else if(XLEN == 64) return __builtin_ctzl(val);   
+    else {
+        for (int i = XLEN-1; i >= 0; i--) {
+            if (val & ((__uint128_t)1 << i)) {
+                return XLEN-1 - i;
+            }
+        }      
+    }
+}
+// -------------------------------------------------------------------------
+static inline intx_t glue(clzw,XLEN)(uintx_t val) { 
+    if(val == 0) return 32;
+    else {
+      uint32_t _val = (uint32_t)val;
+      return __builtin_ctz(_val);
+    }
+}
+// =========================================================================
+// =========================================================================
 #if XLEN == 32
 
 static inline uint32_t mulh32(int32_t a, int32_t b) { return ((int64_t)a * (int64_t)b) >> 32; }
@@ -205,7 +324,7 @@ static inline uintx_t glue(mulhsu, XLEN)(intx_t a, uintx_t b) {
     case n + (30 << 2): \
     case n + (31 << 2):
 
-#define GET_PC()           (target_ulong)((uintptr_t)code_ptr + code_to_pc_addend)
+#define GET_PC() (target_ulong)((uintptr_t)code_ptr + code_to_pc_addend)
 #define GET_INSN_COUNTER() (insn_counter_addend - n_cycles)
 
 #define C_NEXT_INSN \
@@ -247,6 +366,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles);
 
 int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
     uint32_t     opcode, insn, rd, rs1, rs2, funct3;
+    uint32_t     _funct7, _funct12, _funct3;
     int32_t      imm, cond, err;
     target_ulong addr, val, val2;
     uint8_t *    code_ptr, *code_end;
@@ -357,7 +477,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                     imm = get_field1(insn, 11, 4, 5) | get_field1(insn, 7, 6, 9) | get_field1(insn, 6, 2, 2)
                           | get_field1(insn, 5, 3, 3);
                     if (imm == 0)
-                        goto illegal_insn;
+                        ILLEGAL_INSTR("000")
                     write_reg(rd, (intx_t)(read_reg(2) + imm));
                     break;
 #if XLEN >= 128
@@ -375,7 +495,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                 {
                     uint64_t rval;
                     if (s->fs == 0)
-                        goto illegal_insn;
+                        ILLEGAL_INSTR("001")
                     imm  = get_field1(insn, 10, 3, 5) | get_field1(insn, 5, 6, 7);
                     rs1  = ((insn >> 7) & 7) | 8;
                     addr = (intx_t)(read_reg(rs1) + imm);
@@ -410,7 +530,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                 {
                     uint32_t rval;
                     if (s->fs == 0)
-                        goto illegal_insn;
+                        ILLEGAL_INSTR("002")
                     imm  = get_field1(insn, 10, 3, 5) | get_field1(insn, 6, 2, 2) | get_field1(insn, 5, 6, 6);
                     rs1  = ((insn >> 7) & 7) | 8;
                     addr = (intx_t)(read_reg(rs1) + imm);
@@ -431,7 +551,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
 #elif FLEN >= 64
                 case 5: /* c.fsd */
                     if (s->fs == 0)
-                        goto illegal_insn;
+                        ILLEGAL_INSTR("003")
                     imm  = get_field1(insn, 10, 3, 5) | get_field1(insn, 5, 6, 7);
                     rs1  = ((insn >> 7) & 7) | 8;
                     addr = (intx_t)(read_reg(rs1) + imm);
@@ -459,7 +579,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
 #elif FLEN >= 32
                 case 7: /* c.fsw */
                     if (s->fs == 0)
-                        goto illegal_insn;
+                        ILLEGAL_INSTR("004")
                     imm  = get_field1(insn, 10, 3, 5) | get_field1(insn, 6, 2, 2) | get_field1(insn, 5, 6, 6);
                     rs1  = ((insn >> 7) & 7) | 8;
                     addr = (intx_t)(read_reg(rs1) + imm);
@@ -467,7 +587,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                         goto mmu_exception;
                     break;
 #endif
-                default: goto illegal_insn;
+                default: ILLEGAL_INSTR("005")
             }
             C_NEXT_INSN;
             C_QUADRANT(1)
@@ -491,7 +611,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
 #else
                 case 1: /* c.addiw */
                     if (rd == 0)
-                        goto illegal_insn;
+                        ILLEGAL_INSTR("006")
                     imm = sext(get_field1(insn, 12, 5, 5) | get_field1(insn, 2, 0, 4), 6);
                     write_reg(rd, (int32_t)(read_reg(rd) + imm));
                     break;
@@ -509,16 +629,16 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                                        | get_field1(insn, 3, 7, 8) | get_field1(insn, 2, 5, 5),
                                    10);
                         if (imm == 0)
-                            goto illegal_insn;
+                            ILLEGAL_INSTR("007")
                         write_reg(2, (intx_t)(read_reg(2) + imm));
                     } else if (rd != 0) {
                         /* c.lui */
                         imm = sext(get_field1(insn, 12, 17, 17) | get_field1(insn, 2, 12, 16), 18);
                         if (imm == 0)
-                            goto illegal_insn;
+                            ILLEGAL_INSTR("008")
                         write_reg(rd, imm);
                     } else if (sext(get_field1(insn, 12, 17, 17) | get_field1(insn, 2, 12, 16), 18) == 0)
-                        goto illegal_insn;
+                        ILLEGAL_INSTR("009")
                     break;
                 case 4:
                     funct3 = (insn >> 10) & 3;
@@ -528,7 +648,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                         case 1: /* c.srai */ imm = get_field1(insn, 12, 5, 5) | get_field1(insn, 2, 0, 4);
 #if XLEN == 32
                             if (imm & 0x20)
-                                goto illegal_insn;
+                                ILLEGAL_INSTR("010")
 #elif XLEN == 128
                             if (imm == 0)
                                 imm = 64;
@@ -557,7 +677,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                                 case 4: /* c.subw */ write_reg(rd, (int32_t)(read_reg(rd) - read_reg(rs2))); break;
                                 case 5: /* c.addw */ write_reg(rd, (int32_t)(read_reg(rd) + read_reg(rs2))); break;
 #endif
-                                default: goto illegal_insn;
+                                default: ILLEGAL_INSTR("011")
                             }
                             break;
                     }
@@ -589,7 +709,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                         JUMP_INSN(ctf_taken_branch);
                     }
                     break;
-                default: goto illegal_insn;
+                default: ILLEGAL_INSTR("012")
             }
             C_NEXT_INSN;
             C_QUADRANT(2)
@@ -599,7 +719,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                 case 0: /* c.slli */ imm = get_field1(insn, 12, 5, 5) | rs2;
 #if XLEN == 32
                     if (imm & 0x20)
-                        goto illegal_insn;
+                        ILLEGAL_INSTR("013")
 #elif XLEN == 128
                     if (imm == 0)
                         imm = 64;
@@ -610,7 +730,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
 #if XLEN == 128
                 case 1: /* c.lqsp */
                     if (rd == 0)
-                        goto illegal_insn;
+                        ILLEGAL_INSTR("014")
                     imm  = get_field1(insn, 12, 5, 5) | (rs2 & (1 << 4)) | get_field1(insn, 2, 6, 9);
                     addr = (intx_t)(read_reg(2) + imm);
                     if (target_read_u128(s, &val, addr))
@@ -623,7 +743,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                 {
                     uint64_t rval;
                     if (s->fs == 0)
-                        goto illegal_insn;
+                        ILLEGAL_INSTR("015")
                     imm  = get_field1(insn, 12, 5, 5) | (rs2 & (3 << 3)) | get_field1(insn, 2, 6, 8);
                     addr = (intx_t)(read_reg(2) + imm);
                     if (target_read_u64(s, &rval, addr))
@@ -635,7 +755,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                 {
                     uint32_t rval;
                     if (rd == 0)
-                        goto illegal_insn;
+                        ILLEGAL_INSTR("016")
                     imm  = get_field1(insn, 12, 5, 5) | (rs2 & (7 << 2)) | get_field1(insn, 2, 6, 7);
                     addr = (intx_t)(read_reg(2) + imm);
                     if (target_read_u32(s, &rval, addr))
@@ -647,7 +767,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                 {
                     uint64_t rval;
                     if (rd == 0)
-                        goto illegal_insn;
+                        ILLEGAL_INSTR("017")
                     imm  = get_field1(insn, 12, 5, 5) | (rs2 & (3 << 3)) | get_field1(insn, 2, 6, 8);
                     addr = (intx_t)(read_reg(2) + imm);
                     if (target_read_u64(s, &rval, addr))
@@ -659,7 +779,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                 {
                     uint32_t rval;
                     if (s->fs == 0)
-                        goto illegal_insn;
+                        ILLEGAL_INSTR("018")
                     imm  = get_field1(insn, 12, 5, 5) | (rs2 & (7 << 2)) | get_field1(insn, 2, 6, 7);
                     addr = (intx_t)(read_reg(2) + imm);
                     if (target_read_u32(s, &rval, addr))
@@ -672,7 +792,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                         if (rs2 == 0) {
                             /* c.jr */
                             if (rd == 0)
-                                goto illegal_insn;
+                                ILLEGAL_INSTR("019")
                             s->pc = read_reg(rd) & ~1;
                             JUMP_INSN(ctf_compute_hint(0, rd));
                         } else {
@@ -710,7 +830,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
 #elif FLEN >= 64
                 case 5: /* c.fsdsp */
                     if (s->fs == 0)
-                        goto illegal_insn;
+                        ILLEGAL_INSTR("020")
                     imm  = get_field1(insn, 10, 3, 5) | get_field1(insn, 7, 6, 8);
                     addr = (intx_t)(read_reg(2) + imm);
                     if (target_write_u64(s, addr, read_fp_reg(rs2)))
@@ -733,14 +853,14 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
 #elif FLEN >= 32
                 case 7: /* c.swsp */
                     if (s->fs == 0)
-                        goto illegal_insn;
+                        ILLEGAL_INSTR("021")
                     imm  = get_field1(insn, 9, 2, 5) | get_field1(insn, 7, 6, 7);
                     addr = (intx_t)(read_reg(2) + imm);
                     if (target_write_u32(s, addr, read_fp_reg(rs2)))
                         goto mmu_exception;
                     break;
 #endif
-                default: goto illegal_insn;
+                default: ILLEGAL_INSTR("022")
             }
             C_NEXT_INSN;
 
@@ -771,7 +891,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
             case 0x67: /* jalr */
                 funct3 = (insn >> 12) & 7;
                 if (funct3 != 0)
-                    goto illegal_insn;
+                    ILLEGAL_INSTR("023")
                 imm = (int32_t)insn >> 20;
                 val = GET_PC() + 4;
                 {
@@ -792,7 +912,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                     case 0: /* beq/bne */ cond = (read_reg(rs1) == read_reg(rs2)); break;
                     case 2: /* blt/bge */ cond = ((target_long)read_reg(rs1) < (target_long)read_reg(rs2)); break;
                     case 3: /* bltu/bgeu */ cond = (read_reg(rs1) < read_reg(rs2)); break;
-                    default: goto illegal_insn;
+                    default: ILLEGAL_INSTR("024")
                 }
                 cond ^= (funct3 & 1);
                 if (cond) {
@@ -877,7 +997,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                         val = rval;
                     } break;
 #endif
-                    default: goto illegal_insn;
+                    default: ILLEGAL_INSTR("025")
                 }
                 if (rd != 0)
                     write_reg(rd, val);
@@ -914,25 +1034,58 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                             goto mmu_exception;
                         break;
 #endif
-                    default: goto illegal_insn;
+                    default: ILLEGAL_INSTR("026")
                 }
                 NEXT_INSN;
             case 0x13:
-                funct3 = (insn >> 12) & 7;
-                imm    = (int32_t)insn >> 20;
+                funct3   = (insn >> 12) & 7;
+                imm      = (int32_t)insn >> 20;
+                _funct12 = (insn >> 20) & 0xFFF;
+
                 switch (funct3) {
                     case 0: /* addi */ val = (intx_t)(read_reg(rs1) + imm); break;
-                    case 1: /* slli */
-                        if ((imm & ~(XLEN - 1)) != 0)
-                            goto illegal_insn;
-                        val = (intx_t)(read_reg(rs1) << (imm & (XLEN - 1)));
+                    case 1: /* cpop */
+                        if (EN_ZBB && (_funct12 == F12_CTZx)) {
+
+                            CAPTURED_INSTR("CTZ");
+                            val = (intx_t)glue(ctz_,XLEN)((intx_t)read_reg(rs1));
+
+                        } else if (EN_ZBB && (_funct12 == F12_CLZx)) {
+
+                            CAPTURED_INSTR("CLZ");
+                            val = (intx_t)glue(clz,XLEN)((intx_t)read_reg(rs1));
+
+                        } else if (EN_ZBB && (_funct12 == F12_CPOPx)) {
+
+                            CAPTURED_INSTR("CPOP");
+                            val = (intx_t)glue(cpop,XLEN)((uintx_t)read_reg(rs1));
+
+                        } else if ( EN_ZBB && (_funct12 == F12_SEXT_H)) {
+
+                            CAPTURED_INSTR("SEXT.H");
+                            val = (intx_t)glue(sext_h,XLEN)((intx_t)read_reg(rs1));
+
+                        } else if ( EN_ZBB && (_funct12 == F12_SEXT_B)) {
+
+                            CAPTURED_INSTR("SEXT.B");
+                            val = (intx_t)glue(sext_b,XLEN)((intx_t)read_reg(rs1));
+
+                        } else if ((imm & ~(XLEN - 1)) != 0) {
+
+                            ILLEGAL_INSTR("027")
+
+                        } else {
+
+                            val = (intx_t)(read_reg(rs1) << (imm & (XLEN - 1)));
+
+                        }
                         break;
-                    case 2: /* slti */ val = (target_long)read_reg(rs1) < (target_long)imm; break;
+                    case 2: /* slti  */ val = (target_long)read_reg(rs1) < (target_long)imm; break;
                     case 3: /* sltiu */ val = read_reg(rs1) < (target_ulong)imm; break;
-                    case 4: /* xori */ val = read_reg(rs1) ^ imm; break;
+                    case 4: /* xori  */ val = read_reg(rs1) ^ imm; break;
                     case 5: /* srli/srai */
                         if ((imm & ~((XLEN - 1) | 0x400)) != 0)
-                            goto illegal_insn;
+                            ILLEGAL_INSTR("028")
                         if (imm & 0x400)
                             val = (intx_t)read_reg(rs1) >> (imm & (XLEN - 1));
                         else
@@ -947,25 +1100,45 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                 NEXT_INSN;
 #if XLEN >= 64
             case 0x1b: /* OP-IMM-32 */
-                funct3 = (insn >> 12) & 7;
-                imm    = (int32_t)insn >> 20;
-                val    = read_reg(rs1);
+                funct3   = (insn >> 12) & 7;
+                imm      = (int32_t)insn >> 20;
+                val      = read_reg(rs1);
+                _funct12 = (insn >> 20) & 0xFFF;
+
                 switch (funct3) {
                     case 0: /* addiw */ val = (int32_t)(val + imm); break;
-                    case 1: /* slliw */
-                        if ((imm & ~31) != 0)
-                            goto illegal_insn;
-                        val = (int32_t)(val << (imm & 31));
+                    case 1:
+                        if (EN_ZBB && (_funct12 == F12_CTZx)) {
+
+                            CAPTURED_INSTR("CTZW");
+                            val = (intx_t)glue(ctzw,XLEN)((intx_t)read_reg(rs1));
+
+                        } else if (EN_ZBB && (_funct12 == F12_CPOPx)) {
+
+                            CAPTURED_INSTR("CPOPW");
+                            val = (intx_t)glue(cpopw,XLEN)((intx_t)read_reg(rs1));
+
+                        } else if (EN_ZBB && (_funct12 == F12_CLZx)) {
+
+                            CAPTURED_INSTR("CLZW");
+                            val = (intx_t)glue(clzw,XLEN)((intx_t)read_reg(rs1));
+
+                        } else if ((imm & ~31) != 0) {
+                            ILLEGAL_INSTR("029")
+                        } else {
+                          /* slliw */
+                          val = (int32_t)(val << (imm & 31));
+                        }
                         break;
                     case 5: /* srliw/sraiw */
                         if ((imm & ~(31 | 0x400)) != 0)
-                            goto illegal_insn;
+                            ILLEGAL_INSTR("030")
                         if (imm & 0x400)
                             val = (int32_t)val >> (imm & 31);
                         else
                             val = (int32_t)((uint32_t)val >> (imm & 31));
                         break;
-                    default: goto illegal_insn;
+                    default: ILLEGAL_INSTR("031")
                 }
                 if (rd != 0)
                     write_reg(rd, val);
@@ -980,18 +1153,18 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                     case 0: /* addid */ val = (int64_t)(val + imm); break;
                     case 1: /* sllid */
                         if ((imm & ~63) != 0)
-                            goto illegal_insn;
+                            ILLEGAL_INSTR("032")
                         val = (int64_t)(val << (imm & 63));
                         break;
                     case 5: /* srlid/sraid */
                         if ((imm & ~(63 | 0x400)) != 0)
-                            goto illegal_insn;
+                            ILLEGAL_INSTR("033")
                         if (imm & 0x400)
                             val = (int64_t)val >> (imm & 63);
                         else
                             val = (int64_t)((uint64_t)val >> (imm & 63));
                         break;
-                    default: goto illegal_insn;
+                    default: ILLEGAL_INSTR("034")
                 }
                 if (rd != 0)
                     write_reg(rd, val);
@@ -1001,7 +1174,51 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                 imm  = insn >> 25;
                 val  = read_reg(rs1);
                 val2 = read_reg(rs2);
-                if (imm == 1) {
+
+                //These are defined separately to avoid clashing with other vars of similar name.
+                //The imm variable name is unfortunate and confusing
+                _funct12 = (insn >> 25) & 0xFFF; (void) _funct12;
+                _funct7  = (insn >> 25) & 0x7F; (void) _funct7;
+                _funct3  = (insn >> 12) & 0x7;  (void) _funct3;
+
+                if (EN_ZBB && _funct7 == 0x05) {
+
+                  switch(_funct3) {
+                    case 0x4: CAPTURED_INSTR("MIN");
+                              val = ((intx_t)val < (intx_t)val2)   ? val : val2;
+                              break;
+                    case 0x5: CAPTURED_INSTR("MINU");
+                              val = ((uintx_t)val < (uintx_t)val2) ? val : val2;
+                              break;
+                    case 0x6: CAPTURED_INSTR("MAX");
+                              val = ((intx_t)val < (intx_t)val2)   ? val2 : val;
+                              break;
+                    case 0x7: CAPTURED_INSTR("MAXU");
+                              val = ((uintx_t)val < (uintx_t)val2) ? val2 : val;
+                              break;
+                    default:  ILLEGAL_INSTR("X001")
+                  }
+
+                } else if (EN_ZBB && _funct7 == 0x20) {
+
+                  switch(_funct3) {
+                    case 0x0: CAPTURED_INSTR("SUB");
+                              val = (intx_t)(val - val2);
+                              break;
+                    case 0x4: CAPTURED_INSTR("XNOR");
+                              val = ~(val ^ val2);
+                              break;
+                    case 0x6: CAPTURED_INSTR("ORN");
+                              val = val | ~val2;
+                              break;
+                    case 0x7: CAPTURED_INSTR("ANDN");
+                              val = val & ~val2;
+                              break;
+                    default:  ILLEGAL_INSTR("X002")
+                  }
+
+                } else if (imm == 1) {
+                    //TODO CAN BE REMOVED - this is the original code before zbb
                     funct3 = (insn >> 12) & 7;
                     switch (funct3) {
                         case 0: /* mul */ val = (intx_t)((intx_t)val * (intx_t)val2); break;
@@ -1012,11 +1229,12 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                         case 5: /* divu */ val = (intx_t)glue(divu, XLEN)(val, val2); break;
                         case 6: /* rem */ val = glue(rem, XLEN)(val, val2); break;
                         case 7: /* remu */ val = (intx_t)glue(remu, XLEN)(val, val2); break;
-                        default: goto illegal_insn;
+                        default: ILLEGAL_INSTR("035")
                     }
                 } else {
-                    if (imm & ~0x20)
-                        goto illegal_insn;
+                    if (imm & ~0x20) {
+                        ILLEGAL_INSTR("036")
+                    }
                     funct3 = ((insn >> 12) & 7) | ((insn >> (30 - 3)) & (1 << 3));
                     switch (funct3) {
                         case 0: /* add */ val = (intx_t)(val + val2); break;
@@ -1029,7 +1247,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                         case 5 | 8: /* sra */ val = (intx_t)val >> (val2 & (XLEN - 1)); break;
                         case 6: /* or */ val = val | val2; break;
                         case 7: /* and */ val = val & val2; break;
-                        default: goto illegal_insn;
+                        default: ILLEGAL_INSTR("037")
                     }
                 }
                 if (rd != 0)
@@ -1040,7 +1258,15 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                 imm  = insn >> 25;
                 val  = read_reg(rs1);
                 val2 = read_reg(rs2);
-                if (imm == 1) {
+                _funct12 = (insn >> 20) & 0xFFF;
+                _funct3  = (insn >> 12) & 0x7;
+
+                if (EN_ZBB && _funct12 == 0x080 & _funct3 == 0x4) {
+
+                   CAPTURED_INSTR("ZEXT.H");
+                   val = val & HALF_WORD_MASK;
+ 
+                } else if (imm == 1) {
                     funct3 = (insn >> 12) & 7;
                     switch (funct3) {
                         case 0: /* mulw */ val = (int32_t)((int32_t)val * (int32_t)val2); break;
@@ -1048,11 +1274,10 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                         case 5: /* divuw */ val = (int32_t)divu32(val, val2); break;
                         case 6: /* remw */ val = rem32(val, val2); break;
                         case 7: /* remuw */ val = (int32_t)remu32(val, val2); break;
-                        default: goto illegal_insn;
+                        default: ILLEGAL_INSTR("038")
                     }
                 } else {
-                    if (imm & ~0x20)
-                        goto illegal_insn;
+                    if (imm & ~0x20) ILLEGAL_INSTR("039")
                     funct3 = ((insn >> 12) & 7) | ((insn >> (30 - 3)) & (1 << 3));
                     switch (funct3) {
                         case 0: /* addw */ val = (int32_t)(val + val2); break;
@@ -1060,13 +1285,14 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                         case 1: /* sllw */ val = (int32_t)((uint32_t)val << (val2 & 31)); break;
                         case 5: /* srlw */ val = (int32_t)((uint32_t)val >> (val2 & 31)); break;
                         case 5 | 8: /* sraw */ val = (int32_t)val >> (val2 & 31); break;
-                        default: goto illegal_insn;
+                        default: ILLEGAL_INSTR("040")
                     }
                 }
                 if (rd != 0)
                     write_reg(rd, val);
                 NEXT_INSN;
 #endif
+
 #if XLEN >= 128
             case 0x7b: /* OP-64 */
                 imm  = insn >> 25;
@@ -1080,11 +1306,11 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                         case 5: /* divud */ val = (int64_t)divu64(val, val2); break;
                         case 6: /* remd */ val = rem64(val, val2); break;
                         case 7: /* remud */ val = (int64_t)remu64(val, val2); break;
-                        default: goto illegal_insn;
+                        default: ILLEGAL_INSTR("041")
                     }
                 } else {
                     if (imm & ~0x20)
-                        goto illegal_insn;
+                        ILLEGAL_INSTR("042")
                     funct3 = ((insn >> 12) & 7) | ((insn >> (30 - 3)) & (1 << 3));
                     switch (funct3) {
                         case 0: /* addd */ val = (int64_t)(val + val2); break;
@@ -1092,7 +1318,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                         case 1: /* slld */ val = (int64_t)((uint64_t)val << (val2 & 63)); break;
                         case 5: /* srld */ val = (int64_t)((uint64_t)val >> (val2 & 63)); break;
                         case 5 | 8: /* srad */ val = (int64_t)val >> (val2 & 63); break;
-                        default: goto illegal_insn;
+                        default: ILLEGAL_INSTR("043")
                     }
                 }
                 if (rd != 0)
@@ -1117,13 +1343,13 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                             s->minstret += delta;
                         }
                         if (csr_read(s, funct3, &val2, imm, TRUE))
-                            goto illegal_insn;
+                            ILLEGAL_INSTR("044")
                         val2 = (intx_t)val2;
                         err  = csr_write(s, funct3, imm, val);
                         if (err == -2)
                             goto mmu_exception;
                         if (err < 0)
-                            goto illegal_insn;
+                            ILLEGAL_INSTR("045")
                         if (rd != 0)
                             write_reg(rd, val2);
                         insn_counter_addend = s->insn_counter + n_cycles;
@@ -1145,7 +1371,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                             s->minstret += delta;
                         }
                         if (csr_read(s, funct3, &val2, imm, (rs1 != 0)))
-                            goto illegal_insn;
+                            ILLEGAL_INSTR("046")
                         val2 = (intx_t)val2;
                         if (rs1 != 0) {
                             if (funct3 == 2)
@@ -1156,7 +1382,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                             if (err == -2)
                                 goto mmu_exception;
                             if (err < 0)
-                                goto illegal_insn;
+                                ILLEGAL_INSTR("047")
                         } else {
                             err = 0;
                         }
@@ -1174,7 +1400,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                         switch (imm) {
                             case 0x000: /* ecall */
                                 if (insn & 0x000fff80)
-                                    goto illegal_insn;
+                                    ILLEGAL_INSTR("048")
                                 s->pending_exception = CAUSE_USER_ECALL + s->priv;
                                 s->pending_tval      = 0;
                                 /* Intercept SBI_SHUTDOWN, that is, ecall with a7 == SBI_SHUTDOWN */
@@ -1183,18 +1409,18 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                                 goto exception;
                             case 0x001: /* ebreak */
                                 if (insn & 0x000fff80)
-                                    goto illegal_insn;
+                                    ILLEGAL_INSTR("049")
                                 s->pending_exception = CAUSE_BREAKPOINT;
                                 s->pending_tval      = 0;
                                 goto exception;
                             case 0x102: /* sret */
                             {
                                 if (insn & 0x000fff80)
-                                    goto illegal_insn;
+                                    ILLEGAL_INSTR("050")
                                 if (s->priv < PRV_S)
-                                    goto illegal_insn;
+                                    ILLEGAL_INSTR("051")
                                 if (s->priv == PRV_S && s->mstatus & MSTATUS_TSR)
-                                    goto illegal_insn;
+                                    ILLEGAL_INSTR("052")
                                 s->pc = GET_PC();
                                 handle_sret(s);
                                 goto done_interp;
@@ -1202,22 +1428,22 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                             case 0x302: /* mret */
                             {
                                 if (insn & 0x000fff80)
-                                    goto illegal_insn;
+                                    ILLEGAL_INSTR("053")
                                 if (s->priv < PRV_M)
-                                    goto illegal_insn;
+                                    ILLEGAL_INSTR("054")
                                 s->pc = GET_PC();
                                 handle_mret(s);
                                 goto done_interp;
                             } break;
                             case 0x7b2: /* dret */
                                 if (!s->debug_mode)
-                                    goto illegal_insn;
+                                    ILLEGAL_INSTR("055")
                                 {
                                     if (insn & 0x000fff80)
-                                        goto illegal_insn;
+                                        ILLEGAL_INSTR("056")
                                     if (s->priv
                                         < PRV_M)  // FIXME: It should be illegal even in M, but this is the only that we have now
-                                        goto illegal_insn;
+                                        ILLEGAL_INSTR("057")
                                     s->pc = GET_PC();
                                     handle_dret(s);
                                     goto done_interp;
@@ -1225,16 +1451,16 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                                 break;
                             case 0x105: /* wfi */
                                 if (insn & 0x00007f80)
-                                    goto illegal_insn;
+                                    ILLEGAL_INSTR("058")
                                 if (s->priv == PRV_U)
-                                    goto illegal_insn;
+                                    ILLEGAL_INSTR("059")
                                 /* "When TW=1, if WFI is executed in S- mode, and
                                    it does not complete within an
                                    implementation-specific, bounded time limit,
                                    the WFI instruction causes an illegal
                                    instruction trap." */
                                 if (s->priv == PRV_S && s->mstatus & MSTATUS_TW)
-                                    goto illegal_insn;
+                                    ILLEGAL_INSTR("060")
                                 /* go to power down if no enabled interrupts are
                                    pending */
                                 if (((s->mip & s->mie) == 0) && (s->machine->common.pending_interrupt == -1)
@@ -1248,11 +1474,11 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                                 if ((imm >> 5) == 0x09) {
                                     /* sfence.vma */
                                     if (insn & 0x00007f80)
-                                        goto illegal_insn;
+                                        ILLEGAL_INSTR("061")
                                     if (s->priv == PRV_U)
-                                        goto illegal_insn;
+                                        ILLEGAL_INSTR("062")
                                     if (s->priv == PRV_S && s->mstatus & MSTATUS_TVM)
-                                        goto illegal_insn;
+                                        ILLEGAL_INSTR("063")
                                     if (rs1 == 0) {
                                         tlb_flush_all(s);
                                     } else {
@@ -1262,12 +1488,12 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                                     s->pc = GET_PC() + 4;
                                     JUMP_INSN(ctf_nop);
                                 } else {
-                                    goto illegal_insn;
+                                    ILLEGAL_INSTR("064")
                                 }
                                 break;
                         }
                         break;
-                    default: goto illegal_insn;
+                    default: ILLEGAL_INSTR("065")
                 }
                 NEXT_INSN;
             case 0x0f: /* misc-mem */
@@ -1289,7 +1515,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                             write_reg(rd, val);
                         break;
 #endif
-                    default: goto illegal_insn;
+                    default: ILLEGAL_INSTR("066")
                 }
                 NEXT_INSN;
             case 0x2f: funct3 = (insn >> 12) & 7;
@@ -1381,7 +1607,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
 #if XLEN >= 128
                     case 4: OP_A(128); break;
 #endif
-                    default: goto illegal_insn;
+                    default: ILLEGAL_INSTR("067")
                 }
                 if (rd != 0)
                     write_reg(rd, val);
@@ -1395,7 +1621,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                     case 2: /* flw */
                     {
                         if (s->fs == 0)
-                            goto illegal_insn;
+                            ILLEGAL_INSTR("068")
                         uint32_t rval;
                         if (target_read_u32(s, &rval, addr))
                             goto mmu_exception;
@@ -1405,7 +1631,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                     case 3: /* fld */
                     {
                         if (s->fs == 0)
-                            goto illegal_insn;
+                            ILLEGAL_INSTR("069")
                         uint64_t rval;
                         if (target_read_u64(s, &rval, addr))
                             goto mmu_exception;
@@ -1416,7 +1642,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                     case 4: /* flq */
                     {
                         if (s->fs == 0)
-                            goto illegal_insn;
+                            ILLEGAL_INSTR("070")
                         uint128_t rval;
                         if (target_read_u128(s, &rval, addr))
                             goto mmu_exception;
@@ -1431,17 +1657,17 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                     case 6:
                     case 7:
                         if (s->vs == 0)
-                            goto illegal_insn;
+                            ILLEGAL_INSTR("071")
                         vmem_result = vmem_op(s, insn, true, v_load_config);
                         if (vmem_result == 2)
                             goto mmu_exception;
                         else if (vmem_result == 1) {
                             s->vtype = VILL;
-                            goto illegal_insn;
+                            ILLEGAL_INSTR("072")
                         }
                         break;
 #endif
-                    default: goto illegal_insn;
+                    default: ILLEGAL_INSTR("073")
                 }
                 NEXT_INSN;
             case 0x27:
@@ -1453,14 +1679,14 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
 #if FLEN > 0
                     case 2: /* fsw */
                         if (s->fs == 0)
-                            goto illegal_insn;
+                            ILLEGAL_INSTR("074")
                         if (target_write_u32(s, addr, read_fp_reg(rs2)))
                             goto mmu_exception;
                         break;
 #if FLEN >= 64
                     case 3: /* fsd */
                         if (s->fs == 0)
-                            goto illegal_insn;
+                            ILLEGAL_INSTR("075")
                         if (target_write_u64(s, addr, read_fp_reg(rs2)))
                             goto mmu_exception;
                         break;
@@ -1468,7 +1694,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
 #if FLEN >= 128
                     case 4: /* fsq */
                         if (s->fs == 0)
-                            goto illegal_insn;
+                            ILLEGAL_INSTR("076")
                         if (target_write_u128(s, addr, read_fp_reg(rs2)))
                             goto mmu_exception;
                         break;
@@ -1482,28 +1708,28 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                     case 6:
                     case 7:
                         if (s->vs == 0)
-                            goto illegal_insn;
+                            ILLEGAL_INSTR("077")
                         vmem_result = vmem_op(s, insn, false, v_store_config);
                         if (vmem_result == 2)
                             goto mmu_exception;
                         else if (vmem_result == 1) {
                             s->vtype = VILL;
-                            goto illegal_insn;
+                            ILLEGAL_INSTR("078")
                         }
                         break;
 #endif
-                    default: goto illegal_insn;
+                    default: ILLEGAL_INSTR("079")
                 }
                 NEXT_INSN;
 #if FLEN > 0
             case 0x43: /* fmadd */
                 if (s->fs == 0)
-                    goto illegal_insn;
+                    ILLEGAL_INSTR("080")
                 funct3 = (insn >> 25) & 3;
                 rs3    = insn >> 27;
                 rm     = get_insn_rm(s, (insn >> 12) & 7);
                 if (rm < 0)
-                    goto illegal_insn;
+                    ILLEGAL_INSTR("081")
                 switch (funct3) {
                     case 0:
                         write_fp_reg(rd,
@@ -1531,17 +1757,17 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                                 fma_sf128(read_fp_reg(rs1), read_fp_reg(rs2), read_fp_reg(rs3), (RoundingModeEnum)rm, &s->fflags));
                         ;
 #endif
-                    default: goto illegal_insn;
+                    default: ILLEGAL_INSTR("082")
                 }
                 NEXT_INSN;
             case 0x47: /* fmsub */
                 if (s->fs == 0)
-                    goto illegal_insn;
+                    ILLEGAL_INSTR("083")
                 funct3 = (insn >> 25) & 3;
                 rs3    = insn >> 27;
                 rm     = get_insn_rm(s, (insn >> 12) & 7);
                 if (rm < 0)
-                    goto illegal_insn;
+                    ILLEGAL_INSTR("084")
                 switch (funct3) {
                     case 0:
                         write_fp_reg(rd,
@@ -1573,17 +1799,17 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                                                &s->fflags));
                         break;
 #endif
-                    default: goto illegal_insn;
+                    default: ILLEGAL_INSTR("085")
                 }
                 NEXT_INSN;
             case 0x4b: /* fnmsub */
                 if (s->fs == 0)
-                    goto illegal_insn;
+                    ILLEGAL_INSTR("086")
                 funct3 = (insn >> 25) & 3;
                 rs3    = insn >> 27;
                 rm     = get_insn_rm(s, (insn >> 12) & 7);
                 if (rm < 0)
-                    goto illegal_insn;
+                    ILLEGAL_INSTR("087")
                 switch (funct3) {
                     case 0:
                         write_fp_reg(rd,
@@ -1615,17 +1841,17 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                                                &s->fflags));
                         break;
 #endif
-                    default: goto illegal_insn;
+                    default: ILLEGAL_INSTR("088")
                 }
                 NEXT_INSN;
             case 0x4f: /* fnmadd */
                 if (s->fs == 0)
-                    goto illegal_insn;
+                    ILLEGAL_INSTR("089")
                 funct3 = (insn >> 25) & 3;
                 rs3    = insn >> 27;
                 rm     = get_insn_rm(s, (insn >> 12) & 7);
                 if (rm < 0)
-                    goto illegal_insn;
+                    ILLEGAL_INSTR("090")
                 switch (funct3) {
                     case 0:
                         write_fp_reg(rd,
@@ -1657,12 +1883,12 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                                                &s->fflags));
                         break;
 #endif
-                    default: goto illegal_insn;
+                    default: ILLEGAL_INSTR("091")
                 }
                 NEXT_INSN;
             case 0x53:
                 if (s->fs == 0)
-                    goto illegal_insn;
+                    ILLEGAL_INSTR("092")
                 imm = insn >> 25;
                 rm  = (insn >> 12) & 7;
                 switch (imm) {
@@ -1677,14 +1903,14 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
 #include "dromajo_fp_template.h"
 #endif
 
-                    default: goto illegal_insn;
+                    default: ILLEGAL_INSTR("093")
                 }
                 NEXT_INSN;
 #endif
 #if VLEN > 0
             case 0x57:
                 if (s->vs == 0)
-                    goto illegal_insn;
+                    ILLEGAL_INSTR("094")
                 s->vs  = 3;
                 vl     = s->vl;
                 vm     = (insn >> 25) & 1;
@@ -1695,30 +1921,30 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                         switch (funct6) {
                             case 0: /* vadd.vv */
                                 if (vectorize_arithmetic(s, rs2, rd, rs1, SINGLE_WIDTH, true, vm, v_add_config))
-                                    goto illegal_insn;
+                                    ILLEGAL_INSTR("095")
                                 break;
-                            default: goto illegal_insn;
+                            default: ILLEGAL_INSTR("096")
                         }
                         break;
                     case 2: /* OPMVV */
                         switch (funct6) {
                             case 0x30: /* vwaddu.vv */
                                 if (vectorize_arithmetic(s, rs2, rd, rs1, WIDEN_VD, true, vm, vw_addu_config))
-                                    goto illegal_insn;
+                                    ILLEGAL_INSTR("097")
                                 break;
                             case 0x31: /* vwadd.vv */
                                 if (vectorize_arithmetic(s, rs2, rd, rs1, WIDEN_VD, true, vm, vw_add_config))
-                                    goto illegal_insn;
+                                    ILLEGAL_INSTR("098")
                                 break;
                             case 0x34: /* vwaddu.wv */
                                 if (vectorize_arithmetic(s, rs2, rd, rs1, WIDEN_VD_VS2, true, vm, vw_adduw_config))
-                                    goto illegal_insn;
+                                    ILLEGAL_INSTR("099")
                                 break;
                             case 0x35: /* vwadd.wv */
                                 if (vectorize_arithmetic(s, rs2, rd, rs1, WIDEN_VD_VS2, true, vm, vw_addw_config))
-                                    goto illegal_insn;
+                                    ILLEGAL_INSTR("100")
                                 break;
-                            default: goto illegal_insn;
+                            default: ILLEGAL_INSTR("101")
                         }
                         break;
                     case 3: /* OPIVI */
@@ -1727,39 +1953,39 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                                 imm = rs1;
                                 imm = imm << 27 >> 27;  // sign extend 5-bit immediate
                                 if (vectorize_arithmetic(s, rs2, rd, imm, SINGLE_WIDTH, false, vm, v_add_config))
-                                    goto illegal_insn;
+                                    ILLEGAL_INSTR("102")
                                 break;
-                            default: goto illegal_insn;
+                            default: ILLEGAL_INSTR("103")
                         }
                         break;
                     case 4: /* OPIVX */
                         switch (funct6) {
                             case 0: /* vadd.vx */
                                 if (vectorize_arithmetic(s, rs2, rd, read_reg(rs1), SINGLE_WIDTH, false, vm, v_add_config))
-                                    goto illegal_insn;
+                                    ILLEGAL_INSTR("104")
                                 break;
-                            default: goto illegal_insn;
+                            default: ILLEGAL_INSTR("105")
                         }
                         break;
                     case 6: /* OPMVX */
                         switch (funct6) {
                             case 0x30: /* vwaddu.vx */
                                 if (vectorize_arithmetic(s, rs2, rd, read_reg(rs1), WIDEN_VD, false, vm, vw_addu_config))
-                                    goto illegal_insn;
+                                    ILLEGAL_INSTR("106")
                                 break;
                             case 0x31: /* vwadd.vx */
                                 if (vectorize_arithmetic(s, rs2, rd, read_reg(rs1), WIDEN_VD, false, vm, vw_add_config))
-                                    goto illegal_insn;
+                                    ILLEGAL_INSTR("107")
                                 break;
                             case 0x34: /* vwaddu.wx */
                                 if (vectorize_arithmetic(s, rs2, rd, read_reg(rs1), WIDEN_VD_VS2, false, vm, vw_adduw_config))
-                                    goto illegal_insn;
+                                    ILLEGAL_INSTR("108")
                                 break;
                             case 0x35: /* vwadd.wx */
                                 if (vectorize_arithmetic(s, rs2, rd, read_reg(rs1), WIDEN_VD_VS2, false, vm, vw_addw_config))
-                                    goto illegal_insn;
+                                    ILLEGAL_INSTR("109")
                                 break;
-                            default: goto illegal_insn;
+                            default: ILLEGAL_INSTR("110")
                         }
                         break;
                     case 7: /* OPCFG */
@@ -1807,7 +2033,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                 }
                 NEXT_INSN;
 #endif
-            default: goto illegal_insn;
+            default: ILLEGAL_INSTR("111")
         }
         /* update PC for next instruction */
     jump_insn:;
@@ -1824,6 +2050,12 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
 
     } /* end of main loop */
 illegal_insn:
+
+#if REPORT_ILLEGAL == 1
+fprintf(dromajo_stderr,"ILLEGAL INSN FALLTHROUGH\n");
+exit(1);
+#endif
+
     s->pending_exception = CAUSE_ILLEGAL_INSTRUCTION;
     s->pending_tval      = 0;
 mmu_exception:
