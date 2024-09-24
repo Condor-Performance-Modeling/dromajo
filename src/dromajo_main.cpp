@@ -589,14 +589,18 @@ static void usage(const char *prog, const char *msg) {
         "usage: %s {options} [config|elf-file]\n\n"
         "    --help ...\n"
         "\n"
-        "  ISA selection options\n" 
+        "  ISA selection options EXPERIMENTAL\n" 
         "    --march <string> Specify the architecture string to enable\n"
         "                  supported ISA extensions, default is rv64gc.\n"
         "                  --help-march to see currently supported set.\n"
         "    --show-march  Takes a complete option set and shows the\n"
         "                  enabled extensions. Then exits. \n"
+        "    --help-march   List the currently supported ISA extension set.\n"
+        "\n"
         "  STF options\n" 
         "    --stf_trace <filename> Dump an STF trace to the given file\n"
+        "                  Use .zstf as the file extension for compressed trace\n"
+        "                  output. Use .stf for uncompressed output\n"
         "    --stf_exit_on_stop_opc Terminate the simulation after \n"
         "                  detecting a STOP_TRACE opcode. Using this\n"
         "                  switch will disable non-contiguous region\n"
@@ -660,8 +664,6 @@ static void usage(const char *prog, const char *msg) {
         "                   (default 8M)\n"
 #endif
         "    --clear_ids clear mvendorid, marchid, mimpid for all cores\n\n" 
-        "    --help-march   List the currently supported ISA extension set.\n"
-        "    --show-march   List the currently enabled ISA extensions.\n"
         ,
         msg,
         DROMAJO_VERSION_STRING,
