@@ -28,10 +28,10 @@ struct ExtensionFlags {
 //    bool v = false;
 
     // Multi-character extensions
-//    bool zba = false;
+    bool zba = false;
     bool zbb = false;
-//    bool zbc = false;
-//    bool zbs = false;
+    bool zbc = false;
+    bool zbs = false;
 //    bool zawrs = false;
 //    bool zbkb = false;
 //    bool zbkc = false;

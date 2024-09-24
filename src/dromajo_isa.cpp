@@ -27,7 +27,10 @@ std::unordered_map<std::string, bool ExtensionFlags::*> extensionMap = {
     {"f", &ExtensionFlags::f},
     {"d", &ExtensionFlags::d},
     {"c", &ExtensionFlags::c},
-    {"zbb", &ExtensionFlags::zbb}
+    {"zba", &ExtensionFlags::zba},
+    {"zbb", &ExtensionFlags::zbb},
+    {"zbc", &ExtensionFlags::zbc},
+    {"zbs", &ExtensionFlags::zbs}
 };
 // -----------------------------------------------------------------------
 // -----------------------------------------------------------------------

@@ -56,20 +56,10 @@
 #include "dromajo_stf.h"
 #include <limits>
 
+#define EN_ZBA (s->machine->common.ext_flags.zba == true)
 #define EN_ZBB (s->machine->common.ext_flags.zbb == true)
-
-//TODO: Create a map for these
-#define F12_CLZx    0x600
-#define F12_CTZx    0x601
-#define F12_CPOPx   0x602
-
-#define F12_ZEXT_H  0x080
-#define F3_ZEXT_H   0x4
-
-#define F12_SEXT_H  0x605
-#define F12_SEXT_B  0x604
-
-#define F3_SEXT     0x1
+#define EN_ZBC (s->machine->common.ext_flags.zbb == true)
+#define EN_ZBS (s->machine->common.ext_flags.zbs == true)
 
 #define HALF_WORD_MASK 0xFFFF
 
@@ -137,6 +127,33 @@ static inline uintx_t glue(remu, XLEN)(uintx_t a, uintx_t b) {
 }
 // =========================================================================
 // =========================================================================
+static inline uintx_t glue(clmul,XLEN)(uintx_t v1,uintx_t v2) { 
+    assert(XLEN == 32 || XLEN == 64 || XLEN == 128);
+   
+    uintx_t val = 0;
+    for (unsigned i = 0; i < XLEN; ++i)
+        if ((v2 >> i) & 1) val ^= v1 << i;
+    return val;
+}
+// -------------------------------------------------------------------------
+static inline uintx_t glue(clmulh,XLEN)(uintx_t v1,uintx_t v2) { 
+    assert(XLEN == 32 || XLEN == 64 || XLEN == 128);
+  
+    uintx_t val = 0;
+    for (unsigned i = 1; i < XLEN; ++i)
+        if ((v2 >> i) & 1) val ^= v1 >> (XLEN - i);
+    return val;
+}
+// -------------------------------------------------------------------------
+static inline uintx_t glue(clmulr,XLEN)(uintx_t v1,uintx_t v2) { 
+    assert(XLEN == 32 || XLEN == 64 || XLEN == 128);
+  
+    uintx_t val = 0;
+    for (unsigned i = 0; i < XLEN; ++i)
+        if ((v2 >> i) & 1) val ^= v1 >> (XLEN - i - 1);
+    return val;
+}
+// -------------------------------------------------------------------------
 static inline uintx_t glue(cpop,XLEN)(uintx_t val) { 
     assert(XLEN == 32 || XLEN == 64 || XLEN == 128);
     
@@ -366,13 +383,14 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles);
 
 int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
     uint32_t     opcode, insn, rd, rs1, rs2, funct3;
-    uint32_t     _funct7, _funct12, _funct3;
+    uint32_t     _funct3, _funct6, _funct7, _funct12, _shamt;
     int32_t      imm, cond, err;
     target_ulong addr, val, val2;
     uint8_t *    code_ptr, *code_end;
     target_ulong code_to_pc_addend;
     uint64_t     insn_counter_addend;
     uint64_t     insn_counter_start = s->insn_counter;
+
 #if FLEN > 0
     uint32_t rs3;
     int32_t  rm;
@@ -1040,35 +1058,57 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
             case 0x13:
                 funct3   = (insn >> 12) & 7;
                 imm      = (int32_t)insn >> 20;
+                val      = read_reg(rs1);
                 _funct12 = (insn >> 20) & 0xFFF;
+                _funct7  = (insn >> 25) & 0x7F;
+                _funct6  = (insn >> 26) & 0x3F;
+                _shamt   = (insn >> 20) & (XLEN == 32 ? 0x1F : 0x3F);
 
                 switch (funct3) {
                     case 0: /* addi */ val = (intx_t)(read_reg(rs1) + imm); break;
                     case 1: /* cpop */
-                        if (EN_ZBB && (_funct12 == F12_CTZx)) {
+                        if (EN_ZBB && (_funct12 == 0x601)) {
 
                             CAPTURED_INSTR("CTZ");
                             val = (intx_t)glue(ctz_,XLEN)((intx_t)read_reg(rs1));
 
-                        } else if (EN_ZBB && (_funct12 == F12_CLZx)) {
+                        } else if (EN_ZBB && (_funct12 == 0x600)) {
 
                             CAPTURED_INSTR("CLZ");
                             val = (intx_t)glue(clz,XLEN)((intx_t)read_reg(rs1));
 
-                        } else if (EN_ZBB && (_funct12 == F12_CPOPx)) {
+                        } else if (EN_ZBB && (_funct12 == 0x602)) {
 
                             CAPTURED_INSTR("CPOP");
                             val = (intx_t)glue(cpop,XLEN)((uintx_t)read_reg(rs1));
 
-                        } else if ( EN_ZBB && (_funct12 == F12_SEXT_H)) {
+                        } else if ( EN_ZBB && (_funct12 == 0x605)) {
 
                             CAPTURED_INSTR("SEXT.H");
                             val = (intx_t)glue(sext_h,XLEN)((intx_t)read_reg(rs1));
 
-                        } else if ( EN_ZBB && (_funct12 == F12_SEXT_B)) {
+                        } else if ( EN_ZBB && (_funct12 == 0x604)) {
 
                             CAPTURED_INSTR("SEXT.B");
                             val = (intx_t)glue(sext_b,XLEN)((intx_t)read_reg(rs1));
+
+                        } else if (EN_ZBS && ((XLEN == 32 && _funct7 == 0x14)
+                                          ||  (XLEN >= 64 && _funct6 == 0x0A))) {
+
+                            CAPTURED_INSTR("BSETI");
+                            val = (uintx_t)val | ((uintx_t)1 << (_shamt & (XLEN - 1)));
+
+                        } else if (EN_ZBS && ((XLEN == 32 && _funct7 == 0x24)
+                                          ||  (XLEN >= 64 && _funct6 == 0x12))) {
+
+                            CAPTURED_INSTR("BCLRI");
+                            val = (uintx_t)val & ~((uintx_t)1 << (_shamt & (XLEN - 1)));
+
+                        } else if (EN_ZBS && ((XLEN == 32 && _funct7 == 0x34)
+                                          ||  (XLEN >= 64 && _funct6 == 0x1A))) {
+
+                            CAPTURED_INSTR("BINVI");
+                            val = (uintx_t)val ^ ((uintx_t)1 << (_shamt & (XLEN - 1)));
 
                         } else if ((imm & ~(XLEN - 1)) != 0) {
 
@@ -1083,17 +1123,32 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                     case 2: /* slti  */ val = (target_long)read_reg(rs1) < (target_long)imm; break;
                     case 3: /* sltiu */ val = read_reg(rs1) < (target_ulong)imm; break;
                     case 4: /* xori  */ val = read_reg(rs1) ^ imm; break;
-                    case 5: /* srli/srai */
-                        if ((imm & ~((XLEN - 1) | 0x400)) != 0)
+                    case 5: 
+                        if (EN_ZBS && ((XLEN == 32 && _funct7 == 0x24)
+                                   ||  (XLEN >= 64 && _funct6 == 0x12))) {
+
+                            CAPTURED_INSTR("BEXTI");
+                            val = ((uintx_t)val >> (_shamt & (XLEN - 1))) & (uintx_t)1;
+
+                          /* srli/srai */
+                        } else if ((imm & ~((XLEN - 1) | 0x400)) != 0) {
+
                             ILLEGAL_INSTR("028")
-                        if (imm & 0x400)
+
+                        } else if (imm & 0x400) {
+
                             val = (intx_t)read_reg(rs1) >> (imm & (XLEN - 1));
-                        else
+
+                        } else {
+
                             val = (intx_t)((uintx_t)read_reg(rs1) >> (imm & (XLEN - 1)));
+
+                        }
                         break;
                     case 6: /* ori */ val = read_reg(rs1) | imm; break;
                     default:
                     case 7: /* andi */ val = read_reg(rs1) & imm; break;
+
                 }
                 if (rd != 0)
                     write_reg(rd, val);
@@ -1104,21 +1159,28 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                 imm      = (int32_t)insn >> 20;
                 val      = read_reg(rs1);
                 _funct12 = (insn >> 20) & 0xFFF;
+                _funct6  = (insn >> 26) & 0x3F;
+                _shamt   = (insn >> 20) & 0x3F;
 
                 switch (funct3) {
                     case 0: /* addiw */ val = (int32_t)(val + imm); break;
                     case 1:
-                        if (EN_ZBB && (_funct12 == F12_CTZx)) {
+                        if (EN_ZBA && (_funct6 == 0x2)) {
+
+                            CAPTURED_INSTR("SLLI.UW");
+                            val = (uintx_t)(uint32_t)val << _shamt;
+
+                        } else if (EN_ZBB && (_funct12 == 0x601)) {
 
                             CAPTURED_INSTR("CTZW");
                             val = (intx_t)glue(ctzw,XLEN)((intx_t)read_reg(rs1));
 
-                        } else if (EN_ZBB && (_funct12 == F12_CPOPx)) {
+                        } else if (EN_ZBB && (_funct12 == 0x602)) {
 
                             CAPTURED_INSTR("CPOPW");
                             val = (intx_t)glue(cpopw,XLEN)((intx_t)read_reg(rs1));
 
-                        } else if (EN_ZBB && (_funct12 == F12_CLZx)) {
+                        } else if (EN_ZBB && (_funct12 == 0x600)) {
 
                             CAPTURED_INSTR("CLZW");
                             val = (intx_t)glue(clzw,XLEN)((intx_t)read_reg(rs1));
@@ -1181,23 +1243,41 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                 _funct7  = (insn >> 25) & 0x7F; (void) _funct7;
                 _funct3  = (insn >> 12) & 0x7;  (void) _funct3;
 
-                if (EN_ZBB && _funct7 == 0x05) {
+                if (EN_ZBA && _funct7 == 0x10) {
 
-                  switch(_funct3) {
-                    case 0x4: CAPTURED_INSTR("MIN");
-                              val = ((intx_t)val < (intx_t)val2)   ? val : val2;
-                              break;
-                    case 0x5: CAPTURED_INSTR("MINU");
-                              val = ((uintx_t)val < (uintx_t)val2) ? val : val2;
-                              break;
-                    case 0x6: CAPTURED_INSTR("MAX");
-                              val = ((intx_t)val < (intx_t)val2)   ? val2 : val;
-                              break;
-                    case 0x7: CAPTURED_INSTR("MAXU");
-                              val = ((uintx_t)val < (uintx_t)val2) ? val2 : val;
-                              break;
-                    default:  ILLEGAL_INSTR("X001")
-                  }
+                   switch (_funct3) {
+                        case 0x2: CAPTURED_INSTR("SH1ADD");
+                                  val = ((uintx_t)val << 1) + (uintx_t)val2;
+                                  break;
+                        case 0x4: CAPTURED_INSTR("SH2ADD");
+                                  val = ((uintx_t)val << 2) + (uintx_t)val2;
+                                  break;
+                        case 0x6: CAPTURED_INSTR("SH3ADD");
+                                  val = ((uintx_t)val << 3) + (uintx_t)val2;
+                                  break;
+                        default:  ILLEGAL_INSTR("ZBA001")
+                    }
+
+                } else if (EN_ZBB && _funct7 == 0x05 && _funct3 == 0x4) {
+
+                    CAPTURED_INSTR("MIN");
+                    val = ((intx_t)val < (intx_t)val2)   ? val : val2;
+
+                //Can't easily use switch, EN_ZBC::CLMULx shares _funct7 = 0x5
+                } else if (EN_ZBB && _funct7 == 0x05 && _funct3 == 0x5) {
+
+                    CAPTURED_INSTR("MINU");
+                    val = ((uintx_t)val < (uintx_t)val2) ? val : val2;
+
+                } else if (EN_ZBB && _funct7 == 0x05 && _funct3 == 0x6) {
+
+                    CAPTURED_INSTR("MAX");
+                    val = ((intx_t)val < (intx_t)val2)   ? val2 : val;
+
+                } else if (EN_ZBB && _funct7 == 0x05 && _funct3 == 0x7) {
+
+                    CAPTURED_INSTR("MAXU");
+                    val = ((uintx_t)val < (uintx_t)val2) ? val2 : val;
 
                 } else if (EN_ZBB && _funct7 == 0x20) {
 
@@ -1216,6 +1296,41 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                               break;
                     default:  ILLEGAL_INSTR("X002")
                   }
+
+                } else if (EN_ZBC && _funct7 == 0x5 && _funct3 == 0x1) {
+
+                    CAPTURED_INSTR("CLMUL");
+                    val = (intx_t)glue(clmul, XLEN)(val, val2);
+
+                } else if (EN_ZBC && _funct7 == 0x5 && _funct3 == 0x2) {
+
+                    CAPTURED_INSTR("CLMULR");
+                    val = (intx_t)glue(clmulr, XLEN)(val, val2);
+
+                } else if (EN_ZBC && _funct7 == 0x5 && _funct3 == 0x3) {
+
+                    CAPTURED_INSTR("CLMULH");
+                    val = (intx_t)glue(clmulh, XLEN)(val, val2);
+
+                } else if (EN_ZBS && _funct7 == 0x14 && _funct3 == 0x1) {
+
+                    CAPTURED_INSTR("BSET");
+                    val = (uintx_t)val | ((uintx_t)1 << (val2 & (XLEN - 1)));
+
+                } else if (EN_ZBS && _funct7 == 0x24 && _funct3 == 0x1) {
+
+                    CAPTURED_INSTR("BCLR");
+                    val = (uintx_t)val & ~((uintx_t)1 << (val2 & (XLEN - 1)));
+
+                } else if (EN_ZBS && _funct7 == 0x24 && _funct3 == 0x5) {
+
+                    CAPTURED_INSTR("BEXT");
+                    val = ((uintx_t)val >> (val2 & (XLEN - 1))) & (uintx_t)1;
+
+                } else if (EN_ZBS && _funct7 == 0x34 && _funct3 == 0x1) {
+
+                    CAPTURED_INSTR("BINV");
+                    val = (uintx_t)val ^ ((uintx_t)1 << (val2 & (XLEN - 1)));
 
                 } else if (imm == 1) {
                     //TODO CAN BE REMOVED - this is the original code before zbb
@@ -1259,13 +1374,24 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                 val  = read_reg(rs1);
                 val2 = read_reg(rs2);
                 _funct12 = (insn >> 20) & 0xFFF;
+                _funct7  = (insn >> 25) & 0x7F;
                 _funct3  = (insn >> 12) & 0x7;
 
-                if (EN_ZBB && _funct12 == 0x080 & _funct3 == 0x4) {
-
+                if (EN_ZBA && _funct7 == 0x10 && _funct3 == 0x2) {
+                    CAPTURED_INSTR("SH1ADD.UW");
+                    val = ((uintx_t)(uint32_t)val << 1) + (uintx_t)val2;
+                } else if (EN_ZBA && _funct7 == 0x10 && _funct3 == 0x4) {
+                    CAPTURED_INSTR("SH2ADD.UW");
+                    val = ((uintx_t)(uint32_t)val << 2) + (uintx_t)val2;
+                } else if (EN_ZBA && _funct7 == 0x10 && _funct3 == 0x6) {
+                    CAPTURED_INSTR("SH3ADD.UW");
+                    val = ((uintx_t)(uint32_t)val << 3) + (uintx_t)val2;
+                } else if (EN_ZBA && _funct7 == 0x04 && _funct3 == 0x0) {
+                    CAPTURED_INSTR("ADD.UW/ZEXT.W");
+                    val = (uintx_t)(uint32_t)val + (uintx_t)val2;
+                } else if (EN_ZBB && _funct12 == 0x080 & _funct3 == 0x4) {
                    CAPTURED_INSTR("ZEXT.H");
                    val = val & HALF_WORD_MASK;
- 
                 } else if (imm == 1) {
                     funct3 = (insn >> 12) & 7;
                     switch (funct3) {
