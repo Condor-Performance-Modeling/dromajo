@@ -6,7 +6,7 @@ all: rebuild_riscv_tests
 rebuild_riscv_tests:
 	@rm -rf $(INSTALL_DIR)
 	@echo "Reuilding riscv-tests..."
-	@export RISCV_PREFIX=/tools/riscv64-unknown-elf/bin/riscv64-unknown-elf- && \
+	@export RISCV_PREFIX=$(RV_GNU_BAREMETAL_TOOLS)/bin/riscv64-unknown-elf- && \
 	cd $(RISCV_TESTS_DIR) && autoupdate && autoconf && \
 	./configure --prefix=$(INSTALL_DIR) && make -j32 clean && make -j32 && make -j32 install
 

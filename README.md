@@ -20,7 +20,7 @@ take it to ISA 2.3/priv 1.11.
 
 ## Building
 
-```
+```bash
 mkdir build
 cd build
 # Debug build
@@ -43,7 +43,7 @@ The co-simulation environment will link with the libraries and usage
 will depend on that, but the `src/dromajo.c` utility allows for standalone
 simulation of RISC-V ELF binaries.
 
-```
+```bash
 ./dromajo
 error: missing config file
 usage: ./dromajo [--load snapshot_name] [--save snapshot_name] [--maxinsns N] [--memory_size MB] config
@@ -76,7 +76,7 @@ Modify your linker script (`.ld`) to set the desired start address. For example,
 You need to  provide a custom bootrom via the `--bootrom` option to run dromajo with custom base address. Modify the Makefile in the bootrom subdirectory to your desired start address. Update the MEMORY_START variable in the Makefile, for example:
 
 ```Makefile
-MEMORY_START=0x15000000
+MEMORY_START=0x20000000
 ```
 
 Bootrom uses `CC=$(RISCV)/bin/riscv64-unknown-elf-gcc` to build custom bootrom. `RISCV` environment veriable is not set by default so it must be set manually before building bootrom. To build the bootrom:
@@ -115,13 +115,13 @@ Important Note: The update_test_files target does not update the golden files. T
 
 Some test targets depend on submodules, before you start, use the following command in the top level directory:
 
-```
+```bash
 git submodule update --init --recursive
 ```
 
 To run the regression tests, use the following command in the top level directory:
 
-```
+```bash
 mkdir build
 cd build
 # Debug build
