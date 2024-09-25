@@ -1,3 +1,6 @@
 [submodule "stf_lib"]
 	path = stf_lib
 	url = https://github.com/sparcians/stf_lib.git
+[submodule "tests/riscv-tests"]
+	path = tests/riscv-tests
+	url = https://github.com/riscv-software-src/riscv-tests.git

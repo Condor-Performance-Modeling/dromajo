@@ -113,6 +113,12 @@ Important Note: The update_test_files target does not update the golden files. T
 
 ### Running the Tests
 
+Some test targets depend on submodules, before you start, use the following command in the top level directory:
+
+```
+git submodule update --init --recursive
+```
+
 To run the regression tests, use the following command in the top level directory:
 
 ```
