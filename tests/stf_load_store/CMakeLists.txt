@@ -2,8 +2,23 @@ cmake_minimum_required(VERSION 3.10)
 
 project(stf_load_store)
 
-set(COMPILER_BARE "/data/tools/riscv64-unknown-elf/bin/riscv64-unknown-elf-gcc")
-set(COMPILER_LINUX "/data/tools/riscv64-unknown-linux-gnu/bin/riscv64-unknown-linux-gnu-gcc")
+if(NOT DEFINED ENV{RISCV})
+    message(FATAL_ERROR "RISCV environment variable is not set.\n"
+                        "Please set it to the base installation directory "
+                        "of your RISC-V baremetal toolchain.\n"
+                        "Example: export RISCV=/data/tools/riscv64-unknown-elf")
+endif()
+
+if(NOT DEFINED ENV{RISCV_LINUX})
+    message(FATAL_ERROR "RISCV_LINUX environment variable is not set.\n"
+                        "Please set it to the base installation directory "
+                        "of your RISC-V linux toolchain.\n"
+                        "Example: export RISCV_LINUX=/data/tools/riscv64-unknown-linux-gnu")
+endif()
+
+set(COMPILER_BARE "$ENV{RISCV}/bin/riscv64-unknown-elf-gcc")
+set(COMPILER_LINUX "$ENV{RISCV_LINUX}/bin/riscv64-unknown-linux-gnu-gcc")
+
 
 file(GLOB SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
 file(GLOB COMMON_DIR ${CMAKE_CURRENT_SOURCE_DIR}/common)

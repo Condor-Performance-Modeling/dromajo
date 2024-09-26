@@ -1,12 +1,19 @@
 RISCV_TESTS_DIR = ../riscv-tests
 INSTALL_DIR = $(shell pwd)/riscv_isa_test
 
+# RISCV environment variable must be set
+ifndef RISCV
+    $(error RISCV environment variable is not set. \
+    Please set it to the RISC-V toolchain installation directory. \
+    Example: export RISCV=/data/tools/riscv64-unknown-elf)
+endif
+
 all: rebuild_riscv_tests
 
 rebuild_riscv_tests:
 	@rm -rf $(INSTALL_DIR)
-	@echo "Reuilding riscv-tests..."
-	@export RISCV_PREFIX=$(RV_GNU_BAREMETAL_TOOLS)/bin/riscv64-unknown-elf- && \
+	@echo "Rebuilding riscv-tests..."
+	@export RISCV_PREFIX=$(RISCV)/bin/riscv64-unknown-elf- && \
 	cd $(RISCV_TESTS_DIR) && autoupdate && autoconf && \
 	./configure --prefix=$(INSTALL_DIR) && make -j32 clean && make -j32 && make -j32 install
 
