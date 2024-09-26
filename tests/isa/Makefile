@@ -7,7 +7,7 @@ DROM   = ../../build/dromajo
 # with a similar MARCH.
 
 #D_OPTS = --ctrlc --show-march --stf_tracepoint --stf_priv_modes USHM 
-D_OPTS = --march=rv64gc_zbb --ctrlc --stf_tracepoint --stf_priv_modes USHM 
+D_OPTS = --march=rv64gc_zba_zbb_zbc_zbs --ctrlc --stf_tracepoint --stf_priv_modes USHM 
 
 #D_TR   = --stf_trace=trace.stf
 
@@ -19,6 +19,7 @@ default: clean_logs dromajo
 dromajo:
 	mkdir -p logs
 	mkdir -p stfs
+	$(MAKE) drom_s E=bmi_sanity.bare
 	$(MAKE) drom_s E=coremark_1.bare
 	$(MAKE) drom_s E=bmi_dhrystone.llvm.bare
 	$(MAKE) drom_s E=bmi_median.bare

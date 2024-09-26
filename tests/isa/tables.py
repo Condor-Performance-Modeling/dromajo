@@ -76,217 +76,50 @@ def generate_table(ranges, values):
     print(border_line)
 
 # ---------------------------------------------------------------------
+# r-type template
+# ---------------------------------------------------------------------
+#values = ["0", "rs2", "rs1", "0", "rd", "0"]
+#print("## TBD")
+#print("```")
+#print("usage:   TBD rd, rs1, rs2")
+#print("opc:     %s" % bin_to_hex(values[5]))
+#print("func7:   %s" % bin_to_hex(values[0]))
+#print("func3:   %s" % bin_to_hex(values[3]))
+#print("ext:     ???")
+#print("arch:    ???")
+#print("pcode: ")
+#print("         ???")
+#print("")
+#generate_table(rtype, values)
+#print("```")
 # ---------------------------------------------------------------------
 # R and S have the same field sizes
 rtype  = ["31:25", "24:20", "19:15", "14:12", "11:7", "6:0"]
+# i64 widens the shamt field 
+i64type = ["31:26", "25:20", "19:15", "14:12", "11:7", "6:0"]
+i32type = ["31:25", "24:20", "19:15", "14:12", "11:7", "6:0"]
 
-print("# ZBB")
-
-values = ["0100000", "rs2", "rs1", "111", "rd", "0110011"]
-print("## ANDN   ZBB  RV32 RV64")
-print("'''")
-print("usage:   andn rd, rs1, rs2")
-print("opc:     %s" % bin_to_hex(values[5]))
-print("func7:   %s" % bin_to_hex(values[0]))
-print("func3:   %s" % bin_to_hex(values[3]))
-print("pcode: ")
-print("    X(rd) = X(rs1) & ~X(rs2);")
-print("")
-generate_table(rtype, values)
-print("'''")
-
-values = ["0110000", "00000", "rs1", "001", "rd", "0010011"]
-print("## CLZ   ZBB  RV32 RV64")
-print("'''")
-print("usage:   clz rd, rs ")
-print("opc:     %s" % bin_to_hex(values[5]))
-print("func7:   %s" % bin_to_hex(values[0]))
-print("func3:   %s" % bin_to_hex(values[3]))
-print("pcode: ")
-print("    COUNT LEADING ZEROS")
-print("")
-generate_table(rtype, values)
-print("'''")
-
-values = ["0110000", "00000", "rs1", "001", "rd", "0011011"]
-print("## CLZW   ZBB  RV64")
-print("'''")
-print("usage:   clzw rd, rs ")
-print("opc:     %s" % bin_to_hex(values[5]))
-print("func7:   %s" % bin_to_hex(values[0]))
-print("func3:   %s" % bin_to_hex(values[3]))
-print("pcode: ")
-print("    COUNT LEADING ZEROS WORD")
-print("")
-generate_table(rtype, values)
-print("'''")
-
-values = ["0110000", "00010", "rs1", "001", "rd", "0010011"]
-print("## CPOP   ZBB  RV32 RV64")
-print("'''")
-print("usage:   cpop rd, rs ")
-print("opc:     %s" % bin_to_hex(values[5]))
-print("func7:   %s" % bin_to_hex(values[0]))
-print("func3:   %s" % bin_to_hex(values[3]))
-print("pcode: ")
-print("    COUNT ONES")
-print("")
-generate_table(rtype, values)
-print("'''")
-
-values = ["0110000", "00010", "rs1", "001", "rd", "0011011"]
-print("## CPOPW   ZBB  RV64")
-print("'''")
-print("usage:   cpopw rd, rs ")
-print("opc:     %s" % bin_to_hex(values[5]))
-print("func7:   %s" % bin_to_hex(values[0]))
-print("func3:   %s" % bin_to_hex(values[3]))
-print("pcode: ")
-print("    COUNT ONES WORD")
-print("")
-generate_table(rtype, values)
-print("'''")
-
-values = ["0110000", "00001", "rs1", "001", "rd", "0010011"]
-print("## CTZ   ZBB  RV32 RV64")
-print("'''")
-print("usage:   ctz rd, rs ")
-print("opc:     %s" % bin_to_hex(values[5]))
-print("func7:   %s" % bin_to_hex(values[0]))
-print("func3:   %s" % bin_to_hex(values[3]))
-print("pcode: ")
-print("    COUNT TRAILING ZEROS")
-print("")
-generate_table(rtype, values)
-print("'''")
-
-values = ["0110000", "00001", "rs1", "001", "rd", "0011011"]
-print("## CTZW   ZBB  RV64")
-print("'''")
-print("usage:   ctzw rd, rs ")
-print("opc:     %s" % bin_to_hex(values[5]))
-print("func7:   %s" % bin_to_hex(values[0]))
-print("func3:   %s" % bin_to_hex(values[3]))
-print("pcode: ")
-print("    COUNT TRAILING ZEROS WORD")
-print("")
-generate_table(rtype, values)
-print("'''")
-
-values = ["0000101", "rs2", "rs1", "110", "rd", "0110011"]
-print("## max   ZBB  RV32 RV64")
-print("'''")
-print("usage:   max rd, rs1, rs2 ")
-print("opc:     %s" % bin_to_hex(values[5]))
-print("func7:   %s" % bin_to_hex(values[0]))
-print("func3:   %s" % bin_to_hex(values[3]))
-print("pcode: ")
-print("    X(rd) = X(rs1) <s X(rs2) ? X(rs2) : X(rs1)")
-print("")
-generate_table(rtype, values)
-print("'''")
-
-values = ["0000101", "rs2", "rs1", "111", "rd", "0110011"]
-print("## maxu   ZBB  RV32 RV64")
-print("'''")
-print("usage:   maxu rd, rs1, rs2 ")
-print("opc:     %s" % bin_to_hex(values[5]))
-print("func7:   %s" % bin_to_hex(values[0]))
-print("func3:   %s" % bin_to_hex(values[3]))
-print("pcode: ")
-print("    X(rd) = X(rs1) <u X(rs2) ? X(rs2) : X(rs1)")
-print("")
-generate_table(rtype, values)
-print("'''")
-
-values = ["0000101", "rs2", "rs1", "100", "rd", "0110011"]
-print("## min   ZBB  RV32 RV64")
-print("'''")
-print("usage:   min rd, rs1, rs2 ")
-print("opc:     %s" % bin_to_hex(values[5]))
-print("func7:   %s" % bin_to_hex(values[0]))
-print("func3:   %s" % bin_to_hex(values[3]))
-print("pcode: ")
-print("    X(rd) = X(rs1) <s X(rs2) ? X(rs1) : X(rs2)")
-print("")
-generate_table(rtype, values)
-print("'''")
-
-values = ["0000101", "rs2", "rs1", "101", "rd", "0110011"]
-print("## minu   ZBB  RV32 RV64")
-print("'''")
-print("usage:   minu rd, rs1, rs2 ")
-print("opc:     %s" % bin_to_hex(values[5]))
-print("func7:   %s" % bin_to_hex(values[0]))
-print("func3:   %s" % bin_to_hex(values[3]))
-print("pcode: ")
-print("    X(rd) = X(rs1) <u X(rs2) ? X(rs1) : X(rs2)")
-print("")
-generate_table(rtype, values)
-print("'''")
-
-values = ["0100000", "rs2", "rs1", "110", "rd", "0110011"]
-print("## orn   ZBB  RV32 RV64")
-print("'''")
-print("usage:   orn rd, rs1, rs2 ")
-print("opc:     %s" % bin_to_hex(values[5]))
-print("func7:   %s" % bin_to_hex(values[0]))
-print("func3:   %s" % bin_to_hex(values[3]))
-print("pcode: ")
-print("    X(rd) = X(rs1) | ~X(rs2)")
-print("")
-generate_table(rtype, values)
-print("'''")
-
-values = ["0110000", "00100", "rs1", "001", "rd", "0010011"]
-print("## sext.b   ZBB  RV32 RV64")
-print("'''")
-print("usage:   sext.b rd, rs")
-print("opc:     %s" % bin_to_hex(values[5]))
-print("func7:   %s" % bin_to_hex(values[0]))
-print("func3:   %s" % bin_to_hex(values[3]))
-print("pcode: ")
-print("    SIGN EXTEND BYTE");
-print("")
-generate_table(rtype, values)
-print("'''")
-
-values = ["0110000", "00101", "rs1", "001", "rd", "0010011"]
-print("## sext.h   ZBB  RV32 RV64")
-print("'''")
-print("usage:   sext.h rd, rs")
-print("opc:     %s" % bin_to_hex(values[5]))
-print("func7:   %s" % bin_to_hex(values[0]))
-print("func3:   %s" % bin_to_hex(values[3]))
-print("pcode: ")
-print("         X(rd) = EXTS(X(rs)[15..0]);");
-print("")
-generate_table(rtype, values)
-print("'''")
-
-values = ["0100000", "rs2", "rs1", "100", "rd", "0110011"]
-print("## xnor   ZBB  RV32 RV64")
-print("'''")
-print("usage:   xnor rd, rs1, rs2")
-print("opc:     %s" % bin_to_hex(values[5]))
-print("func7:   %s" % bin_to_hex(values[0]))
-print("func3:   %s" % bin_to_hex(values[3]))
-print("pcode: ")
-print("         X(rd) = ~(X(rs1) ^ X(rs2));");
-print("")
-generate_table(rtype, values)
-print("'''")
-
-values = ["0000100", "00000", "rs1", "100", "rd", "0111011"]
-print("## zext.h   ZBB  RV32 RV64")
-print("'''")
-print("usage:   zext.h rd, rs")
-print("opc:     %s" % bin_to_hex(values[5]))
-print("func7:   %s" % bin_to_hex(values[0]))
-print("func3:   %s" % bin_to_hex(values[3]))
-print("pcode: ")
-print("         X(rd) = EXTZ(X(rs)[15..0]);");
-print("")
-generate_table(rtype, values)
-print("'''")
-
+# Example
+#print("# ZBC")
+#values = ["0000101", "rs2", "rs1", "001", "rd", "0110011"]
+#print("## CLMUL")
+#print("```")
+#print("usage:   clmul rd, rs1, rs2")
+#print("opc:     %s" % bin_to_hex(values[5]))
+#print("func7:   %s" % bin_to_hex(values[0]))
+#print("func3:   %s" % bin_to_hex(values[3]))
+#print("ext:     ZBC")
+#print("arch:    RV32 RV64")
+#print("pcode: ")
+#print("         URV v1 = intRegs_.read(di->op1());")
+#print("         URV v2 = intRegs_.read(di->op2());")
+#print("       ")
+#print("         URV x = 0;")
+#print("         for (unsigned i = 0; i < mxlen_; ++i)")
+#print("           if ((v2 >> i) & 1)")
+#print("             x ^= v1 << i;")
+#print("       ")
+#print("         intRegs_.write(di->op0(), x);")
+#print("")
+#generate_table(rtype, values)
+#print("```")
