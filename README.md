@@ -28,7 +28,7 @@ git submodule update --init --recursive
 
 ## Building
 
-A debug build is built by default.  To create a release build use -DCMAKE_BUILD_TYPE=Release. 
+A debug build is built by default.  To create a release build use -DCMAKE_BUILD_TYPE=Release. Dromajo uses `RISCV` and `RISCV_LINUX` environment variables to build some of the targets. `RISCV` and `RISCV_LINUX` environment variables are not set by default so it must be set manually before building Dromajo.
 
 ### Debug build
 The name of the directory is cosmetic.
