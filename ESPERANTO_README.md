@@ -1,20 +1,4 @@
 
-# Dromajo - RISC-V Reference Model
-
-This source is derived from the original Esperanto source which was
-derived from Fabrice Bellard's RISCVEMU/TinyEMU.
-
-The original contents of the read me are found in ORIGINAL_README.md
-
-## Building
-
-git clone git@github.com:Condor-Performance-Modeling/dromajo.git cpm.dromajo
-cd cpm.dromajo
-git submodule update --init --recursive
-mkdir release; cd release
-cmake .. -DCMAKE_BUILD_TYPE=Release
-
-
 # Dromajo - Esperanto Technology's RISC-V Reference Model
 
 Functional verification is key to have a strong RISC-V ecosystem.
@@ -92,7 +76,7 @@ Modify your linker script (`.ld`) to set the desired start address. For example,
 You need to  provide a custom bootrom via the `--bootrom` option to run dromajo with custom base address. Modify the Makefile in the bootrom subdirectory to your desired start address. Update the MEMORY_START variable in the Makefile, for example:
 
 ```Makefile
-MEMORY_START=0x15000000
+MEMORY_START=0x20000000
 ```
 
 Bootrom uses `CC=$(RISCV)/bin/riscv64-unknown-elf-gcc` to build custom bootrom. `RISCV` environment veriable is not set by default so it must be set manually before building bootrom. To build the bootrom:
