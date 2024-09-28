@@ -57,6 +57,8 @@
 extern int simpoint_roi;
 
 // NOTE: Use GET_INSN_COUNTER not mcycle because this is just to track advancement of simulation
+
+
 #define write_reg(x, val)                                \
     ({                                                   \
         if(s->machine->common.stf_in_traceable_region) { \
