@@ -28,7 +28,7 @@ git submodule update --init --recursive
 
 ## Building
 
-A debug build is built by default.  To create a release build use -DCMAKE_BUILD_TYPE=Release. Dromajo uses `RISCV` and `RISCV_LINUX` environment variables to build some of the targets. `RISCV` and `RISCV_LINUX` environment variables are not set by default so it must be set manually before building Dromajo.
+A debug build is built by default.  To create a release build use -DCMAKE_BUILD_TYPE=Release.
 
 ### Debug build
 The name of the directory is cosmetic.
@@ -200,7 +200,7 @@ Use the `--reset_vector`, `--memory_addr`, and `--bootrom` switches to run Droma
 
 ## Testing
 
-This project includes a set of unit tests and custom targets to ensure the reliability and correctness of the Dromajo. Tests are defined in the `tests` directory and can be run using CTest.
+This project includes a set of unit tests and custom targets to ensure the reliability and correctness of the Dromajo. Tests are defined in the `tests` directory and can be run using CTest. Test related targets depend on `RISCV` and `RISCV_LINUX` environment variables `RISCV` and `RISCV_LINUX` environment variables are not set by default so it must be set manually before running below targets.
 
 ### Test Targets
 
@@ -211,3 +211,12 @@ We have defined two custom targets to manage the testing process:
 
 Important Note: The update_test_files target does not update the golden files. These files need to be manually regenerated before running the regression tests again.
 
+### Implemented tests
+
+- **stf_load_store_baremetal:** This test runs a baremetal load/store operation, generating trace files for comparison. It checks the accuracy of the new traces against the golden (reference) traces to ensure that they match, confirming correct functionality.
+
+- **stf_load_store_linux:** This test performs the same load/store operation in a Linux environment, following the same process of generating and comparing traces with the golden ones to ensure consistency and correctness.
+
+- **stf_gen_ad_hoc:** This test generates and compares traces for various bare metal operations. It extracts ELF files, runs load/store operations, and compares the generated traces against golden (reference) traces to ensure they match. This process is done for both uncompressed and compressed traces, with the aim of validating the integrity of the STF (System Trace Format) files in different configurations.
+
+- **riscv_isa_test:** This test runs a suite of RISC-V ISA compliance tests using a predefined list of enabled tests. It simulates each test and compares the results to verify correct functionality. The summary at the end provides the total number of tests run, the number passed or failed, and the execution times. Tests can be enabled or disabled by moving files between the respective enabled and disabled test lists in the isa_test_suite directory.

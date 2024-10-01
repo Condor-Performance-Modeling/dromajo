@@ -1,5 +1,5 @@
 RISCV_TESTS_DIR = ../riscv-tests
-INSTALL_DIR = $(shell pwd)/riscv_isa_test
+INSTALL_DIR = $(shell pwd)/test_files
 
 # RISCV environment variable must be set
 ifndef RISCV
@@ -8,14 +8,13 @@ ifndef RISCV
     Example: export RISCV=/data/tools/riscv64-unknown-elf)
 endif
 
-all: rebuild_riscv_tests
+all: build_riscv_tests
 
-rebuild_riscv_tests:
+build_riscv_tests:
 	@rm -rf $(INSTALL_DIR)
-	@echo "Rebuilding riscv-tests..."
 	@export RISCV_PREFIX=$(RISCV)/bin/riscv64-unknown-elf- && \
 	cd $(RISCV_TESTS_DIR) && autoupdate && autoconf && \
-	./configure --prefix=$(INSTALL_DIR) && make -j32 clean && make -j32 && make -j32 install
+	./configure --prefix=$(INSTALL_DIR) && make -j32 && make -j32 install
 
 clean:
 	@echo "Cleaning up..."

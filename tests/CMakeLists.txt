@@ -23,15 +23,15 @@ message(STATUS "Found " ${NUM_CORES} " cores in machine (for ctest)")
 add_subdirectory(stf_load_store)
 
 # Add the riscv_isa_test target using its Makefile
-add_custom_target(riscv_isa_test ALL
-  COMMAND ${CMAKE_COMMAND} -E echo "Running riscv_isa_test Makefile..."
-  COMMAND ${CMAKE_MAKE_PROGRAM} -C ${PROJECT_SOURCE_DIR}/riscv_isa_test
-  COMMENT "Building riscv_isa_test"
+add_custom_target(isa_test_suite
+  COMMAND ${CMAKE_COMMAND} -E echo "Running isa_test_suite Makefile..."
+  COMMAND ${CMAKE_MAKE_PROGRAM} -C ${PROJECT_SOURCE_DIR}/isa_test_suite
+  COMMENT "Building isa_test_suite"
 )
 
 # Ensure the riscv_isa_test is run when regress is run
 add_custom_target(regress)
-add_dependencies(regress dromajo riscv_isa_test)
+add_dependencies(regress dromajo isa_test_suite)
 
 add_custom_command(TARGET regress POST_BUILD
                    COMMAND ${CMAKE_COMMAND} -E echo "Running tests..."
@@ -54,7 +54,7 @@ add_test(NAME stf_gen_ad_hoc
          WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/stf_gen)
 
 add_test(NAME riscv_isa_test
-        COMMAND ${CMAKE_COMMAND} -E env bash -c "bash run_riscv_isa_test.sh 2>&1"
-        WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/riscv_isa_test)
+        COMMAND ${CMAKE_COMMAND} -E env bash -c "bash run_isa_test_suite.sh 2>&1"
+        WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/isa_test_suite)
 
          

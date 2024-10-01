@@ -1,8 +1,8 @@
 #!/bin/bash
 export OPT='--stf_essential_mode --stf_tracepoint --stf_priv_modes USHM --stf_force_zero_sha'
 export SIM_BIN=../../bin/cpm_dromajo
-export ISA_TEST_DIR=./riscv_isa_test/share/riscv-tests/isa
-ALLOWED_TESTS_FILE="allowed_isa_tests.txt"
+export ISA_TEST_DIR=./test_files/share/riscv-tests/isa
+ALLOWED_TESTS_FILE="enabled_isa_tests.txt"
 
 passed_tests=0
 failed_tests=0
