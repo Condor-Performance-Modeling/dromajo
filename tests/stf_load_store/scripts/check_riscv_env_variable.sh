@@ -13,11 +13,11 @@ if [ -z "$ENV_VAR_VALUE" ]; then
     echo "Error: $ENV_VAR_NAME environment variable is not set."
     echo "Please set it to the RISC-V toolchain installation directory."
     echo "IMPORTANT! After setting the variable," \
-    "remember to reconfigure the build using cmake.."
+    "remember to reconfigure the build using cmake .."
     exit 1
 fi
 
 echo "$ENV_VAR_NAME environment variable is set to: $ENV_VAR_VALUE"
 echo "IMPORTANT! After setting the variable," \
-"remember to reconfigure the build using cmake.."
+"remember to reconfigure the build using cmake .."
 exit 0
