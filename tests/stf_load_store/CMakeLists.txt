@@ -8,12 +8,12 @@ file(GLOB LINKER_DIR ${CMAKE_CURRENT_SOURCE_DIR}/linker)
 
 # Custom target to run the bash script to check RISCV for baremetal
 add_custom_target(check_stf_load_store_bare_dependencies
-    COMMAND bash scripts/check_riscv_env_variable.sh RISCV
+    COMMAND bash scripts/check_riscv_env_variable.sh
     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
 
 # Custom target to run the bash script to check RISCV_LINUX for Linux
 add_custom_target(check_stf_load_store_linux_dependencies
-    COMMAND bash scripts/check_riscv_env_variable.sh RISCV_LINUX
+    COMMAND bash scripts/check_riscv_linux_env_variable.sh
     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
 
 # BAREMETAL:
