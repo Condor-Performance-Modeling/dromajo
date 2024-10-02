@@ -219,4 +219,29 @@ Important Note: The update_test_files target does not update the golden files. T
 
 - **stf_gen_ad_hoc:** This test generates and compares traces for various bare metal operations. It extracts ELF files, runs load/store operations, and compares the generated traces against golden (reference) traces to ensure they match. This process is done for both uncompressed and compressed traces, with the aim of validating the integrity of the STF (System Trace Format) files in different configurations.
 
-- **riscv_isa_test:** This test runs a suite of RISC-V ISA compliance tests using a predefined list of enabled tests. It simulates each test and compares the results to verify correct functionality. The summary at the end provides the total number of tests run, the number passed or failed, and the execution times. Tests can be enabled or disabled by moving files between the respective enabled and disabled test lists in the isa_test_suite directory.
+- **riscv_isa_test:** This test runs a suite of RISC-V ISA compliance tests using a predefined list of enabled tests. It simulates each test and compares the results to verify correct functionality. The summary at the end provides the total number of tests run, the number passed or failed, and the execution times. Tests can be enabled or disabled by moving files between the respective enabled and disabled test lists in the isa_test_suite directory. General structure of isa test names:
+
+  - **rv**: Stands for "RISC-V", indicating that these are RISC-V architecture tests.
+
+  - **64 or 32**: Indicates the bit-width of the test.
+    - `rv64`: Tests for 64-bit RISC-V systems.
+    - `rv32`: Tests for 32-bit RISC-V systems.
+
+  - **ISA or Instruction Set Extensions**: Represented by two-letter suffixes:
+    - **`ui`**: User-level instructions (integer instructions).
+    - **`ua`**: Atomic operations (A extension).
+    - **`um`**: Multiplication and division instructions (M extension).
+    - **`uz`**: Compressed instructions (Z extension).
+    - **`uf`**: Floating-point operations (F extension).
+    - **`uzbb`**: Bit manipulation (B extension).
+    - **`uzba`**: Atomic bit manipulation.
+    - **`uzbc`**: Cryptographic extension.
+
+  - **Program-Level or Vector Tests**:
+    - **`p`**: Indicates program-level tests (standard user instructions).
+    - **`v`**: Indicates vector instruction set tests (vector extension).
+
+  - **Mnemonic**: Represents the instruction or functionality being tested, such as:
+    - `add`
+    - `xor`
+    - `fadd`
