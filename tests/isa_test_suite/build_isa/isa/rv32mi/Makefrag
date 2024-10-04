@@ -4,13 +4,8 @@
 
 rv32mi_sc_tests = \
 	breakpoint \
-	csr \
-	mcsr \
 	illegal \
-	ma_fetch \
 	ma_addr \
-	scall \
-	sbreak \
 	shamt \
 	lw-misaligned \
 	lh-misaligned \

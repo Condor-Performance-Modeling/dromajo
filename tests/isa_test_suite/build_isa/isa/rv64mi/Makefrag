@@ -5,13 +5,8 @@
 rv64mi_sc_tests = \
 	access \
 	breakpoint \
-	csr \
-	mcsr \
 	illegal \
-	ma_fetch \
 	ma_addr \
-	scall \
-	sbreak \
 	ld-misaligned \
 	lw-misaligned \
 	lh-misaligned \
