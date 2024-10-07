@@ -30,7 +30,6 @@ cc_andestar:
                                       ./logs/andestar/$(TST).dump
 
 sim_andestar:
-	#@echo "running $(TST)"
 	$(Q)$(ANDES_SIM) $(ANDES_SIM_OPTS)  ./bin/andestar/$(TST) > \
                                      ./logs/andestar/$(TST).log 2>&1 && \
 	echo "Running $(TST) ...pass" || echo "Running $(TST) ...fail"
