@@ -1,6 +1,7 @@
 RISCV_TESTS_DIR = ../riscv-tests
-CONDOR_TESTS_DIR = ./build_isa
-INSTALL_DIR = $(shell pwd)/test_files
+CONDOR_TESTS_DIR = ./condor-tests
+RISCV_TESTS_INSTALL_DIR = $(shell pwd)/riscv-test-files
+CONDOR_TESTS_INSTALL_DIR = $(shell pwd)/condor-test-files
 
 # RISCV environment variable must be set
 ifndef RISCV

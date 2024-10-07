@@ -366,7 +366,6 @@ rv32ui-v-lw
 rv64ui-v-ma_data
 rv32mi-p-csr
 rv32uzbs-v-bset
-.gitignore
 rv64uzba-v-sh2add
 rv32ud-p-fdiv
 rv32ui-p-beq

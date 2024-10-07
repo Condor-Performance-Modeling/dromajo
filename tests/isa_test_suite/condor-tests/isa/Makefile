@@ -5,6 +5,7 @@
 XLEN ?= 64
 
 src_dir := .
+riscv_tests_isa_dir = ../../../riscv-tests/isa
 
 ifeq ($(XLEN),64)
 include $(src_dir)/rv64mi/Makefrag
@@ -40,11 +41,11 @@ vpath %.S $(src_dir)
 define compile_template
 
 $$($(1)_p_tests): $(1)-p-%: $(1)/%.S
-	$$(RISCV_GCC) $(2) $$(RISCV_GCC_OPTS) -I$(src_dir)/../env/p -I$(src_dir)/macros/scalar -T$(src_dir)/../env/p/link.ld $$< -o $$@
+	$$(RISCV_GCC) $(2) $$(RISCV_GCC_OPTS) -I$(riscv_tests_isa_dir)/../env/p -I$(riscv_tests_isa_dir)/macros/scalar -T$(riscv_tests_isa_dir)/../env/p/link.ld $$< -o $$@
 $(1)_tests += $$($(1)_p_tests)
 
 $$($(1)_v_tests): $(1)-v-%: $(1)/%.S
-	$$(RISCV_GCC) $(2) $$(RISCV_GCC_OPTS) -DENTROPY=0x$$(shell echo \$$@ | md5sum | cut -c 1-7) -std=gnu99 -O2 -I$(src_dir)/../env/v -I$(src_dir)/macros/scalar -T$(src_dir)/../env/v/link.ld $(src_dir)/../env/v/entry.S $(src_dir)/../env/v/*.c $$< -o $$@
+	$$(RISCV_GCC) $(2) $$(RISCV_GCC_OPTS) -DENTROPY=0x$$(shell echo \$$@ | md5sum | cut -c 1-7) -std=gnu99 -O2 -I$(riscv_tests_isa_dir)/../env/v -I$(riscv_tests_isa_dir)/macros/scalar -T$(riscv_tests_isa_dir)/../env/v/link.ld $(riscv_tests_isa_dir)/../env/v/entry.S $(riscv_tests_isa_dir)/../env/v/*.c $$< -o $$@
 $(1)_tests += $$($(1)_v_tests)
 
 $(1)_tests_dump = $$(addsuffix .dump, $$($(1)_tests))
