@@ -163,10 +163,11 @@ add_library(dromajo_cosim STATIC
         src/fs_disk.cpp
         src/softfp.cpp
         src/riscv_machine.cpp
-        src/dromajo_main.cpp
         src/dromajo_cosim.cpp
-        src/dromajo_stf.cpp
         src/dromajo_isa.cpp
+        src/dromajo_main.cpp
+        src/dromajo_stf.cpp
+        src/dromajo_trace.cpp
         src/riscv_cpu.cpp
         )
 

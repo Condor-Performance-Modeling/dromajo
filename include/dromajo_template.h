@@ -86,7 +86,7 @@ extern uint32_t _XLEN;
 
 #if CAPTURE_LOG == 1 
 #define CAPTURED_INSTR(S) { \
-  fprintf(dromajo_stderr,"HERE CAPTURED %s PC:0x%lx ENC:0x%08x\n",S,s->pc,insn);  \
+  fprintf(dromajo_stderr,"CAPTURED INSTR %s PC:0x%lx ENC:0x%08x\n",S,s->pc,insn);  \
 }
 #else
 #define CAPTURED_INSTR(S)
@@ -493,6 +493,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
         rd     = (insn >> 7) & 0x1f;
         rs1    = (insn >> 15) & 0x1f;
         rs2    = (insn >> 20) & 0x1f;
+
         switch (opcode) {
 
             case 0x0b: /* Andes CUSTOM-O */
