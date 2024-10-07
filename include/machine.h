@@ -39,19 +39,17 @@
  * THE SOFTWARE.
  */
 
-#include <stdint.h>
 
 #include "json.h"
 #include "dromajo_stf.h"
 #include "dromajo_isa.h"
 
+#include <cstdint>
+
 typedef struct RISCVMachine RISCVMachine;
-
 typedef struct FBDevice FBDevice;
-
-typedef void SimpleFBDrawFunc(FBDevice *fb_dev, void *opaque, int x, int y, int w, int h);
-
-typedef void dromajo_logging_func_t(int hartid, const char *fmt, ...);
+typedef void   SimpleFBDrawFunc(FBDevice *fb_dev, void *opaque, int x, int y, int w, int h);
+typedef void   dromajo_logging_func_t(int hartid, const char *fmt, ...);
 
 #ifndef MACHINE_H
 #define MACHINE_H
@@ -191,10 +189,10 @@ typedef struct {
 
 typedef struct VirtMachine {
     /* network */
-    EthernetDevice *net;
+    EthernetDevice*  net;
     /* console */
-    VIRTIODevice *   console_dev;
-    CharacterDevice *console;
+    VIRTIODevice*    console_dev;
+    CharacterDevice* console;
     /* graphics */
     FBDevice *fb_dev;
 
@@ -203,13 +201,19 @@ typedef struct VirtMachine {
     std::vector<Simpoint> simpoints;
 #endif
 
-    char *   snapshot_load_name;
-    char *   snapshot_save_name;
-    char *   terminate_event;
-    uint64_t maxinsns;
-    uint64_t trace;
+    char*       snapshot_load_name;
+    char*       snapshot_save_name;
+    char*       terminate_event;
+    uint64_t    maxinsns;
+    uint64_t    exe_trace;   //exe_ to distinguish from stf_trace
+//    FILE*       exe_trace_fp = (FILE*)0; //handle
 
-    /* STF Trace Generation */
+    bool      interactive = false;          //Enable interactive operation
+    uint64_t  interactive_run_count    = 0; //run-until support - might be CPU specific?
+    uint128_t interactive_run_until_pc = 0; //run-to-pc support - might be CPU specific?
+
+    // ---------------------------------------------------------------------
+    // STF Trace Generation 
     //FIXME: delete the unused variables below once other 
     //       deprecated functions are removed
     const char * stf_trace = nullptr; // STF trace file name
@@ -232,6 +236,7 @@ typedef struct VirtMachine {
     bool stf_has_exit_pending;        // 
     uint64_t stf_prog_asid;           // STF program asid
     uint64_t stf_count;               // Number of traced instructions
+    // ---------------------------------------------------------------------
 
     /* For co-simulation only, they are -1 if nothing is pending. */
     bool cosim;

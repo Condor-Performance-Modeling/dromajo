@@ -5,6 +5,13 @@
 #include "dromajo_isa.h"
 using namespace std;
 
+//TODO: Test this first with various typo's etc in the -D
+//#if XLEN == 32 || XLEN == 64 || XLEN == 128
+//static uint32_t _XLEN = XLEN;
+//#else
+//#error unsupported XLEN
+//#endif
+
 // List of supported extensions
 // See also dromajo_isa.h
 std::unordered_map<char,bool ExtensionFlags::*> simpleExts = {

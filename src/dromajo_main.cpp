@@ -83,6 +83,7 @@
 #include "dromajo_stf.h"
 #include "dromajo_isa.h"
 
+FILE *dromajo_trace;
 FILE *dromajo_stdout;
 FILE *dromajo_stderr;
 
@@ -106,10 +107,11 @@ static void always_on_argument(const char *arg)
     fprintf(dromajo_stderr,"Argument %s is always enabled\n",arg);
 }
 
-static void deprecated_argument(const char *arg)
-{
-    fprintf(dromajo_stderr,"Argument %s is deprecated\n",arg);
-}
+//Keep for use later
+//static void deprecated_argument(const char *arg)
+//{
+//    fprintf(dromajo_stderr,"Argument %s is deprecated\n",arg);
+//}
 
 static void term_exit(void) {
     tcsetattr(0, TCSANOW, &oldtty);
@@ -559,11 +561,8 @@ void launch_alternate_executable(char **argv) {
 
 #ifdef CONFIG_FS_NET
 static BOOL net_completed;
-
 static void net_start_cb(void *arg) { net_completed = TRUE; }
-
 static BOOL net_poll_cb(void *arg) { return net_completed; }
-
 #endif
 
 static void usage_isa()
@@ -575,95 +574,113 @@ static void usage_isa()
     exit(1);
 }
 
-static void usage(const char *prog, const char *msg) {
-    fprintf(dromajo_stderr,
-        "\nmessage: %s\n\n"
-        "    Dromajo version:  %s\n"
-        "    Dromajo SHA:      %s\n"
-        "    STF_LIB SHA:      %s\n"
-        "\n"
-        "    Copyright (c) 2016-2017 Fabrice Bellard\n"
-        "    Copyright (c) 2018,2019 Esperanto Technologies\n"
-        "    Copyright (c) 2023-2024 Condor Computing\n"
-        "\n"
-        "usage: %s {options} [config|elf-file]\n\n"
-        "    --help ...\n"
-        "\n"
-        "  ISA selection options EXPERIMENTAL\n" 
-        "    --march <string> Specify the architecture string to enable\n"
-        "                  supported ISA extensions, default is rv64gc.\n"
-        "                  --help-march to see currently supported set.\n"
-        "    --show-march  Takes a complete option set and shows the\n"
-        "                  enabled extensions. Then exits. \n"
-        "    --help-march   List the currently supported ISA extension set.\n"
-        "\n"
-        "  STF options\n" 
-        "    --stf_trace <filename> Dump an STF trace to the given file\n"
-        "                  Use .zstf as the file extension for compressed trace\n"
-        "                  output. Use .stf for uncompressed output\n"
-        "    --stf_exit_on_stop_opc Terminate the simulation after \n"
-        "                  detecting a STOP_TRACE opcode. Using this\n"
-        "                  switch will disable non-contiguous region\n"
-        "                  tracing. The first STOP_TRACE opcode will \n"
-        "                  terminate the simulator.\n"
-        "    --stf_memrecord_size_in_bits write memory access size in bits instead of bytes\n"
-        "    --stf_trace_register_state include register state in the STF\n"
-        "                   (default false)\n"
-        "    --stf_disable_memory_records Do not add memory records to \n"
-        "                   STF trace. By default memory records are \n"
-        "                   always traced.\n"
-        "                   (default false)\n"
-        "    --stf_tracepoint Enable tracepoint detection for STF trace \n"
-        "                  generation.\n"
-        "                  ALWAYS ENABLED IN THIS VERSION.\n"
-        "    --stf_include_tracepoints Include the start/stop tracepoints \n"
-        "                  in the STF trace\n"
-        "                  DISABLED IN THIS VERSION.\n"
-        "    --stf_priv_modes <USHM|USH|US|U> Specify which privilege \n"
-        "                  modes to include for STF trace generation\n"
-        "    --stf_force_zero_sha Emit 0 for all SHA's in the STF header. This is a \n"
-        "                  debug option. Also clears the dromajo version placed in\n"
-        "                  the STF header.\n"
-        "    --stf_essential_mode DEPRECATED. NO LONGER NECESSARY. \n"
-        "                  The behavior controlled by this switch is now on by default.\n"
-        "                  See: --stf_disable_memory_records, --stf_trace_register_state\n"
+static void usage_interactive()
+{
+    fprintf(dromajo_stderr,"\nInteractive Command Help\n");
+    fprintf(stdout, "Nothing so far\n"); 
+    exit(1);
+}
 
-        "  Standard options\n" 
-        "    --cmdline Kernel command line arguments to append\n"
-        "    --simpoint reads a simpoint file to create multiple checkpoints\n"
-        "    --ncpus number of cpus to simulate (default 1)\n"
-        "    --load resumes a previously saved snapshot\n"
-        "    --save saves a snapshot upon exit\n"
-        "    --maxinsns terminates execution after a number of instructions\n"
-        "    --terminate-event name of the validate event to terminate \n"
-        "                  execution\n"
-        "    --trace start trace dump after a number of instructions.\n"
-        "                  Trace disabled by default\n"
-        "    --ignore_sbi_shutdown continue simulation even upon seeing \n"
-        "                  the SBI_SHUTDOWN call\n"
-        "    --dump_memories dump memories that could be used to load \n"
-        "                  a cosimulation\n"
-        "    --memory_size sets the memory size in MiB \n"
-        "                   (default 256 MiB)\n"
-        "    --memory_addr sets the memory start address \n"
-        "                   (default 0x%lx)\n"
-        "    --bootrom load in a bootrom img file \n"
-        "                   (default is dromajo bootrom)\n"
-        "    --dtb load in a dtb file (default is dromajo dtb)\n"
-        "    --compact_bootrom have dtb be directly after bootrom \n"
-        "                   (default 256B after boot base)\n"
-        "    --reset_vector set reset vector for all cores \n"
-        "                   (default 0x%lx)\n"
-        "    --plic START:SIZE set PLIC start address and size in B\n"
-        "                   (defaults to 0x%lx:0x%lx)\n"
-        "    --clint START:SIZE set CLINT start address and size in B\n"
-        "                   (defaults to 0x%lx:0x%lx)\n"
-        "    --custom_extension add X extension to misa for all cores\n"
+static void usage(const char *prog, const char *msg) {
+  fprintf(dromajo_stderr,
+"\nmessage: %s\n\n"
+"    Dromajo version:  %s\n"
+"    Dromajo SHA:      %s\n"
+"    STF_LIB SHA:      %s\n"
+"\n"
+"    Copyright (c) 2016-2017 Fabrice Bellard\n"
+"    Copyright (c) 2018,2019 Esperanto Technologies\n"
+"    Copyright (c) 2023-2024 Condor Computing\n"
+"\n"
+"usage: %s {options} [config|elf-file]\n\n"
+"    --help              ...\n"
+"    --help-march        List the currently supported ISA extension set.\n"
+"    --help-interactive  List the interactive command set and exit.\n"
+
+"\n"
+"  ISA selection options EXPERIMENTAL\n" 
+"    --march <string>    Specify the architecture string to enable\n"
+"                        supported ISA extensions, default is rv64gc.\n"
+"                        Use --help-march to see currently supported set.\n"
+"    --show-march        Takes a complete option set and shows the\n"
+"                        enabled extensions. Then exits. \n"
+"    --custom_extension  Set the custom extension bit in the misa \n"
+"                        in all cores\n"
+
+"\n"
+"  STF options\n" 
+"    --stf_trace <file> Dump an STF trace to the given file\n"
+"                  Use .zstf as the file extension for compressed trace\n"
+"                  output. Use .stf for uncompressed output\n"
+"    --stf_exit_on_stop_opc Terminate the simulation after \n"
+"                  detecting a STOP_TRACE opcode. Using this\n"
+"                  switch will disable non-contiguous region\n"
+"                  tracing. The first STOP_TRACE opcode will \n"
+"                  terminate the simulator.\n"
+"    --stf_memrecord_size_in_bits write memory access size in bits\n"
+"                   instead of bytes\n"
+"    --stf_trace_register_state include register state in the STF\n"
+"                   (default false)\n"
+"    --stf_disable_memory_records Do not add memory records to \n"
+"                   STF trace. By default memory records are \n"
+"                   always traced.\n"
+"                   (default false)\n"
+"    --stf_tracepoint Enable tracepoint detection for STF trace \n"
+"                  generation.\n"
+"                  ALWAYS ENABLED IN THIS VERSION.\n"
+"    --stf_include_tracepoints Include the start/stop tracepoints \n"
+"                  in the STF trace\n"
+"                  DISABLED IN THIS VERSION.\n"
+"    --stf_priv_modes <USHM|USH|US|U> Specify which privilege \n"
+"                  modes to include for STF trace generation\n"
+"    --stf_force_zero_sha Emit 0 for all SHA's in the STF header. This is a \n"
+"                  debug option. Also clears the dromajo version placed in\n"
+"                  the STF header.\n"
+
+"\n"
+"  Execution trace options\n" 
+"    --trace                Start trace dump after a number of instructions.\n"
+"                           Alias for --exe_trace. Trace disabled by default\n"
+"    --exe_trace            Start trace dump after a number of instructions.\n"
+"                           Trace disabled by default\n"
+"    --exe_trace_log <file> Write exe trace output to a file\n"
+"                           Ignored without --exe_trace.\n"
+"    --interactive          Initialize and enter interactive mode\n"
+
+"\n"
+"  Standard options\n" 
+"    --cmdline Kernel command line arguments to append\n"
+"    --simpoint reads a simpoint file to create multiple checkpoints\n"
+"    --ncpus number of cpus to simulate (default 1)\n"
+"    --load resumes a previously saved snapshot\n"
+"    --save saves a snapshot upon exit\n"
+"    --maxinsns terminates execution after a number of instructions\n"
+"    --terminate-event name of the validate event to terminate \n"
+"                  execution\n"
+"    --ignore_sbi_shutdown continue simulation even upon seeing \n"
+"                  the SBI_SHUTDOWN call\n"
+"    --dump_memories dump memories that could be used to load \n"
+"                  a cosimulation\n"
+"    --memory_size sets the memory size in MiB \n"
+"                   (default 256 MiB)\n"
+"    --memory_addr sets the memory start address \n"
+"                   (default 0x%lx)\n"
+"    --bootrom load in a bootrom img file \n"
+"                   (default is dromajo bootrom)\n"
+"    --dtb load in a dtb file (default is dromajo dtb)\n"
+"    --compact_bootrom have dtb be directly after bootrom \n"
+"                   (default 256B after boot base)\n"
+"    --reset_vector set reset vector for all cores \n"
+"                   (default 0x%lx)\n"
+"    --plic START:SIZE set PLIC start address and size in B\n"
+"                   (defaults to 0x%lx:0x%lx)\n"
+"    --clint START:SIZE set CLINT start address and size in B\n"
+"                   (defaults to 0x%lx:0x%lx)\n"
 #ifdef LIVECACHE
-        "    --live_cache_size live cache warmup for checkpoint \n"
-        "                   (default 8M)\n"
+"    --live_cache_size live cache warmup for checkpoint \n"
+"                   (default 8M)\n"
 #endif
-        "    --clear_ids clear mvendorid, marchid, mimpid for all cores\n\n" 
+"    --clear_ids clear mvendorid, marchid, mimpid for all cores\n\n" 
         ,
         msg,
         DROMAJO_VERSION_STRING,
@@ -702,14 +719,17 @@ static bool load_elf_and_fake_the_config(VirtMachineParams *p, const char *path)
 }
 
 RISCVMachine *virt_machine_main(int argc, char **argv) {
-    const char *prog                     = argv[0];
-    char *      snapshot_load_name       = 0;
-    char *      snapshot_save_name       = 0;
-    const char *path                     = NULL;
-    const char *cmdline                  = NULL;
-    long        ncpus                    = 0;
-    uint64_t    maxinsns                 = 0;
-    uint64_t    trace                    = UINT64_MAX;
+    const char *prog                = argv[0];
+    char *      snapshot_load_name  = 0;
+    char *      snapshot_save_name  = 0;
+    const char *path                = NULL;
+    const char *cmdline             = NULL;
+    long        ncpus               = 0;
+    uint64_t    maxinsns            = 0;
+
+    uint64_t    exe_trace           = UINT64_MAX;
+    const char *exe_trace_file_name = nullptr;
+    bool        interactive         = false;
 
     const char *stf_trace                  = nullptr;
     bool        stf_exit_on_stop_opc       = false;
@@ -720,52 +740,61 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
     bool        stf_include_tracepoints    = false;
     const char *stf_priv_modes             = "USHM";
     bool        stf_force_zero_sha         = false;
-    bool        stf_essential_mode         = false; //makes no difference
 
-    long        memory_size_override     = 0;
-    uint64_t    memory_addr_override     = 0;
-    bool        ignore_sbi_shutdown      = false;
-    bool        dump_memories            = false;
-    char *      bootrom_name             = 0;
-    char *      dtb_name                 = 0;
-    bool        compact_bootrom          = false;
-    uint64_t    reset_vector_override    = 0;
-    uint64_t    plic_base_addr_override  = 0;
-    uint64_t    plic_size_override       = 0;
-    uint64_t    clint_base_addr_override = 0;
-    uint64_t    clint_size_override      = 0;
-    bool        custom_extension         = false;
-    const char *simpoint_file            = 0;
-    bool        clear_ids                = false;
+    long        memory_size_override       = 0;
+    uint64_t    memory_addr_override       = 0;
+    bool        ignore_sbi_shutdown        = false;
+    bool        dump_memories              = false;
+
+    char *      bootrom_name               = 0;
+    char *      dtb_name                   = 0;
+    bool        compact_bootrom            = false;
+    uint64_t    reset_vector_override      = 0;
+    uint64_t    plic_base_addr_override    = 0;
+    uint64_t    plic_size_override         = 0;
+    uint64_t    clint_base_addr_override   = 0;
+    uint64_t    clint_size_override        = 0;
+    bool        custom_extension           = false;
+    const char *simpoint_file              = 0;
+    bool        clear_ids                  = false;
 #ifdef LIVECACHE
-    uint64_t    live_cache_size          = 8*1024*1024;
+    uint64_t    live_cache_size            = 8*1024*1024;
 #endif
-    bool        elf_based                = false;
-    bool        allow_ctrlc              = false;
-    bool        show_enabled_extensions  = false;
-    const char *march_string             = "rv64gc";
+    bool        elf_based                  = false;
+    bool        allow_ctrlc                = false;
+    bool        show_enabled_extensions    = false;
+    const char *march_string               = "rv64gc";
 
-    dromajo_stdout = stdout;
-    dromajo_stderr = stderr;
+    dromajo_stdout    = stdout;
+    dromajo_stderr    = stderr;
+    dromajo_trace     = stderr;
 
     optind = 0;
 
     for (;;) {
         int option_index = 0;
         // clang-format off
-        // k q v E F G ...
+        // available: k, v, E, F, G, J, K, N, O, Q, R, U, V, W, Y
         static struct option long_options[] = {
             {"help",                              no_argument, 0,  'h' },
             {"help-march",                        no_argument, 0,  'g' },
             {"show-march",                        no_argument, 0,  'j' },
+            {"help-interactive",                  no_argument, 0,  'H' },
+
             {"cmdline",                     required_argument, 0,  'c' }, // CFG
             {"ncpus",                       required_argument, 0,  'n' }, // CFG
             {"load",                        required_argument, 0,  'l' },
             {"save",                        required_argument, 0,  's' },
             {"simpoint",                    required_argument, 0,  'S' },
             {"maxinsns",                    required_argument, 0,  'm' }, // CFG
-            {"trace   ",                    required_argument, 0,  't' },
+
             {"march   ",                    required_argument, 0,  'i' },
+            {"custom_extension",                  no_argument, 0,  'u' }, // CFG
+
+            {"trace",                       required_argument, 0,  't' },
+            {"exe_trace",                   required_argument, 0,  'T' },
+            {"exe_trace_log",               required_argument, 0,  'q' },
+            {"interactive",                       no_argument, 0,  'I' },
 
             {"stf_trace",                   required_argument, 0,  'z' },
             {"stf_exit_on_stop_opc",              no_argument, 0,  'e' },
@@ -776,7 +805,6 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
             {"stf_include_tracepoints",           no_argument, 0,  'w' },
             {"stf_priv_modes",              required_argument, 0,  'a' },
             {"stf_force_zero_sha",                no_argument, 0,  'Z' },
-            {"stf_essential_mode",                no_argument, 0,  'Y' },
 
             {"ignore_sbi_shutdown",         required_argument, 0,  'P' }, // CFG
             {"dump_memories",                     no_argument, 0,  'D' }, // CFG
@@ -788,7 +816,6 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
             {"dtb",                         required_argument, 0,  'd' }, // CFG
             {"plic",                        required_argument, 0,  'p' }, // CFG
             {"clint",                       required_argument, 0,  'C' }, // CFG
-            {"custom_extension",                  no_argument, 0,  'u' }, // CFG
             {"clear_ids",                         no_argument, 0,  'L' }, // CFG
             {"ctrlc",                             no_argument, 0,  'X' },
 #ifdef LIVECACHE
@@ -803,37 +830,42 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
             break;
 
         switch (c) {
-            case 'h':
-                usage(prog, "Show usage");
-                break;
-            case 'g':
-                usage_isa(); //Show supported extensions
-                break;
-            case 'j':
-                show_enabled_extensions= true;
-                break;
-            case 'i':
-                march_string = strdup(optarg);
-                break;
-            case 'X':
-                allow_ctrlc = true;
-                break;
             case 'c':
                 if (cmdline)
                     usage(prog, "already had a kernel command line");
                 cmdline = strdup(optarg);
                 break;
 
-            case 'n':
-                if (ncpus != 0)
-                    usage(prog, "already had a ncpus set");
-                ncpus = atoll(optarg);
+            case 'g': //Show supported extensions
+                usage_isa();
+                break;
+
+            case 'h': // List options
+                usage(prog, "Show usage");
+                break;
+
+            case 'H': // Show interactive command help
+                usage_interactive();
+                break;
+
+            case 'i':
+                march_string = strdup(optarg);
+                break;
+
+            case 'j':
+                show_enabled_extensions= true;
                 break;
 
             case 'l':
                 if (snapshot_load_name)
                     usage(prog, "already had a snapshot to load");
                 snapshot_load_name = strdup(optarg);
+                break;
+
+            case 'n':
+                if (ncpus != 0)
+                    usage(prog, "already had a ncpus set");
+                ncpus = atoll(optarg);
                 break;
 
             case 's':
@@ -863,22 +895,24 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
                 }
                 break;
 
+            case 'T':
             case 't':
-                if (trace != UINT64_MAX)
+                if (exe_trace != UINT64_MAX)
                     usage(prog, "already had a trace set");
-                trace = (uint64_t)atoll(optarg);
+                exe_trace = (uint64_t)atoll(optarg);
                 break;
+            case 'q': exe_trace_file_name = strdup(optarg); break;
 
-            case 'z': stf_trace = strdup(optarg); break;
-            case 'e': stf_exit_on_stop_opc = true; break;
             case 'B': stf_memrecord_size_in_bits = true; break;
-            case 'y': stf_trace_register_state = true; break;
-            case 'f': stf_disable_memory_records = true; break;
-            case 'x': stf_tracepoint  = true; break;
-            case 'w': stf_include_tracepoints = true; break;
-            case 'a': stf_priv_modes = strdup(optarg); break;
             case 'Z': stf_force_zero_sha = true; break;
-            case 'Y': stf_essential_mode = true; break;
+            case 'a': stf_priv_modes = strdup(optarg); break;
+            case 'e': stf_exit_on_stop_opc = true; break;
+            case 'f': stf_disable_memory_records = true; break;
+            case 'w': stf_include_tracepoints = true; break;
+            case 'x': stf_tracepoint  = true; break;
+            case 'y': stf_trace_register_state = true; break;
+            case 'z': stf_trace = strdup(optarg); break;
+
             case 'P': ignore_sbi_shutdown = true; break;
             case 'D': dump_memories = true; break;
 
@@ -973,6 +1007,9 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
                 }
                 break;
 #endif
+            case 'X':
+                allow_ctrlc = true;
+                break;
 
             default: usage(prog, "Unknown command line argument");
         }
@@ -1219,7 +1256,20 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
     }
 
     s->common.snapshot_save_name = snapshot_save_name;
-    s->common.trace              = trace;
+    s->common.exe_trace          = exe_trace;
+
+    if(exe_trace_file_name) {
+
+      dromajo_trace = fopen(exe_trace_file_name,"w");
+
+      if(dromajo_trace == NULL) {
+            fprintf(stderr, "Could not open execution log file '%s'\n", 
+                    exe_trace_file_name);
+      }
+
+    } 
+
+    s->common.interactive        = interactive;
 
     /* STF Trace Generation */
     auto get_stf_highest_priv_mode = [](const char * stf_priv_modes) -> int {
@@ -1249,7 +1299,7 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
     s->common.stf_disable_memory_records = stf_disable_memory_records;
     s->common.stf_tracepoints_enabled    = stf_tracepoint;
     s->common.stf_include_tracepoints    = false;
-    s->common.stf_highest_priv_mode = get_stf_highest_priv_mode(stf_priv_modes);
+    s->common.stf_highest_priv_mode      = get_stf_highest_priv_mode(stf_priv_modes);
     s->common.stf_force_zero_sha         = stf_force_zero_sha;
 
     s->common.stf_trace_open           = false;
@@ -1264,18 +1314,6 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
     s->common.stf_count     = 0;
 
     //FIXME:  forcing an exit on these previously supported switches
-    //FIXME - restore this feature
-
-    //FIXME - restore this feature
-    if(stf_essential_mode) {
-      deprecated_argument("stf_essential_mode");
-    }
-
-    //FIXME - trace points should always be enabled, full trace should be
-    //        controlled from the command line
-    //if(s->common.stf_tracepoint) {
-    //  nonfunctional_argument("stf_tracepoint");
-    //}
 
     //FIXME - add this feature
     if(stf_include_tracepoints) {
