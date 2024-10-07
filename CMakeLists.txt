@@ -223,7 +223,7 @@ add_subdirectory (${STF_LIB_BASE})
 enable_testing()
 
 # Add tests subdirectory to the build
-#add_subdirectory (tests)
+add_subdirectory (tests)
 
 # -------------------------------------------------------------------
 if (${CMAKE_HOST_APPLE})
