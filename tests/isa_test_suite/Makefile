@@ -13,24 +13,26 @@ endif
 all: build_riscv_tests build_condor_tests
 
 build_riscv_tests:
-	@rm -rf $(INSTALL_DIR)
+	@rm -rf $(RISCV_TESTS_INSTALL_DIR)
 	@export RISCV_PREFIX=$(RISCV)/bin/riscv64-unknown-elf- && \
 	cd $(RISCV_TESTS_DIR) && autoupdate && autoconf && \
-	./configure --prefix=$(INSTALL_DIR) && make -j32 && make -j32 install
+	./configure --prefix=$(RISCV_TESTS_INSTALL_DIR) && make -j32 && make -j32 install
 	
 build_condor_tests:
-	@rm -rf $(INSTALL_DIR)
+	@rm -rf $(CONDOR_TESTS_INSTALL_DIR)
 	@export RISCV_PREFIX=$(RISCV)/bin/riscv64-unknown-elf- && \
 	cd $(CONDOR_TESTS_DIR) && autoupdate && autoconf && \
-	./configure --prefix=$(INSTALL_DIR) && make -j32 && make -j32 install
+	./configure --prefix=$(CONDOR_TESTS_INSTALL_DIR) && make -j32 && make -j32 install
 
 clean_install:
 	@echo "Cleaning up install..."
-	@rm -rf $(INSTALL_DIR)
+	@rm -rf $(RISCV_TESTS_INSTALL_DIR)
+	@rm -rf $(CONDOR_TESTS_INSTALL_DIR)
 
 clean_all:
 	@echo "Cleaning up all..."
-	@rm -rf $(INSTALL_DIR)
+	@rm -rf $(RISCV_TESTS_INSTALL_DIR)
+	@rm -rf $(CONDOR_TESTS_INSTALL_DIR)
 	@cd $(RISCV_TESTS_DIR) && make clean
 	@cd $(CONDOR_TESTS_DIR) && make clean
 

@@ -54,7 +54,11 @@ add_test(NAME stf_gen_ad_hoc
          WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/stf_gen)
 
 add_test(NAME riscv_isa_test
-        COMMAND ${CMAKE_COMMAND} -E env bash -c "bash run_isa_test_suite.sh 2>&1"
+        COMMAND ${CMAKE_COMMAND} -E env bash -c "bash run_riscv_isa_test_suite.sh 2>&1"
+        WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/isa_test_suite)
+
+add_test(NAME condor_isa_test
+        COMMAND ${CMAKE_COMMAND} -E env bash -c "bash run_condor_isa_test_suite.sh 2>&1"
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/isa_test_suite)
 
          

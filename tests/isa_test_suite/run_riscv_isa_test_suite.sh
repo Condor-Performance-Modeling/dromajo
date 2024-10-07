@@ -1,7 +1,7 @@
 #!/bin/bash
 export OPT='--stf_tracepoint --stf_priv_modes USHM --stf_force_zero_sha'
 export SIM_BIN=../../bin/cpm_dromajo
-export ISA_TEST_DIR=./test_files/share/riscv-tests/isa
+export RISCV_TEST_DIR=./riscv-test-files/share/riscv-tests/isa
 ALLOWED_TESTS_FILE="enabled_isa_tests.txt"
 
 passed_tests=0
@@ -12,10 +12,10 @@ last_test_duration=0
 passed_tests_list=()
 
 echo "Using simulator binary: $SIM_BIN"
-echo "Running tests from directory: $ISA_TEST_DIR"
+echo "Running tests from directory: $RISCV_TEST_DIR"
 
-if [ ! -d "$ISA_TEST_DIR" ]; then
-    echo "Error: Test directory $ISA_TEST_DIR does not exist"
+if [ ! -d "$RISCV_TEST_DIR" ]; then
+    echo "Error: Test directory $RISCV_TEST_DIR does not exist"
     exit 1
 fi
 
@@ -58,13 +58,15 @@ run_test() {
 
 current_test_number=1
 for test_file in "${allowed_test_files[@]}"; do
-    full_test_path="$ISA_TEST_DIR/$test_file"
+    full_test_path="$RISCV_TEST_DIR/$test_file"
 
     if [ -f "$full_test_path" ]; then
         run_test "$full_test_path" "$current_test_number"
         current_test_number=$((current_test_number + 1))
     else
         echo "Warning: Test file $full_test_path does not exist"
+        echo "Test $test_file failed due to missing file"
+        failed_tests=$((failed_tests + 1))
     fi
 done
 
