@@ -13,26 +13,26 @@ default: andestar
 
 andestar:	
 	mkdir -p bin/andestar logs/andestar
-	$(MAKE) run_andestar TST=addi
-	$(MAKE) run_andestar TST=addigp
-	$(MAKE) run_andestar TST=lwgp
-	$(MAKE) run_andestar TST=lwugp
-	$(MAKE) run_andestar TST=sdgp
+	$(MAKE) run_andestar X=rv64ui-p T=addi
+	$(MAKE) run_andestar X=rv64ui-p T=addigp
+	$(MAKE) run_andestar X=rv64ui-p T=lwgp
+	$(MAKE) run_andestar X=rv64ui-p T=lwugp
+	$(MAKE) run_andestar X=rv64ui-p T=sdgp
 
 run_andestar:
-	$(MAKE) cc_andestar  TST=$(TST)
-	$(MAKE) sim_andestar TST=$(TST)
+	$(MAKE) cc_andestar  X=$(X) TST=$(T)
+	$(MAKE) sim_andestar X=$(X) TST=$(T)
 
 cc_andestar:	
-	$(Q)$(ANDES_CC) $(ANDES_CC_OPTS) -o ./bin/andestar/$(TST) \
-	                                    ./src/andestar/$(TST).S
-	$(Q)$(ANDES_OBJD) $(ANDES_OBJD_OPTS) ./bin/andestar/$(TST) > \
-                                      ./logs/andestar/$(TST).dump
+	$(Q)$(ANDES_CC) $(ANDES_CC_OPTS) -DXLEN=$(X) \
+      ./src/andestar/$(TST).S -o ./bin/andestar/$(X)-$(TST)
+	$(Q)$(ANDES_OBJD) $(ANDES_OBJD_OPTS) \
+    ./bin/andestar/$(X)-$(TST) > ./logs/andestar/$(X)-$(TST).dump
 
 sim_andestar:
-	$(Q)$(ANDES_SIM) $(ANDES_SIM_OPTS)  ./bin/andestar/$(TST) > \
-                                     ./logs/andestar/$(TST).log 2>&1 && \
-	echo "Running $(TST) ...pass" || echo "Running $(TST) ...fail"
+	$(Q)$(ANDES_SIM) $(ANDES_SIM_OPTS) \
+	    ./bin/andestar/$(X)-$(TST) > ./logs/andestar/$(X)-$(TST).log 2>&1 && \
+	echo "Running $(X)-$(TST) ...pass" || echo "Running $(X)-$(TST) ...fail"
 
 clean:
 	-rm -rf bin/* logs/*

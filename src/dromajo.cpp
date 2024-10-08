@@ -51,6 +51,8 @@
 #include <unistd.h>
 #include <unordered_map>
 
+using namespace std;
+
 #ifdef SIMPOINT_BB
 FILE *simpoint_bb_file = nullptr;
 int   simpoint_roi     = 0;  // start without ROI enabled
@@ -179,6 +181,7 @@ static int iterate_core(RISCVMachine *m, int hartid, int n_cycles) {
 
     if(en_trace) { execution_trace(m,hartid,insn_raw); }
 
+cout<<"HERE "<<endl;
     if(in_interactive) {
       std::string command;
       std::cout << "prompt> ";
