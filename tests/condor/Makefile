@@ -33,7 +33,7 @@ sim_andestar:
 	#@echo "running $(TST)"
 	$(Q)$(ANDES_SIM) $(ANDES_SIM_OPTS)  ./bin/andestar/$(TST) > \
                                      ./logs/andestar/$(TST).log 2>&1 && \
-	echo "Running $(TST) ...pass" || echo "Running $(TST) ...fail"
+	echo "Running $(TST) ...pass" || { echo "Running $(X)-$(TST) ...fail"; exit 1; }
 
 clean:
 	-rm -rf bin/* logs/*
