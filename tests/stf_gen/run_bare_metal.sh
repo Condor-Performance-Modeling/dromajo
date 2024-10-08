@@ -1,6 +1,6 @@
 #! /bin/bash
 
-export OPT='--stf_tracepoint --stf_priv_modes USHM --stf_force_zero_sha'
+export OPT='--stf_priv_modes USHM --stf_force_zero_sha'
 export DRO=../../bin/cpm_dromajo
 
 echo "clean previous traces"
@@ -43,14 +43,9 @@ runRegression()
 runRegression illegal bmi_mm.bare bmi_towers.bare
 
 # Compressed with new stf features
-#export OPT='--stf_include_stop_tracepoint --stf_tracepoint \
-#            --stf_priv_modes USHM'
-
-export OPT='--stf_tracepoint --stf_priv_modes USHM --stf_force_zero_sha'
+export OPT='--stf_priv_modes USHM --stf_force_zero_sha'
 
 stf_file_type="zstf"
-#FIXME: mm fails the zstf comparison
-#runRegression illegal bmi_mm.bare bmi_towers.bare
 runRegression illegal bmi_mm.bare bmi_towers.bare
 echo "number of diffs = $diffs"
 

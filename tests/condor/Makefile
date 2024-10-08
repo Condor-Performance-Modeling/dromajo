@@ -29,10 +29,16 @@ cc_andestar:
 	$(Q)$(ANDES_OBJD) $(ANDES_OBJD_OPTS) \
     ./bin/andestar/$(X)-$(TST) > ./logs/andestar/$(X)-$(TST).dump
 
+#sim_andestar:
+#	$(Q)$(ANDES_SIM) $(ANDES_SIM_OPTS) \
+#	    ./bin/andestar/$(X)-$(TST) > ./logs/andestar/$(X)-$(TST).log 2>&1 && \
+#	echo "Running $(X)-$(TST) ...pass" || echo "Running $(X)-$(TST) ...fail"
+
 sim_andestar:
 	$(Q)$(ANDES_SIM) $(ANDES_SIM_OPTS) \
-	    ./bin/andestar/$(X)-$(TST) > ./logs/andestar/$(X)-$(TST).log 2>&1 && \
-	echo "Running $(X)-$(TST) ...pass" || echo "Running $(X)-$(TST) ...fail"
+	./bin/andestar/$(X)-$(TST) > ./logs/andestar/$(X)-$(TST).log 2>&1 && \
+	echo "Running $(X)-$(TST) ...pass" || \
+	{ echo "Running $(X)-$(TST) ...fail"; exit 1; }
 
 clean:
 	-rm -rf bin/* logs/*
