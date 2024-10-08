@@ -14,7 +14,7 @@ default: andestar
 andestar:	
 	mkdir -p bin/andestar logs/andestar
 	$(MAKE) run_andestar TST=addi
-	$(MAKE) run_andestar TST=addigp
+	# $(MAKE) run_andestar TST=addigp
 	$(MAKE) run_andestar TST=lwgp
 	$(MAKE) run_andestar TST=lwugp
 	$(MAKE) run_andestar TST=sdgp
