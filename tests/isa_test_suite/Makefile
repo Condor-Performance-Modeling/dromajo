@@ -1,5 +1,5 @@
 RISCV_TESTS_DIR = ../riscv-tests
-CONDOR_TESTS_DIR = ./condor-tests
+CONDOR_TESTS_DIR = ./condor_tests
 RISCV_TESTS_INSTALL_DIR = $(shell pwd)/riscv-test-files
 CONDOR_TESTS_INSTALL_DIR = $(shell pwd)/condor-test-files
 

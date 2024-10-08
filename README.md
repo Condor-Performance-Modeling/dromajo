@@ -270,7 +270,7 @@ Logs from running the `regress` target are available for review. Logs are locate
   
 - **condor_isa_tests:** The `condor_isa_tests`  runs a collection of RISC-V ISA compliance tests specifically implemented by Condor. Unlike the `riscv_isa_test`, which may selectively run tests, the `condor_isa_tests` executes every test that has been implemented.
 
-  To add new test, follow structure defined in `tests/isa_test_suite/condor-tests/isa` directory.
+  To add new test, follow structure defined in `tests/isa_test_suite/condor_tests/isa` directory.
 
   This test can be run manually by navigating from dromajo directory:
 
