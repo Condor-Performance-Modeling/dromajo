@@ -16,7 +16,7 @@ mapfile -t enabled_tests < "$ENABLED_TESTS_FILE"
 OUTPUT_FILE="disabled_isa_tests.txt"
 > "$OUTPUT_FILE"
 
-find "$ISA_TEST_DIR" -type f ! -name 'Makefile' ! -name '*.dump' -printf "%f\n" | while read -r file; do
+find "$ISA_TEST_DIR" -type f ! -name '.gitignore' ! -name 'Makefile' ! -name '*.dump' -printf "%f\n" | while read -r file; do
     if [[ ! " ${enabled_tests[@]} " =~ " ${file} " ]]; then
         echo "$file" >> "$OUTPUT_FILE"
     fi
