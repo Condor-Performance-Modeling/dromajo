@@ -28,7 +28,7 @@ git submodule update --init --recursive
 
 ## Building
 
-A debug build is built by default.  To create a release build use -DCMAKE_BUILD_TYPE=Release. 
+A debug build is built by default.  To create a release build use -DCMAKE_BUILD_TYPE=Release.
 
 ### Debug build
 The name of the directory is cosmetic.
@@ -200,14 +200,84 @@ Use the `--reset_vector`, `--memory_addr`, and `--bootrom` switches to run Droma
 
 ## Testing
 
-This project includes a set of unit tests and custom targets to ensure the reliability and correctness of the Dromajo. Tests are defined in the `tests` directory and can be run using CTest.
+This project includes a set of unit tests and custom targets to ensure the reliability and correctness of the Dromajo. Tests are defined in the `tests` directory and can be run using CTest. Test related targets depend on `RISCV` and `RISCV_LINUX` environment variables `RISCV` and `RISCV_LINUX` environment variables are not set by default so it must be set manually before running below targets.
 
-### Test Targets
+### Test targets
 
 We have defined two custom targets to manage the testing process:
 
 1. **regress**: This target runs the regression tests against the simulator.
 2. **update_test_files**: This target updates the test files after changes to the project sources.
 
-Important Note: The update_test_files target does not update the golden files. These files need to be manually regenerated before running the regression tests again.
+**Important Note:** The `update_test_files` target does not update the golden files. These files need to be manually regenerated before running the regression tests again.
 
+### Test logs
+
+Logs from running the `regress` target are available for review. Logs are located in the build directory and can be accessed for detailed information on the test results. The logs are stored at `build/tests/Testing/Temporary/LastTest.log`. The logs contain output from both passed and failed tests.
+
+### Implemented tests
+
+- **stf_load_store_baremetal:** This test runs a baremetal load/store operation, generating trace files for comparison. It checks the accuracy of the new traces against the golden (reference) traces to ensure that they match, confirming correct functionality.
+
+- **stf_load_store_linux:** This test performs the same load/store operation in a Linux environment, following the same process of generating and comparing traces with the golden ones to ensure consistency and correctness.
+
+- **stf_gen_ad_hoc:** This test generates and compares traces for various bare metal operations. It extracts ELF files, runs load/store operations, and compares the generated traces against golden (reference) traces to ensure they match. This process is done for both uncompressed and compressed traces, with the aim of validating the integrity of the STF (System Trace Format) files in different configurations.
+
+- **riscv_isa_test:** This test runs a suite of RISC-V ISA compliance tests using a predefined list of enabled tests. It simulates each test and compares the results to verify correct functionality. Tests can be enabled or disabled by moving files between the respective `enabled_isa_tests.txt` and `disabled_isa_tests.txt` test lists in the isa_test_suite directory. The `disabled_isa_tests.txt` file is only for documentation purposes and does not affect how the test runs. 
+
+  This test can be run manually by navigating from dromajo directory:
+
+  ```bash
+  cd tests/isa_test_suite
+  make
+  bash run_riscv_isa_test_suite.sh 
+  ```
+
+  To update `disabled_isa_tests.txt` run:
+
+  ```bash
+  cd tests/isa_test_suite
+  make
+  bash update_disabled_isa_tests_list.sh
+  ```
+
+  General structure of isa test names:
+
+  - **rv**: Stands for "RISC-V", indicating that these are RISC-V architecture tests.
+
+  - **64 or 32**: Indicates the bit-width of the test.
+    - `rv64`: Tests for 64-bit RISC-V systems.
+    - `rv32`: Tests for 32-bit RISC-V systems.
+
+  - **ISA or Instruction Set Extensions**: Represented by two-letter suffixes:
+    - **`ui`**: User-level instructions (integer instructions).
+    - **`ua`**: Atomic operations (A extension).
+    - **`um`**: Multiplication and division instructions (M extension).
+    - **`uz`**: Compressed instructions (Z extension).
+    - **`uf`**: Floating-point operations (F extension).
+    - **`uzbb`**: Bit manipulation (B extension).
+    - **`uzba`**: Atomic bit manipulation.
+    - **`uzbc`**: Cryptographic extension.
+
+  - **Program-Level or Vector Tests**:
+    - **`p`**: Indicates program-level tests (standard user instructions).
+    - **`v`**: Indicates vector instruction set tests (vector extension).
+
+  - **Mnemonic**: Represents the instruction or functionality being tested, such as:
+    - `add`
+    - `xor`
+    - `fadd`
+  
+- **condor_isa_tests:** The `condor_isa_tests`  runs a collection of RISC-V ISA compliance tests specifically implemented by Condor. Unlike the `riscv_isa_test`, which may selectively run tests, the `condor_isa_tests` executes every test that has been implemented.
+
+  To add new test, follow structure defined in `tests/isa_test_suite/condor_tests/isa` directory.
+
+  This test can be run manually by navigating from dromajo directory:
+
+  ```bash
+  cd tests/isa_test_suite
+  make
+  bash run_condor_isa_test_suite.sh
+  ```
+
+- **andestar_tests:** This test runs a suite andestar tests: `addi`, `addigp`, `lwgp`, `lwugp`, `sdgp`.

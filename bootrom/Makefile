@@ -9,6 +9,11 @@
 #------------------------------------------------------------------------------
 
 # RISCV environment variable must be set
+ifndef RISCV
+    $(error RISCV environment variable is not set. \
+    Please set it to the RISC-V toolchain installation directory. \
+    Example: export RISCV=/data/tools/riscv64-unknown-elf)
+endif
 
 MEMORY_START=0x8000000000
 build_dir=.
