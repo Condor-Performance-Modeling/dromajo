@@ -3,7 +3,7 @@ SHELL=/bin/bash
 
 DRO=../../build/dromajo
 
-OPT='--stf_tracepoint'
+OPT=
 
 bm_elfs = illegal bmi_mm.bare bmi_towers.bare
 
