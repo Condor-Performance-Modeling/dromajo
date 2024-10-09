@@ -56,10 +56,15 @@
 #include "dromajo_stf.h"
 #include <limits>
 
-#define EN_ZBA (s->machine->common.ext_flags.zba == true)
-#define EN_ZBB (s->machine->common.ext_flags.zbb == true)
-#define EN_ZBC (s->machine->common.ext_flags.zbb == true)
-#define EN_ZBS (s->machine->common.ext_flags.zbs == true)
+//#define EN_ZBA (s->machine->common.ext_flags.zba == true)
+//#define EN_ZBB (s->machine->common.ext_flags.zbb == true)
+//#define EN_ZBC (s->machine->common.ext_flags.zbb == true)
+//#define EN_ZBS (s->machine->common.ext_flags.zbs == true)
+
+#define EN_ZBA 1
+#define EN_ZBB 1
+#define EN_ZBC 1
+#define EN_ZBS 1
 
 //TODO: add this to extension support
 #define EN_ASTAR 1
@@ -527,6 +532,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                   addr = read_reg(_GP) + imm;
                   uint32_t rval;
                   if (target_read_u32(s, &rval, addr)) goto mmu_exception;
+                  CAPTURED_INSTR("A* LWGP");
                   val = (intx_t) rval;
                 } else if(funct3 == 0x7) { //SDGP
 #if XLEN >= 64
@@ -539,6 +545,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                             | get_field1(insn,10, 3, 4)),19); //dword addr by construction
                   addr = read_reg(_GP) + imm;
                   if (target_write_u64(s, addr, read_reg(rs2))) goto mmu_exception;
+                  CAPTURED_INSTR("A* SDGP");
                   break;
 #else
                   ILLEGAL_INSTR("02b-0")
