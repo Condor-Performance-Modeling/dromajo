@@ -16,3 +16,4 @@ sudo mkdir -p $BUILDROOT/output/target/root/benchfs
 sudo cp $INPUT_FILE $BUILDROOT/output/target/root/benchfs
 sudo make -C $BUILDROOT
 sudo cp $BUILDROOT/output/images/rootfs.cpio $COMMON_DIR
+
