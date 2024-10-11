@@ -1,5 +1,5 @@
 #!/bin/bash
-export OPT='--stf_tracepoint --stf_priv_modes USHM --stf_force_zero_sha'
+export OPT='--stf_priv_modes USHM --stf_force_zero_sha'
 export SIM_BIN=../../bin/cpm_dromajo
 export RISCV_TEST_DIR=./condor-test-files/share/riscv-tests/isa
 

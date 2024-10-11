@@ -150,24 +150,29 @@ endif ()
 
 # libdromajo_cosim
 add_library(dromajo_cosim STATIC
-        src/virtio.cpp
-        src/pci.cpp
-        src/fs.cpp
+        src/block_device.cpp
         src/cutils.cpp
-        src/iomem.cpp
+        src/dromajo_cosim.cpp
+        src/dromajo_isa.cpp
+        src/dromajo_main.cpp
+        src/dromajo_stf.cpp
+        src/dromajo_trace.cpp
         src/dw_apb_uart.cpp
+        src/elf64.cpp
+        src/fs.cpp
+        src/fs_disk.cpp
+        src/iomem.cpp
         src/json.cpp
         src/machine.cpp
-        src/elf64.cpp
-        src/LiveCache.cpp
-        src/fs_disk.cpp
-        src/softfp.cpp
-        src/riscv_machine.cpp
-        src/dromajo_main.cpp
-        src/dromajo_cosim.cpp
-        src/dromajo_stf.cpp
-        src/dromajo_isa.cpp
+        src/network.cpp
+        src/options.cpp
+        src/pci.cpp
         src/riscv_cpu.cpp
+        src/riscv_machine.cpp
+        src/softfp.cpp
+        src/term_io.cpp
+        src/virtio.cpp
+        src/LiveCache.cpp
         )
 
 add_executable(dromajo src/dromajo.cpp)
