@@ -1,3 +1,5 @@
+x rv64ui-v-sra
+x rv64ui-p-sra
 rv64mi-p-access
 rv64mi-p-breakpoint
 rv64mi-p-csr
@@ -145,7 +147,6 @@ rv64ui-p-slt
 rv64ui-p-slti
 rv64ui-p-sltiu
 rv64ui-p-sltu
-rv64ui-p-sra
 rv64ui-p-srai
 rv64ui-p-sraiw
 rv64ui-p-sraw
@@ -196,7 +197,6 @@ rv64ui-v-slt
 rv64ui-v-slti
 rv64ui-v-sltiu
 rv64ui-v-sltu
-rv64ui-v-sra
 rv64ui-v-srai
 rv64ui-v-sraiw
 rv64ui-v-sraw

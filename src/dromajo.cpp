@@ -181,14 +181,6 @@ static int iterate_core(RISCVMachine *m, int hartid, int n_cycles) {
 
     if(en_trace) { execution_trace(m,hartid,insn_raw); }
 
-cout<<"HERE "<<endl;
-    if(in_interactive) {
-      std::string command;
-      std::cout << "prompt> ";
-      getline(std::cin,command);
-      std::cout<< command << std::endl;
-    }
-
     return keep_going;
 }
 

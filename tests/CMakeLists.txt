@@ -41,27 +41,29 @@ add_custom_command(TARGET regress POST_BUILD
 #add_custom_target(update_test_files)
 #add_dependencies(update_test_files stf_load_store_bare stf_load_store_linux)
 
-#add_test(NAME stf_load_store_baremetal
-#  COMMAND ${CMAKE_COMMAND} -E env bash -c "bash scripts/run_baremetal_test.sh 2>&1"
-#  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/stf_load_store)
+add_test(NAME stf_load_store_baremetal
+  COMMAND ${CMAKE_COMMAND} -E env bash -c "bash scripts/run_baremetal_test.sh 2>&1"
+  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/stf_load_store)
 
+# Disabled for now - need automation to build collateral
 #add_test(NAME stf_load_store_linux
 #  COMMAND ${CMAKE_COMMAND} -E env bash -c "bash scripts/run_linux_test.sh 2>&1"
 #  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/stf_load_store)
-#
+
+# This test needs to go away
 #add_test(NAME stf_gen_ad_hoc
 #         COMMAND ${CMAKE_COMMAND} -E env bash -c "bash run_bare_metal.sh 2>&1"
 #         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/stf_gen)    
-#
-# add_test(NAME condor_isa_tests
-#         COMMAND ${CMAKE_COMMAND} -E env bash -c "bash run_condor_isa_test_suite.sh 2>&1"
-#         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/isa_test_suite)
-#
+
+add_test(NAME condor_isa_tests
+         COMMAND ${CMAKE_COMMAND} -E env bash -c "bash run_condor_isa_test_suite.sh 2>&1"
+         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/isa_test_suite)
+
 add_test(NAME andestar_tests
         COMMAND ${CMAKE_COMMAND} -E env bash -c "make"
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/condor)     
    
-#add_test(NAME riscv_isa_tests
-#         COMMAND ${CMAKE_COMMAND} -E env bash -c "bash run_riscv_isa_test_suite.sh 2>&1"
-#         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/isa_test_suite)
-#
+add_test(NAME riscv_isa_tests
+         COMMAND ${CMAKE_COMMAND} -E env bash -c "bash run_riscv_isa_test_suite.sh 2>&1"
+         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/isa_test_suite)
+

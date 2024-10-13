@@ -68,14 +68,35 @@
 
 //TODO: add this to extension support
 #define EN_ASTAR 1
+#define EN_CODENSE 1
 //TODO: add this to extension support
 #define _GP 0x3
 //TODO: modify src to use this instead of cond. compile
 extern uint32_t _XLEN;
 
+//bfos
+//bfoz
+//bnec
+//addigp
+//lbgp
+//lbugp
+//ldgp
+//lhgp
+//lwgp
+//lwugp
+//sbgp
+//shgp
+//bbs
+//bbc
+//beqc
+//bnec
+//lea.w
+
+
+
 #define HALF_WORD_MASK 0xFFFF
 
-#define CAPTURE_LOG    0
+#define CAPTURE_LOG    1
 #define REPORT_ILLEGAL 0
 
 #if REPORT_ILLEGAL == 1
@@ -395,7 +416,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles);
 
 int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
     uint32_t     opcode, insn, rd, rs1, rs2, funct2, funct3;
-    uint32_t     _funct3, _funct6, _funct7, _funct12, _shamt;
+    uint32_t     _funct3, _funct6, _funct7, _funct12, _shamt,_bit30;
     int32_t      imm, cond, err;
     target_ulong addr, val, val2;
     uint8_t *    code_ptr, *code_end;
@@ -403,6 +424,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
     uint64_t     insn_counter_addend;
     uint64_t     insn_counter_start = s->insn_counter;
 
+    (void) _bit30; //GCC complains for XLEN != 64
 #if FLEN > 0
     uint32_t rs3;
     int32_t  rm;
@@ -523,12 +545,13 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
             case 0x2b: /* Andes CUSTOM-1 */
                 funct3 = (insn >> 12) & 7;
                 if(funct3 == 0x2) { // LWGP
+                              //word addr by construction
                   imm = sext((get_field1(insn,31,18,18)
                             | get_field1(insn,21,17,17)
                             | get_field1(insn,15,15,16)
                             | get_field1(insn,17,12,14)
                             | get_field1(insn,20,11,11)
-                            | get_field1(insn,22, 2,10)),18); //word addr by construction
+                            | get_field1(insn,22, 2,10)),18); 
                   addr = read_reg(_GP) + imm;
                   uint32_t rval;
                   if (target_read_u32(s, &rval, addr)) goto mmu_exception;
@@ -536,26 +559,45 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                   val = (intx_t) rval;
                 } else if(funct3 == 0x7) { //SDGP
 #if XLEN >= 64
-                  imm = sext((get_field1(insn,31,19,19)
-                            | get_field1(insn, 8,17,18)
-                            | get_field1(insn,15,15,16)
-                            | get_field1(insn,17,12,14)
-                            | get_field1(insn, 7,11,11)
-                            | get_field1(insn,25, 5,10)
-                            | get_field1(insn,10, 3, 4)),19); //dword addr by construction
+                  //dword addr by construction
+                  imm = sext((get_field1(insn,31,19,19) //31    -> 19
+                            | get_field1(insn, 8,17,18) //9:8   -> 18:17
+                            | get_field1(insn,15,15,16) //16:15 -> 16:15
+                            | get_field1(insn,17,12,14) //19:17 -> 14:12
+                            | get_field1(insn, 7,11,11) //7     -> 11
+                            | get_field1(insn,25, 5,10) //30:25 -> 10:5
+                            | get_field1(insn,10, 3, 4)),19); //11:10 -> 4:3
                   addr = read_reg(_GP) + imm;
-                  if (target_write_u64(s, addr, read_reg(rs2))) goto mmu_exception;
+                  if (target_write_u64(s, addr, read_reg(rs2))) {
+                    goto mmu_exception;
+                  }
                   CAPTURED_INSTR("A* SDGP");
                   break;
 #else
                   ILLEGAL_INSTR("02b-0")
 #endif
+                } else if(funct3 == 0x4) { // SWGP
+                  imm = sext((get_field1(insn,31,18,18) //31    -> 18
+                            | get_field1(insn, 8,17,17) //8     -> 17
+                            | get_field1(insn,15,15,16) //16:15 -> 16:15
+                            | get_field1(insn,17,12,14) //19:17 -> 14:12
+                            | get_field1(insn, 7,11,11) //7     -> 11
+                            | get_field1(insn,25, 5,10) //30:25 -> 10:5
+                            | get_field1(insn, 9, 3, 4)),18);
+                  addr = read_reg(_GP) + imm;
+                  if (target_write_u32(s, addr, read_reg(rs2))) {
+                    goto mmu_exception;
+                  }
+                  CAPTURED_INSTR("A* SWGP");
+                  break;
+
                 } else {
                   ILLEGAL_INSTR("02b-1")
                 }
                 if (rd != 0) write_reg(rd, val);
                 NEXT_INSN;
 
+            // --------------------------------------------------------------
             C_QUADRANT(0)
             funct3 = (insn >> 13) & 7;
             rd     = ((insn >> 2) & 7) | 8;
@@ -730,7 +772,15 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                 case 4:
                     funct3 = (insn >> 10) & 3;
                     rd     = ((insn >> 7) & 7) | 8;
+//                    _bit7  = ((insn >> 7) & 1);
                     switch (funct3) {
+//This is where this instruction fits in devoder
+//                        case 0: if(EN_CODENSE && !_bit7) {
+//                                  CAPTURED_INSTR("A* EXEC.IT");
+//                                  break;
+//                                } else {
+//                                  //fall through for c.srli
+//                                }
                         case 0: /* c.srli */
                         case 1: /* c.srai */ imm = get_field1(insn, 12, 5, 5) | get_field1(insn, 2, 0, 4);
 #if XLEN == 32
@@ -1274,41 +1324,44 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                 if (rd != 0)
                     write_reg(rd, val);
                 NEXT_INSN;
+            //FIXME: This comment was found here: case 0x5b: /* OP-IMM-32 */
+            case 0x5b: /* Andes CUSTOM-2 */
+                _funct3 = (insn >> 12) & 0x7;   //14:12
+                _funct7 = (insn >> 25) & 0x7F;  //31:27
+                _bit30  = (insn >> 30) & 0x1;
+                switch(_funct3) {
+                  case 0x0:
+                            switch(_funct7) {
+                              case 0x05: CAPTURED_INSTR("A* LEA.h"); break;
+                              case 0x06: CAPTURED_INSTR("A* LEA.w"); break;
+                              case 0x07: CAPTURED_INSTR("A* LEA.d"); break;
+                              case 0x08: CAPTURED_INSTR("A* LEA.b.ze"); break;
+                              case 0x09: CAPTURED_INSTR("A* LEA.h.ze"); break;
+                              case 0x0a: CAPTURED_INSTR("A* LEA.w.ze"); break;
+                              case 0x0b: CAPTURED_INSTR("A* LEA.d.ze"); break;
+                              default: ILLEGAL_INSTR("CUST2-1")
+                            }
+                            break;
+                  case 0x2: CAPTURED_INSTR("A* BFOZ RV64");
+                            break;
+                  case 0x3: CAPTURED_INSTR("A* BFOS RV64");
+                            break;
+                  case 0x5: CAPTURED_INSTR("A* BEQC");
+                            break;
+                  case 0x6: CAPTURED_INSTR("A* BNEC");
+                            break;
+                  case 0x7: if(_bit30 == 0) {
+                              CAPTURED_INSTR("A* BBC RV64");
+                            } else if(_bit30 == 1) {
+                              CAPTURED_INSTR("A* BBS RV64");
+                            }
+                            break;
+                  default: ILLEGAL_INSTR("CUST2-2")
+
+                }
+//FIXME: implement ME
+                NEXT_INSN;
 #endif
-//                funct3 = (insn >> 12) & 7;
-//                imm    = (int32_t)insn >> 20;
-//                addr   = read_reg(rs1) + imm;
-//            funct3 = (insn >> 13) & 7;
-//            rs2    = (insn >> 2) & 0x1f;
-//
-//                    case 1: /* lh */
-//                    {
-//                        uint16_t rval;
-//                        if (target_read_u16(s, &rval, addr))
-//                            goto mmu_exception;
-//                        val = (int16_t)rval;
-//                    } break;
-//
-//                funct3 = (insn >> 12) & 7;
-//            case 0x2b: /* CUSTOM */
-//                funct3 = (insn >> 12) & 7;
-//                uint16_t rval;
-//                imm = sext((get_field1(insn,31,17,17)
-//                          | get_field1(insn,16,16,15)
-//                          | get_field1(insn,19,14,12)
-//                          | get_field1(insn,20,11,11)
-//                          | get_field1(insn,30,10,1)) << 1,17);
-//                addr = read_reg(_GP) + imm;
-//                switch(funct3) {
-//                  case 0x1: CAPTURED_INSTR("A* LHGP");
-//                            ILLEGAL_INSTR("02b-a")
-//                            break;
-//                  default:
-//                            ILLEGAL_INSTR("02b-b")
-//                }
-//                ILLEGAL_INSTR("02b-z")
-//                //if (rd != 0) write_reg(rd, val);
-//                NEXT_INSN; 
 
 
 #if XLEN >= 128
