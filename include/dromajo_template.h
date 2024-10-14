@@ -56,15 +56,10 @@
 #include "dromajo_stf.h"
 #include <limits>
 
-//#define EN_ZBA (s->machine->common.ext_flags.zba == true)
-//#define EN_ZBB (s->machine->common.ext_flags.zbb == true)
-//#define EN_ZBC (s->machine->common.ext_flags.zbc == true)
-//#define EN_ZBS (s->machine->common.ext_flags.zbs == true)
-
-#define EN_ZBA 1
-#define EN_ZBB 1
-#define EN_ZBC 1
-#define EN_ZBS 1
+#define EN_ZBA (s->machine->common.ext_flags.zba == true)
+#define EN_ZBB (s->machine->common.ext_flags.zbb == true)
+#define EN_ZBC (s->machine->common.ext_flags.zbc == true)
+#define EN_ZBS (s->machine->common.ext_flags.zbs == true)
 
 //TODO: add this to extension support
 #define EN_ASTAR 1
