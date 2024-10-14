@@ -15,68 +15,10 @@
 
 1. [ZBS](#zbs)
 
-## Extension support status. 
 
-D=implemented but not validated, V= validated
-```
-D  ZBA
-D  ZBB
-D  ZBC
-D  ZBS
--  ROT These have no extension designation in known docs
-```
+# Instruction status
 
-## Instruction status
-```
-D  add.uw          zba   RV64
-D  andn            zbb   RV32 RV64
-D  bclr            zbs   RV32 RV64
-D  bclri           zbs   RV32 RV64
-D  bext            zbs   RV32 RV64
-D  bexti           zbs   RV32 RV64
-D  binv            zbs   RV32 RV64
-D  binvi           zbs   RV32 RV64
-D  bset            zbs   RV32 RV64
-D  bseti           zbs   RV32 RV64
-D-  clmul           zbc   RV32 RV64
-D-  clmulh          zbc   RV32 RV64
-D-  clmulr          zbc   RV32 RV64
-D  clz             zbb   RV32 RV64
-D  clzw            zbb   RV64
-D  cpop            zbb   RV32 RV64
-D  cpopw           zbb   RV64
-D  ctz             zbb   RV32 RV64
-D  ctzw            zbb   RV64
-D  max             zbb   RV32 RV64
-D  maxu            zbb   RV32 RV64
-D  min             zbb   RV32 RV64
-D  minu            zbb   RV32 RV64
--  orc.b           ???   RV32 RV64
-D  orn             zbb   RV32 RV64
--  rev8            ???   RV32 RV64
--  rol             ???   RV32 RV64
--  rolw            ???   RV64
--  ror             ???   RV32 RV64
--  rori            ???   RV32 RV64
--  roriw           ???   RV64
--  rorw            ???   RV64
-D  sext.b          zbb   RV32 RV64
-D  sext.h          zbb   RV32 RV64
-D  sh1add          zba   RV32 RV64
-D  sh1add.uw       zba   RV64
-D  sh2add          zba   RV32 RV64
-D  sh2add.uw       zba   RV64
-D  sh3add          zba   RV32 RV64
-D  sh3add.uw       zba   RV64
-D  slli.uw         zba   RV64
-D  xnor            zbb   RV32 RV64
-D  zext.h          zbb   RV32 RV64
-```
-
-```
-Also - had to reimplement this, needs verified again
-D  sub
-```
+See EXT_STATUS.md for latest status.
 
 # ZBA
 
