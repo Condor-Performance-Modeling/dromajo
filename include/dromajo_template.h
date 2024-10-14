@@ -76,7 +76,7 @@ extern uint32_t _XLEN;
 
 #define HALF_WORD_MASK 0xFFFF
 
-#define CAPTURE_LOG    0
+#define CAPTURE_LOG    1
 #define REPORT_ILLEGAL 0
 
 #if REPORT_ILLEGAL == 1
@@ -1727,23 +1727,38 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                     CAPTURED_INSTR("MAXU");
                     val = ((uintx_t)val < (uintx_t)val2) ? val2 : val;
 
-                } else if (EN_ZBB && _funct7 == 0x20) {
+                } else if (EN_ZBB && _funct7 == 0x20 && _funct3 == 0x4) {
 
-                  switch(_funct3) {
-                    case 0x0: CAPTURED_INSTR("SUB");
-                              val = (intx_t)(val - val2);
-                              break;
-                    case 0x4: CAPTURED_INSTR("XNOR");
-                              val = ~(val ^ val2);
-                              break;
-                    case 0x6: CAPTURED_INSTR("ORN");
-                              val = val | ~val2;
-                              break;
-                    case 0x7: CAPTURED_INSTR("ANDN");
-                              val = val & ~val2;
-                              break;
-                    default:  ILLEGAL_INSTR("X002")
-                  }
+                    CAPTURED_INSTR("XNOR");
+                    val = ~(val ^ val2);
+
+                } else if (EN_ZBB && _funct7 == 0x20 && _funct3 == 0x6) {
+
+                    CAPTURED_INSTR("ORN");
+                    val = val | ~val2;
+
+                } else if (EN_ZBB && _funct7 == 0x20 && _funct3 == 0x7) {
+
+                    CAPTURED_INSTR("ANDN");
+                    val = val & ~val2;
+
+//                } else if (EN_ZBB && _funct7 == 0x20) {
+//
+//                  switch(_funct3) {
+//                    case 0x0: CAPTURED_INSTR("SUB");
+//                              val = (intx_t)(val - val2);
+//                              break;
+//                    case 0x4: CAPTURED_INSTR("XNOR");
+//                              val = ~(val ^ val2);
+//                              break;
+//                    case 0x6: CAPTURED_INSTR("ORN");
+//                              val = val | ~val2;
+//                              break;
+//                    case 0x7: CAPTURED_INSTR("ANDN");
+//                              val = val & ~val2;
+//                              break;
+//                    default:  ILLEGAL_INSTR("X002")
+//                  }
 
                 } else if (EN_ZBC && _funct7 == 0x5 && _funct3 == 0x1) {
 
