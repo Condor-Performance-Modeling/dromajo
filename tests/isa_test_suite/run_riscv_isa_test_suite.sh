@@ -8,6 +8,7 @@ passed_tests=0
 failed_tests=0
 total_tests=0
 last_test_duration=0
+stop_all_tests=false
 
 passed_tests_list=()
 
@@ -28,12 +29,38 @@ mapfile -t allowed_test_files < "$ALLOWED_TESTS_FILE"
 
 total_start_time=$(date +%s)
 
+trap ctrl_c_handler SIGINT
+
+ctrl_c_handler() {
+    echo ""
+    echo "Ctrl+C detected. What would you like to do?"
+    echo "1) Skip current test and continue"
+    echo "2) Stop all tests"
+    read -p "Enter your choice: " choice
+
+    case $choice in
+        1)
+            echo "Skipping current test..."
+            ;;
+        2)
+            echo "Stopping all tests..."
+            stop_all_tests=true
+            ;;
+        *)
+            echo "Invalid choice. Continuing..."
+            ;;
+    esac
+}
+
 run_test() {
     local test_file="$1"
     echo "Running test: $test_file"
     start_test_time=$(date +%s)
 
-    $SIM_BIN $OPT "$test_file"
+    $SIM_BIN $OPT "$test_file" &
+    SIM_PID=$!
+
+    wait $SIM_PID
     EXIT_CODE=$?
 
     end_test_time=$(date +%s)
@@ -55,6 +82,10 @@ run_test() {
 
 for test_file in "${allowed_test_files[@]}"; do
     test_file=$(echo "$test_file" | xargs)
+    
+    if [[ -z "$test_file" ]]; then
+        continue
+    fi
 
     if [[ "$test_file" =~ ^# ]] || [[ "$test_file" =~ ^x ]]; then
         continue
@@ -69,6 +100,11 @@ for test_file in "${allowed_test_files[@]}"; do
         echo "Warning: Test file $full_test_path does not exist"
         echo "Test $test_file failed due to missing file"
         failed_tests=$((failed_tests + 1))
+    fi
+
+    if [ "$stop_all_tests" = true ]; then
+        echo "Stopping test execution..."
+        break
     fi
 done
 
