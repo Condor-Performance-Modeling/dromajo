@@ -7,8 +7,8 @@ ALLOWED_TESTS_FILE="isa_tests_list.txt"
 passed_tests=0
 failed_tests=0
 total_tests=0
+test_counter=0
 last_test_duration=0
-stop_all_tests=false
 
 passed_tests_list=()
 
@@ -30,31 +30,15 @@ mapfile -t allowed_test_files < "$ALLOWED_TESTS_FILE"
 total_start_time=$(date +%s)
 
 trap ctrl_c_handler SIGINT
-
 ctrl_c_handler() {
-    echo ""
-    echo "Ctrl+C detected. What would you like to do?"
-    echo "1) Skip current test and continue"
-    echo "2) Stop all tests"
-    read -p "Enter your choice: " choice
-
-    case $choice in
-        1)
-            echo "Skipping current test..."
-            ;;
-        2)
-            echo "Stopping all tests..."
-            stop_all_tests=true
-            ;;
-        *)
-            echo "Invalid choice. Continuing..."
-            ;;
-    esac
+    echo "Stopping test execution..."
+    exit 1
 }
 
 run_test() {
     local test_file="$1"
-    echo "Running test: $test_file"
+    test_counter=$((test_counter + 1))
+    echo "Running test #$test_counter: $test_file"
     start_test_time=$(date +%s)
 
     $SIM_BIN $OPT "$test_file" &
@@ -100,11 +84,6 @@ for test_file in "${allowed_test_files[@]}"; do
         echo "Warning: Test file $full_test_path does not exist"
         echo "Test $test_file failed due to missing file"
         failed_tests=$((failed_tests + 1))
-    fi
-
-    if [ "$stop_all_tests" = true ]; then
-        echo "Stopping test execution..."
-        break
     fi
 done
 

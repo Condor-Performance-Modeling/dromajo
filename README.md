@@ -223,7 +223,7 @@ Logs from running the `regress` target are available for review. Logs are locate
 
 - **stf_gen_ad_hoc:** This test generates and compares traces for various bare metal operations. It extracts ELF files, runs load/store operations, and compares the generated traces against golden (reference) traces to ensure they match. This process is done for both uncompressed and compressed traces, with the aim of validating the integrity of the STF (System Trace Format) files in different configurations.
 
-- **riscv_isa_test:** This test runs a suite of RISC-V ISA compliance tests using a predefined list of enabled tests. It simulates each test and evaluates the results to verify correct functionality. Tests can be enabled/disabled in `isa_tests_list.txt` in the isa_test_suite directory.
+- **riscv_isa_test:** This test runs a suite of RISC-V ISA compliance tests using a predefined list of enabled tests. It simulates each test and evaluates the results to verify correct functionality. Tests can be enabled/disabled in `isa_tests_list.txt` in the isa_test_suite directory. In this file, disabled tests are preceded by "x".
 
   This test can be run manually by navigating from dromajo directory:
 
@@ -233,7 +233,7 @@ Logs from running the `regress` target are available for review. Logs are locate
   bash run_riscv_isa_test_suite.sh 
   ```
 
-  To update `isa_tests_list.txt` run:
+  When `riscv-tests` submodule changes, new tests might be added. To update `isa_tests_list.txt` with those tests run:
 
   ```bash
   cd tests/isa_test_suite
