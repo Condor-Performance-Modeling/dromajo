@@ -1,8 +1,8 @@
 #!/bin/bash
-export OPT='--stf_tracepoint --stf_priv_modes USHM --stf_force_zero_sha'
+export OPT='--ctrlc --stf_priv_modes USHM --stf_force_zero_sha'
 export SIM_BIN=../../bin/cpm_dromajo
 export RISCV_TEST_DIR=./riscv-test-files/share/riscv-tests/isa
-ALLOWED_TESTS_FILE="enabled_isa_tests.txt"
+ALLOWED_TESTS_FILE="isa_tests_list.txt"
 
 passed_tests=0
 failed_tests=0
@@ -26,14 +26,11 @@ fi
 
 mapfile -t allowed_test_files < "$ALLOWED_TESTS_FILE"
 
-total_tests_count=${#allowed_test_files[@]}
-
 total_start_time=$(date +%s)
 
 run_test() {
     local test_file="$1"
-    local current_test_number="$2"
-    echo "Running test $current_test_number/$total_tests_count: $test_file"
+    echo "Running test: $test_file"
     start_test_time=$(date +%s)
 
     $SIM_BIN $OPT "$test_file"
@@ -56,13 +53,18 @@ run_test() {
     echo "---------------------------"
 }
 
-current_test_number=1
 for test_file in "${allowed_test_files[@]}"; do
+    test_file=$(echo "$test_file" | xargs)
+
+    if [[ "$test_file" =~ ^# ]] || [[ "$test_file" =~ ^x ]]; then
+        continue
+    fi
+
     full_test_path="$RISCV_TEST_DIR/$test_file"
+    total_tests_count=$((total_tests_count + 1))
 
     if [ -f "$full_test_path" ]; then
-        run_test "$full_test_path" "$current_test_number"
-        current_test_number=$((current_test_number + 1))
+        run_test "$full_test_path"
     else
         echo "Warning: Test file $full_test_path does not exist"
         echo "Test $test_file failed due to missing file"
