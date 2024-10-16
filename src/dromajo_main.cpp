@@ -166,6 +166,7 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
 
     long        memory_size_override       = 0;
     uint64_t    memory_addr_override       = 0;
+    bool        memory_addr_override_flag  = false;
     bool        ignore_sbi_shutdown        = false;
     bool        dump_memories              = false;
 
@@ -350,6 +351,7 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
                 if (optarg[0] != '0' || optarg[1] != 'x')
                     usage(prog, "--memory_addr expects argument to start with 0x... ");
                 memory_addr_override = strtoll(optarg + 2, NULL, 16);
+                memory_addr_override_flag = true;
                 break;
 
             case 'b':
@@ -478,7 +480,7 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
 #endif
 
     /* override some config parameters */
-    if (memory_addr_override)
+    if (memory_addr_override_flag)
         p->ram_base_addr = memory_addr_override;
     if (memory_size_override)
         p->ram_size = memory_size_override << 20;
