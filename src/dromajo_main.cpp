@@ -722,21 +722,22 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
     bool        stf_force_zero_sha         = false;
     bool        stf_essential_mode         = false; //makes no difference
 
-    long        memory_size_override     = 0;
-    uint64_t    memory_addr_override     = 0;
-    bool        ignore_sbi_shutdown      = false;
-    bool        dump_memories            = false;
-    char *      bootrom_name             = 0;
-    char *      dtb_name                 = 0;
-    bool        compact_bootrom          = false;
-    uint64_t    reset_vector_override    = 0;
-    uint64_t    plic_base_addr_override  = 0;
-    uint64_t    plic_size_override       = 0;
-    uint64_t    clint_base_addr_override = 0;
-    uint64_t    clint_size_override      = 0;
-    bool        custom_extension         = false;
-    const char *simpoint_file            = 0;
-    bool        clear_ids                = false;
+    long        memory_size_override      = 0;
+    uint64_t    memory_addr_override      = 0;
+    bool        memory_addr_override_flag = false;
+    bool        ignore_sbi_shutdown       = false;
+    bool        dump_memories             = false;
+    char *      bootrom_name              = 0;
+    char *      dtb_name                  = 0;
+    bool        compact_bootrom           = false;
+    uint64_t    reset_vector_override     = 0;
+    uint64_t    plic_base_addr_override   = 0;
+    uint64_t    plic_size_override        = 0;
+    uint64_t    clint_base_addr_override  = 0;
+    uint64_t    clint_size_override       = 0;
+    bool        custom_extension          = false;
+    const char *simpoint_file             = 0;
+    bool        clear_ids                 = false;
 #ifdef LIVECACHE
     uint64_t    live_cache_size          = 8*1024*1024;
 #endif
@@ -893,6 +894,7 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
                 if (optarg[0] != '0' || optarg[1] != 'x')
                     usage(prog, "--memory_addr expects argument to start with 0x... ");
                 memory_addr_override = strtoll(optarg + 2, NULL, 16);
+                memory_addr_override_flag = true;
                 break;
 
             case 'b':
@@ -1018,7 +1020,7 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
 #endif
 
     /* override some config parameters */
-    if (memory_addr_override)
+    if (memory_addr_override_flag)
         p->ram_base_addr = memory_addr_override;
     if (memory_size_override)
         p->ram_size = memory_size_override << 20;
