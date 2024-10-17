@@ -7,19 +7,6 @@ echo "clean previous traces"
 mkdir -p traces
 rm -f traces/*
 
-echo "create/extract elf's"
-cd elf
-rm -f *.riscv
-tar xf *.bz2
-
-# clean /extract reference stf's
-cd ../golden
-rm -f golden/*.stf
-rm -f golden/*.zstf
-tar xf *.bz2
-
-cd ..
-
 diffs=0
 stf_file_type="stf"
 runRegression()
