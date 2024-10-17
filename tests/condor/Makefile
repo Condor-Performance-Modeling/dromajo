@@ -15,6 +15,7 @@ andestar:
 	mkdir -p bin/andestar logs/andestar
 	$(MAKE) run_andestar X=rv64ui-p T=addi
 	$(MAKE) run_andestar X=rv64ui-p T=addigp
+	$(MAKE) run_andestar X=rv64ui-p T=bfoz
 	$(MAKE) run_andestar X=rv64ui-p T=lwgp
 	$(MAKE) run_andestar X=rv64ui-p T=lwugp
 	$(MAKE) run_andestar X=rv64ui-p T=sdgp

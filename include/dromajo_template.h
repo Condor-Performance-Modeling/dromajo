@@ -241,8 +241,11 @@ static inline intx_t glue(clzw,XLEN)(uintx_t val) {
 // -------------------------------------------------------------------------
 #if XLEN >= 64
 // -------------------------------------------------------------------------
+static inline uint64_t get_mask(int len) {
+    return (len == 64) ? ~0ULL : (1ULL << len) - 1;
+}
 static inline uint64_t clear_bits(uint64_t value, int start, int end) {
-    uintx_t mask = ((1ULL << (start + 1)) - 1) & ~((1ULL << end) - 1);
+    uintx_t mask = get_mask(start + 1) & ~get_mask(end);
     return value & ~mask;
 }
 // -------------------------------------------------------------------------
@@ -277,7 +280,7 @@ static inline uint64_t bfoz_oper(uint32_t insn,uintx_t Rs1) {
         int lenm1 = lsb - msb;
         
         // Set val[lsb:msb] = Rs1[lenm1:0]
-        uint64_t mask = (1ULL << (lenm1 + 1)) - 1;
+        uint64_t mask = get_mask(lenm1 + 1);
         val |= (Rs1 & mask) << msb;
         
         // Zero out the upper part if lsb < 63
@@ -290,10 +293,10 @@ static inline uint64_t bfoz_oper(uint32_t insn,uintx_t Rs1) {
     } else {
         // Case: msb >= lsb
         int lenm1 = msb - lsb;
-        
+
         // Set val[lenm1:0] = Rs1[msb:lsb]
-        uint64_t mask = (1ULL << (lenm1 + 1)) - 1;
-        val |= (Rs1 & mask) << lsb;
+        uint64_t mask = get_mask(lenm1 + 1);
+        val |= mask & (Rs1 >> lsb);
 
         // Zero out upper part val[63:(lenm1+1)]
         val = clear_bits(val, 63, lenm1 + 1);

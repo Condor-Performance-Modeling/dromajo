@@ -25,3 +25,8 @@ test_ ## testnum: \
     inst x14, offset; \
   )
 
+#define ASTAR_TEST_BFOZ( testnum, inst, expect, rs1_value, msb, lsb ) \
+    ASTAR_TEST_CASE( testnum, x14, expect, \
+      li   x3, rs1_value; \
+      inst x14, x3, msb, lsb; \
+  )
