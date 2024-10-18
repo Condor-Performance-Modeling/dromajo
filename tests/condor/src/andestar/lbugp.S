@@ -25,18 +25,18 @@ ASTAR_CODE_BEGIN
 
   # Test with negative offset
 
-#  ASTAR_TEST_LD_OP(  6, lbugp, 0x00000000000000ff, -3,  tdat4 );
-#  ASTAR_TEST_LD_OP(  7, lbugp, 0x0000000000000000, -2,  tdat4 );
-#  ASTAR_TEST_LD_OP(  8, lbugp, 0x00000000000000f0, -1,  tdat4 );
-#  ASTAR_TEST_LD_OP(  9, lbugp, 0x000000000000000f,  0,  tdat4 );
+  ASTAR_TEST_LD_OP(  6, lbugp, 0x00000000000000ff, -3,  tdat4 );
+  ASTAR_TEST_LD_OP(  7, lbugp, 0x0000000000000000, -2,  tdat4 );
+  ASTAR_TEST_LD_OP(  8, lbugp, 0x00000000000000f0, -1,  tdat4 );
+  ASTAR_TEST_LD_OP(  9, lbugp, 0x000000000000000f,  0,  tdat4 );
 
   # Test with a negative base
 
-#  ASTAR_TEST_CASE( 10, x5, 0x00000000000000ff, \
-#    la   x3, tdat; \
-#    addi x3, x3, -32; \
-#    lbugp x5, 32; \
-#  )
+  ASTAR_TEST_CASE( 10, x5, 0x00000000000000ff, \
+    la   x3, tdat; \
+    addi x3, x3, -32; \
+    lbugp x5, 32; \
+  )
 
   # Test with unaligned base
 

@@ -642,37 +642,64 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
 
             case 0x0b: /* Andes CUSTOM-O */
                 funct2 = (insn >> 12) & 3;
-                imm = sext((get_field1(insn,31,17,17)
-                           | get_field1(insn,15,15,16)
-                           | get_field1(insn,17,12,14)
-                           | get_field1(insn,20,11,11)
-                           | get_field1(insn,21, 1,10) 
-                           | get_field1(insn,14, 0, 0)),18);
-                switch(funct2) {
-                   case 0x00: CAPTURED_INSTR("A* LBGP");
-                              addr = read_reg(_GP) + imm;
-                              if (target_read_u8(s, &_rval, addr)) goto mmu_exception;
-                              val = (int8_t) _rval;
-                              break;
-                   case 0x01: CAPTURED_INSTR("A* ADDIGP");
-                              val = ((intx_t) read_reg(_GP)) + imm;
-                              break;
-                   case 0x02: CAPTURED_INSTR("A* LBUGP"); 
-                              addr = read_reg(_GP) + imm;
-                              if (target_read_u8(s, &_rval, addr)) goto mmu_exception;
-                              val = _rval;
-                              break;
-                   case 0x03: CAPTURED_INSTR("A* SBGP"); 
-                              addr = read_reg(_GP) + imm;
-                              if (target_write_u8(s, addr, read_reg(rs2))) goto mmu_exception;
-                              val = _rval;
-                              break;
-                   default:
-                              ILLEGAL_INSTR("0xb-a")
+
+                if (funct2 == 0x00) { // LBGP
+                    CAPTURED_INSTR("A* LBGP");
+                    imm = sext((get_field1(insn,31,17,17)
+                               | get_field1(insn,15,15,16)
+                               | get_field1(insn,17,12,14)
+                               | get_field1(insn,20,11,11)
+                               | get_field1(insn,21, 1,10) 
+                               | get_field1(insn,14, 0, 0)),18);
+                    addr = read_reg(_GP) + imm;
+                    if (target_read_u8(s, &_rval, addr)) goto mmu_exception;
+                    val = (int8_t) _rval;
+                } else if (funct2 == 0x01) { // ADDIGP
+                    CAPTURED_INSTR("A* ADDIGP");
+                    imm = sext((get_field1(insn,31,17,17)
+                               | get_field1(insn,15,15,16)
+                               | get_field1(insn,17,12,14)
+                               | get_field1(insn,20,11,11)
+                               | get_field1(insn,21, 1,10) 
+                               | get_field1(insn,14, 0, 0)),18);
+                    val = ((intx_t) read_reg(_GP)) + imm;
+                } else if (funct2 == 0x02) { // LBUGP
+                    CAPTURED_INSTR("A* LBUGP"); 
+                    imm = sext((get_field1(insn,31,17,17)
+                               | get_field1(insn,15,15,16)
+                               | get_field1(insn,17,12,14)
+                               | get_field1(insn,20,11,11)
+                               | get_field1(insn,21, 1,10) 
+                               | get_field1(insn,14, 0, 0)),18);                    
+                    addr = read_reg(_GP) + imm;
+                    if (target_read_u8(s, &_rval, addr)) goto mmu_exception;
+                    val = _rval;
+                } else if (funct2 == 0x03) { // SBGP
+                    CAPTURED_INSTR("A* SBGP");
+                    imm = sext((get_field1(insn,31,17,17)
+                               | get_field1(insn,15,15,16)
+                               | get_field1(insn,17,12,14)
+                               | get_field1(insn, 7,11,11)
+                               | get_field1(insn,25, 5,10)
+                               | get_field1(insn, 8, 1, 4)
+                               | get_field1(insn,14, 0, 0)),18);
+                    addr = read_reg(_GP) + imm;
+                    if (target_write_u8(s, addr, read_reg(rs2))) goto mmu_exception;
+                    val = (int8_t) _rval;
+
+
+                              std::cout << std::hex << "gp:" << read_reg(_GP) << std::endl;
+                              std::cout << std::hex << "imm:" << imm << std::endl;
+                              std::cout << std::hex << "addr:" << addr << std::endl;
+                              std::cout << std::hex << "val:" << val << std::endl;
+
+                } else {
+                    ILLEGAL_INSTR("0xb-a")
                 }
 
                 if (rd != 0) write_reg(rd, val);
                 NEXT_INSN;
+                break;
 
             case 0x2b: /* Andes CUSTOM-1 */
                 funct3 = (insn >> 12) & 7;
@@ -731,12 +758,13 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
 
                 } else if(funct3 == 0x4) { // SWGP
                   CAPTURED_INSTR("A* SWGP");
-                  imm = sext((get_field1(insn,31,19,19)
-                            | get_field1(insn,21,17,18)
+                  imm = sext((get_field1(insn,31,18,18)
+                            | get_field1(insn, 8,17,17)
                             | get_field1(insn,15,15,16)
                             | get_field1(insn,17,12,14)
-                            | get_field1(insn,20,11,11)
-                            | get_field1(insn,23, 3,10)),20); 
+                            | get_field1(insn, 7,11,11)
+                            | get_field1(insn,25, 5,10)
+                            | get_field1(insn, 9, 2, 4)),19); 
 
                   addr = read_reg(_GP) + imm;
                   if (target_write_u32(s, addr, read_reg(rs2))) goto mmu_exception;
@@ -767,7 +795,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                   if (target_read_u32(s, &rval, addr)) goto mmu_exception;
                   val = rval;
 
-                } else if(funct3 == 0x7) { //SDGP
+                } else if(funct3 == 0x7) { // SDGP
 #if XLEN >= 64
                   CAPTURED_INSTR("A* SDGP");
                   //dword addr by construction
@@ -782,25 +810,9 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                   if (target_write_u64(s, addr, read_reg(rs2))) {
                     goto mmu_exception;
                   }
-                  break;
 #else
                   ILLEGAL_INSTR("02b-0")
 #endif
-                } else if(funct3 == 0x4) { // SWGP
-                  CAPTURED_INSTR("A* SWGP");
-                  imm = sext((get_field1(insn,31,18,18) //31    -> 18
-                            | get_field1(insn, 8,17,17) //8     -> 17
-                            | get_field1(insn,15,15,16) //16:15 -> 16:15
-                            | get_field1(insn,17,12,14) //19:17 -> 14:12
-                            | get_field1(insn, 7,11,11) //7     -> 11
-                            | get_field1(insn,25, 5,10) //30:25 -> 10:5
-                            | get_field1(insn, 9, 3, 4)),19);
-                  addr = read_reg(_GP) + imm;
-                  if (target_write_u32(s, addr, read_reg(rs2))) {
-                    goto mmu_exception;
-                  }
-                  break;
-
                 } else {
                   ILLEGAL_INSTR("02b-1")
                 }

@@ -30,6 +30,9 @@ andestar:
 	$(MAKE) run_andestar X=rv64ui-p T=lwgp
 	$(MAKE) run_andestar X=rv64ui-p T=lwugp
 	$(MAKE) run_andestar X=rv64ui-p T=ldgp
+	$(MAKE) run_andestar X=rv64ui-p T=sbgp
+	$(MAKE) run_andestar X=rv64ui-p T=shgp
+	$(MAKE) run_andestar X=rv64ui-p T=swgp
 	$(MAKE) run_andestar X=rv64ui-p T=sdgp
 
 run_andestar:
