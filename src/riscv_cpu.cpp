@@ -2180,6 +2180,7 @@ static int __must_use_result raise_interrupt(RISCVCPUState *s) {
     return -1;
 }
 
+// n is the size of the signed field we are sign extending - not the sign bit
 static inline int32_t sext(int32_t val, int n) { return (val << (32 - n)) >> (32 - n); }
 
 static inline uint32_t get_field1(uint32_t val, int src_pos, int dst_pos, int dst_pos_max) {
