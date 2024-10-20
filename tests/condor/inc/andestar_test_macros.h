@@ -7,6 +7,13 @@ test_ ## testnum: \
     li  x7, MASK_XLEN(correctval); \
     bne testreg, x7, astar_fail;
 
+#define ASTAR_TEST_RR_OP( testnum, inst, expect, val1, val2 ) \
+    ASTAR_TEST_CASE( testnum, x14, expect, \
+      li  x11, MASK_XLEN(val1); \
+      li  x12, MASK_XLEN(val2); \
+      inst x14, x11, x12; \
+    )
+
 #define ASTAR_TEST_S18_OP( testnum, inst, expect, x3_value, imm18 ) \
   ASTAR_TEST_CASE( testnum, x14, expect, \
     li   x7, expect; \
@@ -47,3 +54,24 @@ test_ ## testnum: \
       li  x12, offset; \
       inst x14, x11, x12; \
     )
+
+#define ASTAR_TEST_BRANCH_OP_TAKEN( testnum, inst, val, imm ) \
+test_ ## testnum: \
+    li  ASTAR_TESTNUM, testnum; \
+    li  x1, val; \
+    inst x1, imm, 2f; \
+    bne x0, ASTAR_TESTNUM, astar_fail; \
+1:  bne x0, ASTAR_TESTNUM, 3f; \
+2:  inst x1, imm, 1b; \
+    bne x0, ASTAR_TESTNUM, astar_fail; \
+3:
+
+#define ASTAR_TEST_BRANCH_OP_NOTTAKEN( testnum, inst, val, imm ) \
+test_ ## testnum: \
+    li  ASTAR_TESTNUM, testnum; \
+    li  x1, val; \
+    inst x1, imm, 1f; \
+    bne x0, ASTAR_TESTNUM, 2f; \
+1:  bne x0, ASTAR_TESTNUM, astar_fail; \
+2:  inst x1, imm, 1b; \
+3:

@@ -686,13 +686,6 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                     addr = read_reg(_GP) + imm;
                     if (target_write_u8(s, addr, read_reg(rs2))) goto mmu_exception;
                     val = (int8_t) _rval;
-
-
-                              std::cout << std::hex << "gp:" << read_reg(_GP) << std::endl;
-                              std::cout << std::hex << "imm:" << imm << std::endl;
-                              std::cout << std::hex << "addr:" << addr << std::endl;
-                              std::cout << std::hex << "val:" << val << std::endl;
-
                 } else {
                     ILLEGAL_INSTR("0xb-a")
                 }
@@ -1595,71 +1588,71 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                        
                 } else { //Branch group
 
-                  isBranchGroup = true;
+                    isBranchGroup = true;
 
-                  cimm7 = ( get_field1(insn,30,6,6)
-                          | get_field1(insn, 7,5,5)
-                          | get_field1(insn,20,0,4));
+                    cimm7 = ( get_field1(insn,30,6,6)
+                            | get_field1(insn, 7,5,5)
+                            | get_field1(insn,20,0,4));
 
-                  simm11 =  sext( get_field1(insn,31,10,10)
-                                | get_field1(insn,25,5,9)
-                                | get_field1(insn,8, 1,4),11);
+                    simm11 =  sext( get_field1(insn,31,10,10)
+                                    | get_field1(insn,25,5,9)
+                                    | get_field1(insn,8, 1,4),11);
 
-                  cimm6 = ( get_field1(insn, 7,5,5)
-                          | get_field1(insn,20,0,4));
+                    cimm6 = ( get_field1(insn, 7,5,5)
+                            | get_field1(insn,20,0,4));
 
-                  _new_pc = (target_ulong)(GET_PC() + simm11);
+                    _new_pc = (target_ulong)(GET_PC() + simm11);
 
-                  switch(_funct3) {
+                    switch(_funct3) {
 
-                      case 0x0: ILLEGAL_INSTR("CUST2-2-LEA");  break; //LEA  handled above
-                      case 0x1: ILLEGAL_INSTR("CUST2-2-???1"); break; //???
-                      case 0x2: ILLEGAL_INSTR("CUST2-2-BFOZ"); break; //BFOZ RV64 handled above
-                      case 0x3: ILLEGAL_INSTR("CUST2-2-BFOS"); break; //BFOS RV64"handled above);
-                      case 0x4: ILLEGAL_INSTR("CUST2-2-???2"); break; //???
+                        case 0x0: ILLEGAL_INSTR("CUST2-2-LEA");  break; //LEA  handled above
+                        case 0x1: ILLEGAL_INSTR("CUST2-2-???1"); break; //???
+                        case 0x2: ILLEGAL_INSTR("CUST2-2-BFOZ"); break; //BFOZ RV64 handled above
+                        case 0x3: ILLEGAL_INSTR("CUST2-2-BFOS"); break; //BFOS RV64"handled above);
+                        case 0x4: ILLEGAL_INSTR("CUST2-2-???2"); break; //???
 
-                      case 0x5: CAPTURED_INSTR("A* BEQC");
+                        case 0x5: CAPTURED_INSTR("A* BEQC");
 
                                 cond = (read_reg(rs1) == cimm7);
                                 break;
 
-                      case 0x6: CAPTURED_INSTR("A* BNEC");
+                        case 0x6: CAPTURED_INSTR("A* BNEC");
 
-                                cond = (read_reg(rs1) != cimm7); break;
+                                cond = (read_reg(rs1) != cimm7);
                                 break;
 
-                      case 0x7: if(_bit30 == 0) {
+                        case 0x7: 
+                            if(_bit30 == 0) {
 
-                                  CAPTURED_INSTR("A* BBC RV64");
-                                  cond = (((read_reg(rs1) >> cimm6) & 0x1) == 0x0); //bit cleared
-                                  if(!cond) { NEXT_INSN; }
-
-                                } else if(_bit30 == 1) {
-
-                                  CAPTURED_INSTR("A* BBS RV64");
-                                  cond = (((read_reg(rs1) >> cimm6) & 0x1) == 0x1); //bit set
-                                  if(!cond) { NEXT_INSN; }
-                                }
+                                CAPTURED_INSTR("A* BBC RV64");
+                                cond = (((read_reg(rs1) >> cimm6) & 0x1) == 0x0); //bit cleared
                                 break;
-                      default: ILLEGAL_INSTR("CUST2-2"); break;
-                  }
 
-                  if(cond) {
-                    if (!(s->misa & MCPUID_C) && (_new_pc & 3) != 0) {
-                        s->pending_exception = CAUSE_MISALIGNED_FETCH;
-                        s->pending_tval      = 0;
-                        goto exception;
+                            } else if(_bit30 == 1) {
+
+                                CAPTURED_INSTR("A* BBS RV64");
+                                cond = (((read_reg(rs1) >> cimm6) & 0x1) == 0x1); //bit set
+                                break;
+                            }
+                            
+                        default: ILLEGAL_INSTR("CUST2-2"); break;
                     }
-                    //Elsewhere new_pc is calculated and then recalculated here. FIXME: Is there a reason?
-                    //s->pc = (intx_t)(GET_PC() + simm11);
-                    s->pc = _new_pc;
-                    JUMP_INSN(ctf_taken_branch);
-                  } 
+
+                    if (isBranchGroup && cond) {
+                        if (!(s->misa & MCPUID_C) && (_new_pc & 3) != 0) {
+                            s->pending_exception = CAUSE_MISALIGNED_FETCH;
+                            s->pending_tval      = 0;
+                            goto exception;
+                        }
+                        //Elsewhere new_pc is calculated and then recalculated here. FIXME: Is there a reason?
+                        //s->pc = (intx_t)(GET_PC() + simm11);
+                        s->pc = _new_pc;
+                        JUMP_INSN(ctf_taken_branch);
+                    } 
 
                 } //end of branch group
 
-                if(!isBranchGroup) { NEXT_INSN; }
-               
+                NEXT_INSN;     
 #endif
 
 
