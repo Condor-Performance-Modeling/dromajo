@@ -39,475 +39,34 @@
  * THE SOFTWARE.
  */
 
-#include <assert.h>
-#include <errno.h>
-#include <fcntl.h>
-#include <getopt.h>
-#include <inttypes.h>
-#include <net/if.h>
-#include <stdarg.h>
-#include <stdbool.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/ioctl.h>
-#include <termios.h>
-#include <time.h>
-#include <unistd.h>
-#include <ctype.h>
+#include "block_device.h"
+#include "cutils.h"
+#include "elf64.h"
+#include "iomem.h"
+#include "network.h"
+#include "options.h"
+#include "riscv_machine.h"
+#include "term_io.h"
+#include "virtio.h"
 
 #include "dromajo.h"
-#ifndef __APPLE__
-#include <linux/if_tun.h>
-#endif
-#include <err.h>
-#include <signal.h>
-#include <sys/stat.h>
-
-#include <algorithm>
-
-#include "cutils.h"
-#include "iomem.h"
-#include "virtio.h"
-#ifdef CONFIG_FS_NET
-#include "fs_utils.h"
-#include "fs_wget.h"
-#endif
-#include "riscv_machine.h"
-#ifdef CONFIG_SLIRP
-#include "slirp/libslirp.h"
-#endif
-#include "elf64.h"
-
 #include "dromajo_sha.h"
 #include "dromajo_stf.h"
 #include "dromajo_isa.h"
 
+#ifdef CONFIG_FS_NET
+#include "fs_utils.h"
+#include "fs_wget.h"
+#endif
+
+#include <getopt.h>
+#include <net/if.h>
+#include <sys/ioctl.h>
+#include <csignal>
+
+FILE *dromajo_trace;
 FILE *dromajo_stdout;
 FILE *dromajo_stderr;
-
-typedef struct {
-    FILE *stdin, *out;
-    int   console_esc_state;
-    BOOL  resize_pending;
-} STDIODevice;
-
-static struct termios oldtty;
-static int            old_fd0_flags;
-static STDIODevice *  global_stdio_device;
-
-static void nonfunctional_argument(const char *arg)
-{
-    fprintf(dromajo_stderr,"Argument %s is not implemented\n",arg);
-    exit(1);
-}
-static void always_on_argument(const char *arg)
-{
-    fprintf(dromajo_stderr,"Argument %s is always enabled\n",arg);
-}
-
-static void deprecated_argument(const char *arg)
-{
-    fprintf(dromajo_stderr,"Argument %s is deprecated\n",arg);
-}
-
-static void term_exit(void) {
-    tcsetattr(0, TCSANOW, &oldtty);
-    fcntl(0, F_SETFL, old_fd0_flags);
-}
-
-static void term_init(BOOL allow_ctrlc) {
-    struct termios tty;
-
-    memset(&tty, 0, sizeof(tty));
-    tcgetattr(0, &tty);
-    oldtty        = tty;
-    old_fd0_flags = fcntl(0, F_GETFL);
-
-    tty.c_iflag &= ~(IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | ICRNL | IXON);
-    tty.c_oflag |= OPOST;
-    tty.c_lflag &= ~(ECHO | ECHONL | ICANON | IEXTEN);
-    if (!allow_ctrlc)
-        tty.c_lflag &= ~ISIG;
-    tty.c_cflag &= ~(CSIZE | PARENB);
-    tty.c_cflag |= CS8;
-    tty.c_cc[VMIN]  = 1;
-    tty.c_cc[VTIME] = 0;
-
-    tcsetattr(0, TCSANOW, &tty);
-
-    atexit(term_exit);
-}
-
-static void console_write(void *opaque, const uint8_t *buf, int len) {
-    STDIODevice *s = (STDIODevice *)opaque;
-    fwrite(buf, 1, len, s->out);
-    fflush(s->out);
-}
-
-static int console_read(void *opaque, uint8_t *buf, int len) {
-    STDIODevice *s = (STDIODevice *)opaque;
-
-    if (len <= 0)
-        return 0;
-
-    int ret = fread(buf, len, 1, s->stdin);
-    if (ret <= 0)
-        return 0;
-
-    int j = 0;
-    for (int i = 0; i < ret; i++) {
-        uint8_t ch = buf[i];
-        if (s->console_esc_state) {
-            s->console_esc_state = 0;
-            switch (ch) {
-                case 'x': fprintf(dromajo_stderr, "Terminated\n"); exit(0);
-                case 'h':
-                    fprintf(dromajo_stderr,
-                            "\n"
-                            "C-b h   print this help\n"
-                            "C-b x   exit emulator\n"
-                            "C-b C-b send C-b\n");
-                    break;
-                case 1: goto output_char;
-                default: break;
-            }
-        } else {
-            if (ch == 2) {  // Change to work with tmux
-                s->console_esc_state = 1;
-            } else {
-            output_char:
-                buf[j++] = ch;
-            }
-        }
-    }
-
-    return j;
-}
-
-static void term_resize_handler(int sig) {
-    if (global_stdio_device)
-        global_stdio_device->resize_pending = TRUE;
-}
-
-CharacterDevice *console_init(BOOL allow_ctrlc, FILE *stdin, FILE *out) {
-    term_init(allow_ctrlc);
-
-    CharacterDevice *dev = (CharacterDevice *)mallocz(sizeof *dev);
-    STDIODevice *    s   = (STDIODevice *)mallocz(sizeof *s);
-    s->stdin             = stdin;
-    s->out               = out;
-    /* Note: the glibc does not properly tests the return value of
-       write() in printf, so some messages on out may be lost */
-    fcntl(fileno(s->stdin), F_SETFL, O_NONBLOCK);
-
-    s->resize_pending   = TRUE;
-    global_stdio_device = s;
-
-    /* use a signal to get the host terminal resize events */
-    struct sigaction sig;
-    sig.sa_handler = term_resize_handler;
-    sigemptyset(&sig.sa_mask);
-    sig.sa_flags = 0;
-    sigaction(SIGWINCH, &sig, NULL);
-
-    dev->opaque     = s;
-    dev->write_data = console_write;
-    dev->read_data  = console_read;
-    return dev;
-}
-
-typedef enum {
-    BF_MODE_RO,
-    BF_MODE_RW,
-    BF_MODE_SNAPSHOT,
-} BlockDeviceModeEnum;
-
-#define SECTOR_SIZE 512UL
-
-typedef struct BlockDeviceFile {
-    FILE *              f;
-    int64_t             nb_sectors;
-    BlockDeviceModeEnum mode;
-    uint8_t **          sector_table;
-} BlockDeviceFile;
-
-static int64_t bf_get_sector_count(BlockDevice *bs) {
-    BlockDeviceFile *bf = (BlockDeviceFile *)bs->opaque;
-    return bf->nb_sectors;
-}
-
-//#define DUMP_BLOCK_READ
-
-static int bf_read_async(BlockDevice *bs, uint64_t sector_num, uint8_t *buf, int n, BlockDeviceCompletionFunc *cb, void *opaque) {
-    BlockDeviceFile *bf = (BlockDeviceFile *)bs->opaque;
-#ifdef DUMP_BLOCK_READ
-    {
-        static FILE *f;
-        if (!f)
-            f = fopen("/tmp/read_sect.txt", "wb");
-        fprintf(f, "%" PRId64 " %d\n", sector_num, n);
-    }
-#endif
-    if (!bf->f)
-        return -1;
-    if (bf->mode == BF_MODE_SNAPSHOT) {
-        int i;
-        for (i = 0; i < n; i++) {
-            if (!bf->sector_table[sector_num]) {
-                fseek(bf->f, sector_num * SECTOR_SIZE, SEEK_SET);
-                size_t got = fread(buf, 1, SECTOR_SIZE, bf->f);
-                (void) got; // Make GCC happy
-                assert(got == SECTOR_SIZE);
-            } else {
-                memcpy(buf, bf->sector_table[sector_num], SECTOR_SIZE);
-            }
-            sector_num++;
-            buf += SECTOR_SIZE;
-        }
-    } else {
-        fseek(bf->f, sector_num * SECTOR_SIZE, SEEK_SET);
-        size_t got = fread(buf, 1, n * SECTOR_SIZE, bf->f);
-        (void) got; // Make GCC happy
-        assert(got == n * SECTOR_SIZE);
-    }
-    /* synchronous read */
-    return 0;
-}
-
-static int bf_write_async(BlockDevice *bs, uint64_t sector_num, const uint8_t *buf, int n, BlockDeviceCompletionFunc *cb,
-                          void *opaque) {
-    BlockDeviceFile *bf = (BlockDeviceFile *)bs->opaque;
-    int              ret;
-
-    switch (bf->mode) {
-        case BF_MODE_RO:
-            ret = -1; /* error */
-            break;
-        case BF_MODE_RW:
-            fseek(bf->f, sector_num * SECTOR_SIZE, SEEK_SET);
-            fwrite(buf, 1, n * SECTOR_SIZE, bf->f);
-            ret = 0;
-            break;
-        case BF_MODE_SNAPSHOT: {
-            if ((unsigned int)(sector_num + n) > bf->nb_sectors)
-                return -1;
-            for (int i = 0; i < n; i++) {
-                if (!bf->sector_table[sector_num]) {
-                    bf->sector_table[sector_num] = (uint8_t *)malloc(SECTOR_SIZE);
-                }
-                memcpy(bf->sector_table[sector_num], buf, SECTOR_SIZE);
-                sector_num++;
-                buf += SECTOR_SIZE;
-            }
-            ret = 0;
-        } break;
-        default: abort();
-    }
-
-    return ret;
-}
-
-static BlockDevice *block_device_init(const char *filename, BlockDeviceModeEnum mode) {
-    const char *mode_str;
-
-    if (mode == BF_MODE_RW) {
-        mode_str = "r+b";
-    } else {
-        mode_str = "rb";
-    }
-
-    FILE *f = fopen(filename, mode_str);
-    if (!f) {
-        perror(filename);
-        exit(1);
-    }
-    fseek(f, 0, SEEK_END);
-    int64_t file_size = ftello(f);
-
-    BlockDevice *    bs = (BlockDevice *)mallocz(sizeof *bs);
-    BlockDeviceFile *bf = (BlockDeviceFile *)mallocz(sizeof *bf);
-
-    bf->mode       = mode;
-    bf->nb_sectors = file_size / 512;
-    bf->f          = f;
-
-    if (mode == BF_MODE_SNAPSHOT) {
-        bf->sector_table = (uint8_t **)mallocz(sizeof(bf->sector_table[0]) * bf->nb_sectors);
-    }
-
-    bs->opaque           = bf;
-    bs->get_sector_count = bf_get_sector_count;
-    bs->read_async       = bf_read_async;
-    bs->write_async      = bf_write_async;
-    return bs;
-}
-
-#define MAX_EXEC_CYCLE 1
-#define MAX_SLEEP_TIME 10 /* in ms */
-
-#if !defined(__APPLE__)
-typedef struct {
-    int  fd;
-    BOOL select_filled;
-} TunState;
-
-static void tun_write_packet(EthernetDevice *net, const uint8_t *buf, int len) {
-    TunState *s   = (TunState *)net->opaque;
-    ssize_t   got = write(s->fd, buf, len);
-    (void) got; // Make GCC happy
-    assert(got == len);
-}
-
-static void tun_select_fill(EthernetDevice *net, int *pfd_max, fd_set *rfds, fd_set *wfds, fd_set *efds, int *pdelay) {
-    TunState *s      = (TunState *)net->opaque;
-    int       net_fd = s->fd;
-
-    s->select_filled = net->device_can_write_packet(net);
-    if (s->select_filled) {
-        FD_SET(net_fd, rfds);
-        *pfd_max = max_int(*pfd_max, net_fd);
-    }
-}
-
-static void tun_select_poll(EthernetDevice *net, fd_set *rfds, fd_set *wfds, fd_set *efds, int select_ret) {
-    TunState *s      = (TunState *)net->opaque;
-    int       net_fd = s->fd;
-    uint8_t   buf[2048];
-    int       ret;
-
-    if (select_ret <= 0)
-        return;
-    if (s->select_filled && FD_ISSET(net_fd, rfds)) {
-        ret = read(net_fd, buf, sizeof(buf));
-        if (ret > 0)
-            net->device_write_packet(net, buf, ret);
-    }
-}
-
-/* configure with:
-# bridge configuration (connect tap0 to bridge interface br0)
-   ip link add br0 type bridge
-   ip tuntap add dev tap0 mode tap [user x] [group x]
-   ip link set tap0 master br0
-   ip link set dev br0 up
-   ip link set dev tap0 up
-
-# NAT configuration (eth1 is the interface connected to internet)
-   ifconfig br0 192.168.3.1
-   echo 1 > /proc/sys/net/ipv4/ip_forward
-   iptables -D FORWARD 1
-   iptables -t nat -A POSTROUTING -o eth1 -j MASQUERADE
-
-   In the VM:
-   ifconfig eth0 192.168.3.2
-   route add -net 0.0.0.0 netmask 0.0.0.0 gw 192.168.3.1
-*/
-static EthernetDevice *tun_open(const char *ifname) {
-    struct ifreq ifr;
-    int          fd, ret;
-
-    fd = open("/dev/net/tun", O_RDWR);
-    if (fd < 0) {
-        fprintf(dromajo_stderr, "Error: could not open /dev/net/tun\n");
-        return NULL;
-    }
-    memset(&ifr, 0, sizeof(ifr));
-    ifr.ifr_flags = IFF_TAP | IFF_NO_PI;
-    pstrcpy(ifr.ifr_name, sizeof(ifr.ifr_name), ifname);
-    ret = ioctl(fd, TUNSETIFF, (void *)&ifr);
-    if (ret != 0) {
-        fprintf(dromajo_stderr, "Error: could not configure /dev/net/tun\n");
-        close(fd);
-        return NULL;
-    }
-    fcntl(fd, F_SETFL, O_NONBLOCK);
-
-    EthernetDevice *net = (EthernetDevice *)mallocz(sizeof *net);
-    net->mac_addr[0]    = 0x02;
-    net->mac_addr[1]    = 0x00;
-    net->mac_addr[2]    = 0x00;
-    net->mac_addr[3]    = 0x00;
-    net->mac_addr[4]    = 0x00;
-    net->mac_addr[5]    = 0x01;
-
-    TunState *s       = (TunState *)mallocz(sizeof *s);
-    s->fd             = fd;
-    net->opaque       = s;
-    net->write_packet = tun_write_packet;
-    net->select_fill  = tun_select_fill;
-    net->select_poll  = tun_select_poll;
-    return net;
-}
-
-#endif /* !__APPLE__*/
-
-#ifdef CONFIG_SLIRP
-
-/*******************************************************/
-/* slirp */
-
-static Slirp *slirp_state;
-
-static void slirp_write_packet(EthernetDevice *net, const uint8_t *buf, int len) {
-    Slirp *slirp_state = net->opaque;
-    slirp_input(slirp_state, buf, len);
-}
-
-int slirp_can_output(void *opaque) {
-    EthernetDevice *net = opaque;
-    return net->device_can_write_packet(net);
-}
-
-void slirp_output(void *opaque, const uint8_t *pkt, int pkt_len) {
-    EthernetDevice *net = opaque;
-    return net->device_write_packet(net, pkt, pkt_len);
-}
-
-static void slirp_select_fill1(EthernetDevice *net, int *pfd_max, fd_set *rfds, fd_set *wfds, fd_set *efds, int *pdelay) {
-    Slirp *slirp_state = net->opaque;
-    slirp_select_fill(slirp_state, pfd_max, rfds, wfds, efds);
-}
-
-static void slirp_select_poll1(EthernetDevice *net, fd_set *rfds, fd_set *wfds, fd_set *efds, int select_ret) {
-    Slirp *slirp_state = net->opaque;
-    slirp_select_poll(slirp_state, rfds, wfds, efds, (select_ret <= 0));
-}
-
-static EthernetDevice *slirp_open(void) {
-    EthernetDevice *net;
-    struct in_addr  net_addr   = {.s_addr = htonl(0x0a000200)}; /* 10.0.2.0 */
-    struct in_addr  mask       = {.s_addr = htonl(0xffffff00)}; /* 255.255.255.0 */
-    struct in_addr  host       = {.s_addr = htonl(0x0a000202)}; /* 10.0.2.2 */
-    struct in_addr  dhcp       = {.s_addr = htonl(0x0a00020f)}; /* 10.0.2.15 */
-    struct in_addr  dns        = {.s_addr = htonl(0x0a000203)}; /* 10.0.2.3 */
-    const char *    bootfile   = NULL;
-    const char *    vhostname  = NULL;
-    int             restricted = 0;
-
-    if (slirp_state) {
-        fprintf(dromajo_stderr, "Only a single slirp instance is allowed\n");
-        return NULL;
-    }
-    net = mallocz(sizeof(*net));
-
-    slirp_state = slirp_init(restricted, net_addr, mask, host, vhostname, "", bootfile, dhcp, dns, net);
-
-    net->mac_addr[0]  = 0x02;
-    net->mac_addr[1]  = 0x00;
-    net->mac_addr[2]  = 0x00;
-    net->mac_addr[3]  = 0x00;
-    net->mac_addr[4]  = 0x00;
-    net->mac_addr[5]  = 0x01;
-    net->opaque       = slirp_state;
-    net->write_packet = slirp_write_packet;
-    net->select_fill  = slirp_select_fill1;
-    net->select_poll  = slirp_select_poll1;
-
-    return net;
-}
-
-#endif /* CONFIG_SLIRP */
 
 BOOL virt_machine_run(RISCVMachine *s, int hartid, int n_cycles) {
     (void)virt_machine_get_sleep_duration(s, hartid, MAX_SLEEP_TIME);
@@ -559,126 +118,9 @@ void launch_alternate_executable(char **argv) {
 
 #ifdef CONFIG_FS_NET
 static BOOL net_completed;
-
 static void net_start_cb(void *arg) { net_completed = TRUE; }
-
 static BOOL net_poll_cb(void *arg) { return net_completed; }
-
 #endif
-
-static void usage_isa()
-{
-    fprintf(dromajo_stderr,"\nSupported/Implemented ISA Extensions\n");
-    for (const auto& [key, _] : extensionMap) {
-        fprintf(stdout, "  -  %s\n", key.c_str());
-    }
-    exit(1);
-}
-
-static void usage(const char *prog, const char *msg) {
-    fprintf(dromajo_stderr,
-        "\nmessage: %s\n\n"
-        "    Dromajo version:  %s\n"
-        "    Dromajo SHA:      %s\n"
-        "    STF_LIB SHA:      %s\n"
-        "\n"
-        "    Copyright (c) 2016-2017 Fabrice Bellard\n"
-        "    Copyright (c) 2018,2019 Esperanto Technologies\n"
-        "    Copyright (c) 2023-2024 Condor Computing\n"
-        "\n"
-        "usage: %s {options} [config|elf-file]\n\n"
-        "    --help ...\n"
-        "\n"
-        "  ISA selection options EXPERIMENTAL\n" 
-        "    --march <string> Specify the architecture string to enable\n"
-        "                  supported ISA extensions, default is rv64gc.\n"
-        "                  --help-march to see currently supported set.\n"
-        "    --show-march  Takes a complete option set and shows the\n"
-        "                  enabled extensions. Then exits. \n"
-        "    --help-march   List the currently supported ISA extension set.\n"
-        "\n"
-        "  STF options\n" 
-        "    --stf_trace <filename> Dump an STF trace to the given file\n"
-        "                  Use .zstf as the file extension for compressed trace\n"
-        "                  output. Use .stf for uncompressed output\n"
-        "    --stf_exit_on_stop_opc Terminate the simulation after \n"
-        "                  detecting a STOP_TRACE opcode. Using this\n"
-        "                  switch will disable non-contiguous region\n"
-        "                  tracing. The first STOP_TRACE opcode will \n"
-        "                  terminate the simulator.\n"
-        "    --stf_memrecord_size_in_bits write memory access size in bits instead of bytes\n"
-        "    --stf_trace_register_state include register state in the STF\n"
-        "                   (default false)\n"
-        "    --stf_disable_memory_records Do not add memory records to \n"
-        "                   STF trace. By default memory records are \n"
-        "                   always traced.\n"
-        "                   (default false)\n"
-        "    --stf_tracepoint Enable tracepoint detection for STF trace \n"
-        "                  generation.\n"
-        "                  ALWAYS ENABLED IN THIS VERSION.\n"
-        "    --stf_include_tracepoints Include the start/stop tracepoints \n"
-        "                  in the STF trace\n"
-        "                  DISABLED IN THIS VERSION.\n"
-        "    --stf_priv_modes <USHM|USH|US|U> Specify which privilege \n"
-        "                  modes to include for STF trace generation\n"
-        "    --stf_force_zero_sha Emit 0 for all SHA's in the STF header. This is a \n"
-        "                  debug option. Also clears the dromajo version placed in\n"
-        "                  the STF header.\n"
-        "    --stf_essential_mode DEPRECATED. NO LONGER NECESSARY. \n"
-        "                  The behavior controlled by this switch is now on by default.\n"
-        "                  See: --stf_disable_memory_records, --stf_trace_register_state\n"
-
-        "  Standard options\n" 
-        "    --cmdline Kernel command line arguments to append\n"
-        "    --simpoint reads a simpoint file to create multiple checkpoints\n"
-        "    --ncpus number of cpus to simulate (default 1)\n"
-        "    --load resumes a previously saved snapshot\n"
-        "    --save saves a snapshot upon exit\n"
-        "    --maxinsns terminates execution after a number of instructions\n"
-        "    --terminate-event name of the validate event to terminate \n"
-        "                  execution\n"
-        "    --trace start trace dump after a number of instructions.\n"
-        "                  Trace disabled by default\n"
-        "    --ignore_sbi_shutdown continue simulation even upon seeing \n"
-        "                  the SBI_SHUTDOWN call\n"
-        "    --dump_memories dump memories that could be used to load \n"
-        "                  a cosimulation\n"
-        "    --memory_size sets the memory size in MiB \n"
-        "                   (default 256 MiB)\n"
-        "    --memory_addr sets the memory start address \n"
-        "                   (default 0x%lx)\n"
-        "    --bootrom load in a bootrom img file \n"
-        "                   (default is dromajo bootrom)\n"
-        "    --dtb load in a dtb file (default is dromajo dtb)\n"
-        "    --compact_bootrom have dtb be directly after bootrom \n"
-        "                   (default 256B after boot base)\n"
-        "    --reset_vector set reset vector for all cores \n"
-        "                   (default 0x%lx)\n"
-        "    --plic START:SIZE set PLIC start address and size in B\n"
-        "                   (defaults to 0x%lx:0x%lx)\n"
-        "    --clint START:SIZE set CLINT start address and size in B\n"
-        "                   (defaults to 0x%lx:0x%lx)\n"
-        "    --custom_extension add X extension to misa for all cores\n"
-#ifdef LIVECACHE
-        "    --live_cache_size live cache warmup for checkpoint \n"
-        "                   (default 8M)\n"
-#endif
-        "    --clear_ids clear mvendorid, marchid, mimpid for all cores\n\n" 
-        ,
-        msg,
-        DROMAJO_VERSION_STRING,
-        DROMAJO_GIT_SHA,
-        STF_LIB_GIT_SHA,
-        prog,
-        (long)RAM_BASE_ADDR,
-        (long)RAM_BASE_ADDR,
-        (long)PLIC_BASE_ADDR,
-        (long)PLIC_SIZE,
-        (long)CLINT_BASE_ADDR,
-        (long)CLINT_SIZE);
-
-    exit(EXIT_FAILURE);
-}
 
 static bool load_elf_and_fake_the_config(VirtMachineParams *p, const char *path) {
     uint8_t *buf;
@@ -689,7 +131,7 @@ static bool load_elf_and_fake_the_config(VirtMachineParams *p, const char *path)
         p->files[VM_FILE_BIOS].filename = strdup(path);
         p->files[VM_FILE_BIOS].buf      = buf;
         p->files[VM_FILE_BIOS].len      = buf_len;
-        p->ram_size                     = (size_t)256 << 20;  // Default to 256 MiB
+        p->ram_size    = (size_t)256 << 20;  // Default to 256 MiB
         p->ram_base_addr                = RAM_BASE_ADDR;
         elf64_find_global(buf, buf_len, "tohost", &p->htif_base_addr);
 
@@ -702,25 +144,25 @@ static bool load_elf_and_fake_the_config(VirtMachineParams *p, const char *path)
 }
 
 RISCVMachine *virt_machine_main(int argc, char **argv) {
-    const char *prog                     = argv[0];
-    char *      snapshot_load_name       = 0;
-    char *      snapshot_save_name       = 0;
-    const char *path                     = NULL;
-    const char *cmdline                  = NULL;
-    long        ncpus                    = 0;
-    uint64_t    maxinsns                 = 0;
-    uint64_t    trace                    = UINT64_MAX;
+    const char *prog                = argv[0];
+    char *      snapshot_load_name  = 0;
+    char *      snapshot_save_name  = 0;
+    const char *path                = NULL;
+    const char *cmdline             = NULL;
+    long        ncpus               = 0;
+    uint64_t    maxinsns            = 0;
+
+    uint64_t    exe_trace           = UINT64_MAX;
+    const char *exe_trace_file_name = nullptr;
+    bool        interactive         = false;
 
     const char *stf_trace                  = nullptr;
     bool        stf_exit_on_stop_opc       = false;
     bool        stf_memrecord_size_in_bits = false;
     bool        stf_trace_register_state   = false;
     bool        stf_disable_memory_records = false;
-    bool        stf_tracepoint             = false;
-    bool        stf_include_tracepoints    = false;
     const char *stf_priv_modes             = "USHM";
     bool        stf_force_zero_sha         = false;
-    bool        stf_essential_mode         = false; //makes no difference
 
     long        memory_size_override      = 0;
     uint64_t    memory_addr_override      = 0;
@@ -738,46 +180,53 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
     bool        custom_extension          = false;
     const char *simpoint_file             = 0;
     bool        clear_ids                 = false;
-#ifdef LIVECACHE
-    uint64_t    live_cache_size          = 8*1024*1024;
-#endif
-    bool        elf_based                = false;
-    bool        allow_ctrlc              = false;
-    bool        show_enabled_extensions  = false;
-    const char *march_string             = "rv64gc";
 
-    dromajo_stdout = stdout;
-    dromajo_stderr = stderr;
+#ifdef LIVECACHE
+    uint64_t    live_cache_size            = 8*1024*1024;
+#endif
+    bool        elf_based                  = false;
+    bool        allow_ctrlc                = false;
+    bool        show_enabled_extensions    = false;
+    const char *march_string               = "rv64gc";
+
+    dromajo_stdout    = stdout;
+    dromajo_stderr    = stderr;
+    dromajo_trace     = stderr;
 
     optind = 0;
 
     for (;;) {
         int option_index = 0;
         // clang-format off
-        // k q v E F G ...
+        // available: k, v, E, F, G, J, K, N, O, Q, R, U, V, W, Y, w, x
         static struct option long_options[] = {
             {"help",                              no_argument, 0,  'h' },
             {"help-march",                        no_argument, 0,  'g' },
             {"show-march",                        no_argument, 0,  'j' },
+            {"help-interactive",                  no_argument, 0,  'H' },
+
             {"cmdline",                     required_argument, 0,  'c' }, // CFG
             {"ncpus",                       required_argument, 0,  'n' }, // CFG
             {"load",                        required_argument, 0,  'l' },
             {"save",                        required_argument, 0,  's' },
             {"simpoint",                    required_argument, 0,  'S' },
             {"maxinsns",                    required_argument, 0,  'm' }, // CFG
-            {"trace   ",                    required_argument, 0,  't' },
+
             {"march   ",                    required_argument, 0,  'i' },
+            {"custom_extension",                  no_argument, 0,  'u' }, // CFG
+
+            {"trace",                       required_argument, 0,  't' },
+            {"exe_trace",                   required_argument, 0,  'T' },
+            {"exe_trace_log",               required_argument, 0,  'q' },
+            {"interactive",                       no_argument, 0,  'I' },
 
             {"stf_trace",                   required_argument, 0,  'z' },
             {"stf_exit_on_stop_opc",              no_argument, 0,  'e' },
             {"stf_memrecord_size_in_bits",        no_argument, 0,  'B' },
             {"stf_trace_register_state",          no_argument, 0,  'y' },
             {"stf_disable_memory_records",        no_argument, 0,  'f' },
-            {"stf_tracepoint",                    no_argument, 0,  'x' },
-            {"stf_include_tracepoints",           no_argument, 0,  'w' },
             {"stf_priv_modes",              required_argument, 0,  'a' },
             {"stf_force_zero_sha",                no_argument, 0,  'Z' },
-            {"stf_essential_mode",                no_argument, 0,  'Y' },
 
             {"ignore_sbi_shutdown",         required_argument, 0,  'P' }, // CFG
             {"dump_memories",                     no_argument, 0,  'D' }, // CFG
@@ -789,7 +238,6 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
             {"dtb",                         required_argument, 0,  'd' }, // CFG
             {"plic",                        required_argument, 0,  'p' }, // CFG
             {"clint",                       required_argument, 0,  'C' }, // CFG
-            {"custom_extension",                  no_argument, 0,  'u' }, // CFG
             {"clear_ids",                         no_argument, 0,  'L' }, // CFG
             {"ctrlc",                             no_argument, 0,  'X' },
 #ifdef LIVECACHE
@@ -804,37 +252,46 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
             break;
 
         switch (c) {
-            case 'h':
-                usage(prog, "Show usage");
-                break;
-            case 'g':
-                usage_isa(); //Show supported extensions
-                break;
-            case 'j':
-                show_enabled_extensions= true;
-                break;
-            case 'i':
-                march_string = strdup(optarg);
-                break;
-            case 'X':
-                allow_ctrlc = true;
-                break;
             case 'c':
                 if (cmdline)
                     usage(prog, "already had a kernel command line");
                 cmdline = strdup(optarg);
                 break;
 
-            case 'n':
-                if (ncpus != 0)
-                    usage(prog, "already had a ncpus set");
-                ncpus = atoll(optarg);
+            case 'g': //Show supported extensions
+                usage_isa();
+                break;
+
+            case 'h': // List options
+                usage(prog, "Show usage");
+                break;
+
+            case 'H': // Show interactive command help
+                usage_interactive();
+                break;
+
+            case 'i':
+                march_string = strdup(optarg);
+                break;
+
+            case 'I':
+                interactive = true;
+                break;
+
+            case 'j':
+                show_enabled_extensions= true;
                 break;
 
             case 'l':
                 if (snapshot_load_name)
                     usage(prog, "already had a snapshot to load");
                 snapshot_load_name = strdup(optarg);
+                break;
+
+            case 'n':
+                if (ncpus != 0)
+                    usage(prog, "already had a ncpus set");
+                ncpus = atoll(optarg);
                 break;
 
             case 's':
@@ -864,22 +321,22 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
                 }
                 break;
 
+            case 'T':
             case 't':
-                if (trace != UINT64_MAX)
+                if (exe_trace != UINT64_MAX)
                     usage(prog, "already had a trace set");
-                trace = (uint64_t)atoll(optarg);
+                exe_trace = (uint64_t)atoll(optarg);
                 break;
+            case 'q': exe_trace_file_name = strdup(optarg); break;
 
-            case 'z': stf_trace = strdup(optarg); break;
-            case 'e': stf_exit_on_stop_opc = true; break;
             case 'B': stf_memrecord_size_in_bits = true; break;
-            case 'y': stf_trace_register_state = true; break;
-            case 'f': stf_disable_memory_records = true; break;
-            case 'x': stf_tracepoint  = true; break;
-            case 'w': stf_include_tracepoints = true; break;
-            case 'a': stf_priv_modes = strdup(optarg); break;
             case 'Z': stf_force_zero_sha = true; break;
-            case 'Y': stf_essential_mode = true; break;
+            case 'a': stf_priv_modes = strdup(optarg); break;
+            case 'e': stf_exit_on_stop_opc = true; break;
+            case 'f': stf_disable_memory_records = true; break;
+            case 'y': stf_trace_register_state = true; break;
+            case 'z': stf_trace = strdup(optarg); break;
+
             case 'P': ignore_sbi_shutdown = true; break;
             case 'D': dump_memories = true; break;
 
@@ -975,6 +432,9 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
                 }
                 break;
 #endif
+            case 'X':
+                allow_ctrlc = true;
+                break;
 
             default: usage(prog, "Unknown command line argument");
         }
@@ -1221,7 +681,20 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
     }
 
     s->common.snapshot_save_name = snapshot_save_name;
-    s->common.trace              = trace;
+    s->common.exe_trace          = exe_trace;
+
+    if(exe_trace_file_name) {
+
+      dromajo_trace = fopen(exe_trace_file_name,"w");
+
+      if(dromajo_trace == NULL) {
+            fprintf(stderr, "Could not open execution log file '%s'\n", 
+                    exe_trace_file_name);
+      }
+
+    } 
+
+    s->common.interactive = interactive;
 
     /* STF Trace Generation */
     auto get_stf_highest_priv_mode = [](const char * stf_priv_modes) -> int {
@@ -1249,14 +722,11 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
     s->common.stf_memrecord_size_in_bits = stf_memrecord_size_in_bits;
     s->common.stf_trace_register_state   = stf_trace_register_state;
     s->common.stf_disable_memory_records = stf_disable_memory_records;
-    s->common.stf_tracepoints_enabled    = stf_tracepoint;
-    s->common.stf_include_tracepoints    = false;
-    s->common.stf_highest_priv_mode = get_stf_highest_priv_mode(stf_priv_modes);
+    s->common.stf_highest_priv_mode      = get_stf_highest_priv_mode(stf_priv_modes);
     s->common.stf_force_zero_sha         = stf_force_zero_sha;
 
     s->common.stf_trace_open           = false;
-    s->common.stf_in_traceable_region  = false; //FIXME IN PROGRESS
-    s->common.stf_in_tracepoint_region = false; //FIXME IN PROGRESS
+    s->common.stf_in_traceable_region  = false;
     s->common.stf_tracing_enabled      = false;
     s->common.stf_is_start_opc         = false;
     s->common.stf_is_stop_opc          = false;
@@ -1265,37 +735,13 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
     s->common.stf_prog_asid = 0;
     s->common.stf_count     = 0;
 
-    //FIXME:  forcing an exit on these previously supported switches
-    //FIXME - restore this feature
-
-    //FIXME - restore this feature
-    if(stf_essential_mode) {
-      deprecated_argument("stf_essential_mode");
-    }
-
-    //FIXME - trace points should always be enabled, full trace should be
-    //        controlled from the command line
-    //if(s->common.stf_tracepoint) {
-    //  nonfunctional_argument("stf_tracepoint");
-    //}
-
-    //FIXME - add this feature
-    if(stf_include_tracepoints) {
-      nonfunctional_argument("stf_include_tracepoints");
-    }
-
-    //FIXME - add this feature
-    if(!stf_tracepoint) {
-      always_on_argument("stf_tracepoint");
-    }
-
     // Allow the command option argument to overwrite the value
     // specified in the configuration file
     if (maxinsns > 0) {
         s->common.maxinsns = maxinsns;
     }
 
-    // If not value is specified in the configuration or the command line
+    // If no value is specified in the configuration or the command line
     // then run indefinitely
     if (s->common.maxinsns == 0)
         s->common.maxinsns = UINT64_MAX;

@@ -6,8 +6,7 @@ DROM   = ../../build/dromajo
 # Note for this march switch to work these benchmarks should be compiled
 # with a similar MARCH.
 
-#D_OPTS = --ctrlc --show-march --stf_tracepoint --stf_priv_modes USHM 
-D_OPTS = --march=rv64gc_zba_zbb_zbc_zbs --ctrlc --stf_tracepoint --stf_priv_modes USHM 
+D_OPTS = --march=rv64gc_zba_zbb_zbc_zbs --ctrlc --stf_priv_modes USHM 
 
 #D_TR   = --stf_trace=trace.stf
 

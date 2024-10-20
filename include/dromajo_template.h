@@ -56,10 +56,23 @@
 #include "dromajo_stf.h"
 #include <limits>
 
-#define EN_ZBA (s->machine->common.ext_flags.zba == true)
-#define EN_ZBB (s->machine->common.ext_flags.zbb == true)
-#define EN_ZBC (s->machine->common.ext_flags.zbb == true)
-#define EN_ZBS (s->machine->common.ext_flags.zbs == true)
+//#define EN_ZBA (s->machine->common.ext_flags.zba == true)
+//#define EN_ZBB (s->machine->common.ext_flags.zbb == true)
+//#define EN_ZBC (s->machine->common.ext_flags.zbb == true)
+//#define EN_ZBS (s->machine->common.ext_flags.zbs == true)
+
+#define EN_ZBA 1
+#define EN_ZBB 1
+#define EN_ZBC 1
+#define EN_ZBS 1
+
+//TODO: add this to extension support
+#define EN_ASTAR 1
+#define EN_CODENSE 0
+//TODO: add this to extension support
+#define _GP 0x3
+//TODO: modify src to use this instead of cond. compile
+extern uint32_t _XLEN;
 
 #define HALF_WORD_MASK 0xFFFF
 
@@ -68,7 +81,7 @@
 
 #if REPORT_ILLEGAL == 1
 #define ILLEGAL_INSTR(S) { \
-  fprintf(dromajo_stderr,"ILLEGAL INSTR %s PC:0x%lx ENC:0x%08x\n",S,s->pc,insn); \
+  fprintf(dromajo_stderr,"ILLEGAL INSTR %s PC:0x%lx ENC:0x%08x OPC:%03x\n",S,s->pc,insn,insn&0x7F); \
   goto illegal_insn; \
 }
 #else
@@ -79,7 +92,7 @@
 
 #if CAPTURE_LOG == 1 
 #define CAPTURED_INSTR(S) { \
-  fprintf(dromajo_stderr,"HERE CAPTURED %s PC:0x%lx ENC:0x%08x\n",S,s->pc,insn);  \
+  fprintf(dromajo_stderr,"CAPTURED INSTR %s PC:0x%lx ENC:0x%08x\n",S,s->pc,insn);  \
 }
 #else
 #define CAPTURED_INSTR(S)
@@ -225,6 +238,130 @@ static inline intx_t glue(clzw,XLEN)(uintx_t val) {
       return __builtin_ctz(_val);
     }
 }
+// -------------------------------------------------------------------------
+#if XLEN >= 64
+// -------------------------------------------------------------------------
+static inline uint64_t get_mask(int len) {
+    return (len == 64) ? ~0ULL : (1ULL << len) - 1;
+}
+static inline uint64_t clear_bits(uint64_t value, int start, int end) {
+    uintx_t mask = get_mask(start + 1) & ~get_mask(end);
+    return value & ~mask;
+}
+// -------------------------------------------------------------------------
+// FIXME: The documentation from andes isn't clear about what should happen
+// when msb or lsb is zero. This code is suspect until tested 
+// -------------------------------------------------------------------------
+static inline uint64_t bfoz_oper(uint32_t insn,uintx_t Rs1) {
+
+    uint64_t val=0;
+    uint32_t msb = insn >> 26 & 0x3F;
+    uint32_t lsb = insn >> 20 & 0x3F;
+
+    uint32_t lsbp1 = lsb + 1;
+    uint32_t msbm1 = msb - 1;
+    uint32_t lsbm1 = lsb - 1;
+
+    if (msb == 0) {
+        // Set val[lsb] = Rs1[0]
+        val |= ((Rs1 & 1) << lsb);
+
+        // Zero out the upper part if lsb < 63
+        if (lsb < 63) {
+            val = clear_bits(val, 63, lsbp1);
+        }
+        
+        // Zero out the lower part if lsb > 0
+        if (lsb > 0) {
+            val = clear_bits(val, lsbm1, 0);
+        }
+    } else if (msb < lsb) {
+        // Case: msb < lsb
+        int lenm1 = lsb - msb;
+        
+        // Set val[lsb:msb] = Rs1[lenm1:0]
+        val |= (Rs1 & get_mask(lenm1 + 1)) << msb;
+        
+        // Zero out the upper part if lsb < 63
+        if (lsb < 63) {
+            val = clear_bits(val, 63, lsbp1);
+        }
+  
+        // Zero out lower part val[msbm1:0]
+        val = clear_bits(val, msbm1, 0);
+    } else {
+        // Case: msb >= lsb
+        int lenm1 = msb - lsb;
+
+        // Set val[lenm1:0] = Rs1[msb:lsb]
+        val |= get_mask(lenm1 + 1) & (Rs1 >> lsb);
+
+        // Zero out upper part val[63:(lenm1+1)]
+        val = clear_bits(val, 63, lenm1 + 1);
+    }
+
+    return val;
+}
+// -------------------------------------------------------------------------
+static inline uint64_t repeat_bit(uint64_t value, int bit_pos) {
+    // Extract the bit at bit_pos and extend it across the full 64 bits
+    uint64_t bit = (value >> bit_pos) & 1;
+    return bit ? ~((uint64_t)0) : 0;
+}
+// -------------------------------------------------------------------------
+// FIXME: The documentation from andes isn't clear about what should happen
+// when msb or lsb is zero. This code is suspect until tested 
+// -------------------------------------------------------------------------
+static inline uint64_t bfos_oper(uint32_t insn,uint64_t Rs1) {
+
+    uint64_t Rd=0;
+    uint32_t msb = insn >> 26 & 0x3F;
+    uint32_t lsb = insn >> 20 & 0x3F;
+
+    uint64_t lsbp1 = lsb + 1;
+    uint64_t msbm1 = msb - 1;
+//    uint64_t lsbm1 = lsb - 1;
+
+    if (msb == 0) {
+        // Case msb == 0
+        Rd |= ((Rs1 & 1) << lsb);  // Rd[lsb] = Rs1[0]
+
+        if (lsb < 63) {
+            // Rd[63:lsbp1] = REPEAT(Rs1[0])
+            // Extend Rs1[0] to Rd[63:lsbp1]
+            Rd |= repeat_bit(Rs1, 0) & (~((1ULL << (lsbp1)) - 1));
+        }
+        if (lsb > 0) {
+            // Rd[lsbm1:0] = 0 (using lsbm1 here)
+            Rd &= ~get_mask(lsb);  // Clear bits from lsbm1 down to 0
+        }
+    } else if (msb < lsb) {
+        // Case msb < lsb
+        int lenm1 = lsb - msb;
+
+        // Rd[lsb:msb] = Rs1[lenm1:0]
+        Rd |= (Rs1 & get_mask(lenm1 + 1)) << msb;
+
+        if (lsb < 63) {
+            // Rd[63:lsbp1] = REPEAT(Rs1[lenm1])
+            Rd |= repeat_bit(Rs1, lenm1) & ~get_mask(lsbp1);
+        }
+        // Rd[msbm1:0] = 0 (using msbm1 here)
+        Rd &= ~get_mask(msbm1 + 1);
+    } else {
+        // Case msb >= lsb
+        int lenm1 = msb - lsb;
+
+        // Rd[lenm1:0] = Rs1[msb:lsb]
+        Rd |= (Rs1 >> lsb) & get_mask(lenm1 + 1);
+
+        // Rd[63:(lenm1+1)] = REPEAT(Rs1[msb])
+        Rd |= repeat_bit(Rs1, msb) & ~get_mask(lenm1 + 1);
+    }
+
+    return Rd;
+}
+#endif
 // =========================================================================
 // =========================================================================
 #if XLEN == 32
@@ -382,7 +519,7 @@ static uint32_t chkfp32(target_ulong a) {
 int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles);
 
 int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
-    uint32_t     opcode, insn, rd, rs1, rs2, funct3;
+    uint32_t     opcode, insn, rd, rs1, rs2, funct2, funct3;
     uint32_t     _funct3, _funct6, _funct7, _funct12, _shamt;
     int32_t      imm, cond, err;
     target_ulong addr, val, val2;
@@ -390,6 +527,20 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
     target_ulong code_to_pc_addend;
     uint64_t     insn_counter_addend;
     uint64_t     insn_counter_start = s->insn_counter;
+
+    //Added for A*
+    val = 0;
+    bool isBranchGroup=false;
+    target_ulong _new_pc;
+    uint64_t     simm11,cimm7,cimm6,zero32_rs2;
+    uint32_t     _bit30;
+    (void) simm11; //GCC complains for XLEN != 64
+    (void) cimm7; 
+    (void) cimm6; 
+    (void) _bit30; 
+    (void) zero32_rs2;
+    (void) _new_pc;
+    (void) isBranchGroup;
 
 #if FLEN > 0
     uint32_t rs3;
@@ -483,10 +634,185 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
         }
 
         opcode = insn & 0x7f;
+
         rd     = (insn >> 7) & 0x1f;
         rs1    = (insn >> 15) & 0x1f;
         rs2    = (insn >> 20) & 0x1f;
+        uint8_t _rval;
         switch (opcode) {
+
+            case 0x0b: /* Andes CUSTOM-O */
+                funct2 = (insn >> 12) & 3;
+
+                if (funct2 == 0x00) { // LBGP
+                    CAPTURED_INSTR("A* LBGP");
+                    imm = sext((get_field1(insn,31,17,17)
+                               | get_field1(insn,15,15,16)
+                               | get_field1(insn,17,12,14)
+                               | get_field1(insn,20,11,11)
+                               | get_field1(insn,21, 1,10) 
+                               | get_field1(insn,14, 0, 0)),18);
+                    addr = read_reg(_GP) + imm;
+                    if (target_read_u8(s, &_rval, addr)) goto mmu_exception;
+                    val = (int8_t) _rval;
+                } else if (funct2 == 0x01) { // ADDIGP
+                    CAPTURED_INSTR("A* ADDIGP");
+                    imm = sext((get_field1(insn,31,17,17)
+                               | get_field1(insn,15,15,16)
+                               | get_field1(insn,17,12,14)
+                               | get_field1(insn,20,11,11)
+                               | get_field1(insn,21, 1,10) 
+                               | get_field1(insn,14, 0, 0)),18);
+                    val = ((intx_t) read_reg(_GP)) + imm;
+                } else if (funct2 == 0x02) { // LBUGP
+                    CAPTURED_INSTR("A* LBUGP"); 
+                    imm = sext((get_field1(insn,31,17,17)
+                               | get_field1(insn,15,15,16)
+                               | get_field1(insn,17,12,14)
+                               | get_field1(insn,20,11,11)
+                               | get_field1(insn,21, 1,10) 
+                               | get_field1(insn,14, 0, 0)),18);                    
+                    addr = read_reg(_GP) + imm;
+                    if (target_read_u8(s, &_rval, addr)) goto mmu_exception;
+                    val = _rval;
+                } else if (funct2 == 0x03) { // SBGP
+                    CAPTURED_INSTR("A* SBGP");
+                    imm = sext((get_field1(insn,31,17,17)
+                               | get_field1(insn,15,15,16)
+                               | get_field1(insn,17,12,14)
+                               | get_field1(insn, 7,11,11)
+                               | get_field1(insn,25, 5,10)
+                               | get_field1(insn, 8, 1, 4)
+                               | get_field1(insn,14, 0, 0)),18);
+                    addr = read_reg(_GP) + imm;
+                    if (target_write_u8(s, addr, read_reg(rs2))) goto mmu_exception;
+                } else {
+                    ILLEGAL_INSTR("0xb-a")
+                }
+
+                if (rd != 0) write_reg(rd, val);
+                NEXT_INSN;
+                break;
+
+            case 0x2b: /* Andes CUSTOM-1 */
+                funct3 = (insn >> 12) & 7;
+                funct2 = (insn >> 12) & 3;
+                //TODO: see if this can be changed to switch, re: u/intxx_t rval scope issues.
+
+                if(funct3 == 0x0) { // SHGP
+                  CAPTURED_INSTR("A* SHGP");
+                  imm = sext((get_field1(insn,31,17,17)
+                            | get_field1(insn,15,15,16)
+                            | get_field1(insn,17,12,14)
+                            | get_field1(insn,7, 11,11)
+                            | get_field1(insn,25, 5,10)
+                            | get_field1(insn,8,  1,4)),18); 
+
+                  addr = read_reg(_GP) + imm;
+                  if (target_write_u16(s, addr, read_reg(rs2))) goto mmu_exception;
+
+                } else if(funct3 == 0x1) { // LHGP
+                  CAPTURED_INSTR("A* LHGP");
+                  imm = sext((get_field1(insn,31,17,17)
+                            | get_field1(insn,15,15,16)
+                            | get_field1(insn,17,12,14)
+                            | get_field1(insn,20,11,11)
+                            | get_field1(insn,21, 1,10)),18); 
+                  addr = read_reg(_GP) + imm;
+                  uint16_t rval;
+                  if (target_read_u16(s, &rval, addr)) goto mmu_exception;
+                  val = (int16_t) rval;
+
+                } else if(funct3 == 0x2) { // LWGP
+                  CAPTURED_INSTR("A* LWGP");
+                  imm = sext((get_field1(insn,31,18,18)
+                            | get_field1(insn,21,17,17)
+                            | get_field1(insn,15,15,16)
+                            | get_field1(insn,17,12,14)
+                            | get_field1(insn,20,11,11)
+                            | get_field1(insn,22, 2,10)),19); 
+                  addr = read_reg(_GP) + imm;
+                  uint32_t rval;
+                  if (target_read_u32(s, &rval, addr)) goto mmu_exception;
+                  val = (int32_t) rval;
+
+                } else if(funct3 == 0x3) { // LDGP
+                  CAPTURED_INSTR("A* LDGP");
+                  imm = sext((get_field1(insn,31,19,19)
+                            | get_field1(insn,21,17,18)
+                            | get_field1(insn,15,15,16)
+                            | get_field1(insn,17,12,14)
+                            | get_field1(insn,20,11,11)
+                            | get_field1(insn,23, 3,10)),20); 
+                  addr = read_reg(_GP) + imm;
+                  uint64_t rval;
+                  if (target_read_u64(s, &rval, addr)) goto mmu_exception;
+                  val = (int64_t) rval;
+
+                } else if(funct3 == 0x4) { // SWGP
+                  CAPTURED_INSTR("A* SWGP");
+                  imm = sext((get_field1(insn,31,18,18)
+                            | get_field1(insn, 8,17,17)
+                            | get_field1(insn,15,15,16)
+                            | get_field1(insn,17,12,14)
+                            | get_field1(insn, 7,11,11)
+                            | get_field1(insn,25, 5,10)
+                            | get_field1(insn, 9, 2, 4)),19); 
+
+                  addr = read_reg(_GP) + imm;
+                  if (target_write_u32(s, addr, read_reg(rs2))) goto mmu_exception;
+
+                } else if(funct3 == 0x5) { // LHUGP
+                  CAPTURED_INSTR("A* LHUGP");
+                  imm = sext((get_field1(insn,31,17,17)
+                            | get_field1(insn,15,15,16)
+                            | get_field1(insn,17,12,14)
+                            | get_field1(insn,20,11,11)
+                            | get_field1(insn,21, 1,10)),18); 
+                  addr = read_reg(_GP) + imm;
+                  uint16_t rval;
+                  if (target_read_u16(s, &rval, addr)) goto mmu_exception;
+                  val = rval;
+
+                } else if(funct3 == 0x6) { // LWUGP
+                  CAPTURED_INSTR("A* LWUGP");
+                              //word addr by construction
+                  imm = sext((get_field1(insn,31,18,18)
+                            | get_field1(insn,21,17,17)
+                            | get_field1(insn,15,15,16)
+                            | get_field1(insn,17,12,14)
+                            | get_field1(insn,20,11,11)
+                            | get_field1(insn,22, 2,10)),19); 
+                  addr = read_reg(_GP) + imm;
+                  uint32_t rval;
+                  if (target_read_u32(s, &rval, addr)) goto mmu_exception;
+                  val = rval;
+
+                } else if(funct3 == 0x7) { // SDGP
+#if XLEN >= 64
+                  CAPTURED_INSTR("A* SDGP");
+                  //dword addr by construction
+                  imm = sext((get_field1(insn,31,19,19) //31    -> 19
+                            | get_field1(insn, 8,17,18) //9:8   -> 18:17
+                            | get_field1(insn,15,15,16) //16:15 -> 16:15
+                            | get_field1(insn,17,12,14) //19:17 -> 14:12
+                            | get_field1(insn, 7,11,11) //7     -> 11
+                            | get_field1(insn,25, 5,10) //30:25 -> 10:5
+                            | get_field1(insn,10, 3, 4)),20); //11:10 -> 4:3
+                  addr = read_reg(_GP) + imm;
+                  if (target_write_u64(s, addr, read_reg(rs2))) {
+                    goto mmu_exception;
+                  }
+#else
+                  ILLEGAL_INSTR("02b-0")
+#endif
+                } else {
+                  ILLEGAL_INSTR("02b-1")
+                }
+                if (rd != 0) write_reg(rd, val);
+                NEXT_INSN;
+
+            // --------------------------------------------------------------
             C_QUADRANT(0)
             funct3 = (insn >> 13) & 7;
             rd     = ((insn >> 2) & 7) | 8;
@@ -500,9 +826,9 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                     break;
 #if XLEN >= 128
                 case 1: /* c.lq */
-                    imm          = get_field1(insn, 11, 4, 5) | get_field1(insn, 10, 8, 8) | get_field1(insn, 5, 6, 7);
-                    rs1          = ((insn >> 7) & 7) | 8;
-                    addr         = (intx_t)(read_reg(rs1) + imm);
+                    imm  = get_field1(insn, 11, 4, 5) | get_field1(insn, 10, 8, 8) | get_field1(insn, 5, 6, 7);
+                    rs1  = ((insn >> 7) & 7) | 8;
+                    addr = (intx_t)(read_reg(rs1) + imm);
                     s->last_addr = addr;
                     if (target_read_u128(s, &val, addr))
                         goto mmu_exception;
@@ -1205,7 +1531,131 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                 if (rd != 0)
                     write_reg(rd, val);
                 NEXT_INSN;
+
+            //FIXME: This comment was found here: case 0x5b: /* OP-IMM-32 */
+
+            case 0x5b: /* Andes CUSTOM-2 */
+
+                _funct7  = (insn >> 25) & 0x7F;  //31:27
+                _bit30   = (insn >> 30) & 0x1;
+                _funct3  = (insn >> 12) & 0x7;   //14:12
+
+                zero32_rs2 = read_reg(rs2) & 0xFFFFFFFF;
+
+                isBranchGroup = false;
+
+                if(_funct3 == 0x0) { //LEA group
+                    switch(_funct7) {
+                      case 0x05: CAPTURED_INSTR("A* LEA.h");
+                                 val = read_reg(rs1) + (read_reg(rs2) << 1);
+                                 break;
+                      case 0x06: CAPTURED_INSTR("A* LEA.w");
+                                 val = read_reg(rs1) + (read_reg(rs2) << 2);
+                                 break;
+                      case 0x07: CAPTURED_INSTR("A* LEA.d");
+                                 val = read_reg(rs1) + (read_reg(rs2) << 3);
+                                 break;
+                      case 0x08: CAPTURED_INSTR("A* LEA.b.ze");
+                                 val = read_reg(rs1) + zero32_rs2;
+                                 break;
+                      case 0x09: CAPTURED_INSTR("A* LEA.h.ze");
+                                 val = read_reg(rs1) + (zero32_rs2 << 1);
+                                 break;
+                      case 0x0a: CAPTURED_INSTR("A* LEA.w.ze");
+                                 val = read_reg(rs1) + (zero32_rs2 << 2);
+                                 break;
+                      case 0x0b: CAPTURED_INSTR("A* LEA.d.ze");
+                                 val = read_reg(rs1) + (zero32_rs2 << 3);
+                                 break;
+                      default: ILLEGAL_INSTR("CUST2-1");
+                    }
+
+                    if (rd != 0) write_reg(rd, val);
+
+                } else if(_funct3 == 0x2) { //BFOZ
+
+                    CAPTURED_INSTR("A* BFOZ RV64");
+                    val = bfoz_oper(insn,read_reg(rs1));
+                    if (rd != 0) write_reg(rd, val);
+                    //ILLEGAL_INSTR("A* BFOZ RV64"); need test
+
+                } else if(_funct3 == 0x3) { //BFOS 
+
+                    CAPTURED_INSTR("A* BFOS RV64");
+                    val = bfos_oper(insn,read_reg(rs1));
+                    if (rd != 0) write_reg(rd, val);
+                    //ILLEGAL_INSTR("A* BFOS RV64"); need test
+                       
+                } else { //Branch group
+
+                    isBranchGroup = true;
+
+                    cimm7 = ( get_field1(insn,30,6,6)
+                            | get_field1(insn, 7,5,5)
+                            | get_field1(insn,20,0,4));
+
+                    simm11 =  sext( get_field1(insn,31,10,10)
+                                    | get_field1(insn,25,5,9)
+                                    | get_field1(insn,8, 1,4),11);
+
+                    cimm6 = ( get_field1(insn, 7,5,5)
+                            | get_field1(insn,20,0,4));
+
+                    _new_pc = (target_ulong)(GET_PC() + simm11);
+
+                    switch(_funct3) {
+
+                        case 0x0: ILLEGAL_INSTR("CUST2-2-LEA");  break; //LEA  handled above
+                        case 0x1: ILLEGAL_INSTR("CUST2-2-???1"); break; //???
+                        case 0x2: ILLEGAL_INSTR("CUST2-2-BFOZ"); break; //BFOZ RV64 handled above
+                        case 0x3: ILLEGAL_INSTR("CUST2-2-BFOS"); break; //BFOS RV64"handled above);
+                        case 0x4: ILLEGAL_INSTR("CUST2-2-???2"); break; //???
+
+                        case 0x5: CAPTURED_INSTR("A* BEQC");
+
+                                cond = (read_reg(rs1) == cimm7);
+                                break;
+
+                        case 0x6: CAPTURED_INSTR("A* BNEC");
+
+                                cond = (read_reg(rs1) != cimm7);
+                                break;
+
+                        case 0x7: 
+                            if(_bit30 == 0) {
+
+                                CAPTURED_INSTR("A* BBC RV64");
+                                cond = (((read_reg(rs1) >> cimm6) & 0x1) == 0x0); //bit cleared
+                                break;
+
+                            } else if(_bit30 == 1) {
+
+                                CAPTURED_INSTR("A* BBS RV64");
+                                cond = (((read_reg(rs1) >> cimm6) & 0x1) == 0x1); //bit set
+                                break;
+                            }
+                            
+                        default: ILLEGAL_INSTR("CUST2-2"); break;
+                    }
+
+                    if (isBranchGroup && cond) {
+                        if (!(s->misa & MCPUID_C) && (_new_pc & 3) != 0) {
+                            s->pending_exception = CAUSE_MISALIGNED_FETCH;
+                            s->pending_tval      = 0;
+                            goto exception;
+                        }
+                        //Elsewhere new_pc is calculated and then recalculated here. FIXME: Is there a reason?
+                        //s->pc = (intx_t)(GET_PC() + simm11);
+                        s->pc = _new_pc;
+                        JUMP_INSN(ctf_taken_branch);
+                    } 
+
+                } //end of branch group
+
+                NEXT_INSN;     
 #endif
+
+
 #if XLEN >= 128
             case 0x5b: /* OP-IMM-64 */
                 funct3 = (insn >> 12) & 7;
@@ -1279,23 +1729,20 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                     CAPTURED_INSTR("MAXU");
                     val = ((uintx_t)val < (uintx_t)val2) ? val2 : val;
 
-                } else if (EN_ZBB && _funct7 == 0x20) {
+                } else if (EN_ZBB && _funct7 == 0x20 && _funct3 == 0x4) {
 
-                  switch(_funct3) {
-                    case 0x0: CAPTURED_INSTR("SUB");
-                              val = (intx_t)(val - val2);
-                              break;
-                    case 0x4: CAPTURED_INSTR("XNOR");
-                              val = ~(val ^ val2);
-                              break;
-                    case 0x6: CAPTURED_INSTR("ORN");
-                              val = val | ~val2;
-                              break;
-                    case 0x7: CAPTURED_INSTR("ANDN");
-                              val = val & ~val2;
-                              break;
-                    default:  ILLEGAL_INSTR("X002")
-                  }
+                    CAPTURED_INSTR("XNOR");
+                    val = ~(val ^ val2);
+
+                } else if (EN_ZBB && _funct7 == 0x20 && _funct3 == 0x6) {
+
+                    CAPTURED_INSTR("ORN");
+                    val = val | ~val2;
+
+                } else if (EN_ZBB && _funct7 == 0x20 && _funct3 == 0x7) {
+
+                    CAPTURED_INSTR("ANDN");
+                    val = val & ~val2;
 
                 } else if (EN_ZBC && _funct7 == 0x5 && _funct3 == 0x1) {
 

@@ -79,19 +79,38 @@ An sample is provided ../tests/elfs/bmi_sanity.bare.riscv.
 
 This sample has also been instrumented to produce STF trace output.
 
-### Text trace generation example
-Text to console using the sample elf.
+### Standard use case examples(3) 
+
+Emitting a text trace log
 ```
-<cd to the build directory>
-./dromajo --ctrlc --trace 0 --march=rv64gc ../tests/elfs/bmi_sanity.bare.riscv
+./dromajo \
+--ctrlc \
+--exe_trace 0 \
+--exe_trace_log  this.log \
+../tests/condor/bin/andestar/rv64ui-p-addigp
 ```
 
-### STF trace generation example
-STF trace file creation. The bmi_sanity elf supports tracing over specified regions.
-
+Emitting a compressed STF w/ march specification
 ```
-<cd to the build directory>
-./dromajo --ctrlc --stf_tracepoint --stf_priv_modes USHM --stf_trace=bmi_sanity.stf ../tests/elfs/bmi_sanity.bare.riscv
+./dromajo \
+--ctrlc \
+--march=rv64gc_rba_zbb_zbc_zbs \
+--stf_priv_modes USHM \
+--stf_trace=example.zstf \
+$BENCHMARKS/bin/bmi_mm.bare.riscv
+```
+
+Booting linux
+```
+cp $TOOLS/riscv-linux/* .
+cp $PATCHES/cpm.boot.cfg .
+
+./dromajo \
+--ctrlc \
+--march=rv64gc \
+--stf_priv_modes USHM \
+--stf_trace example.stf \
+cpm.boot.cfg
 ```
 
 ## STF trace options
@@ -99,7 +118,7 @@ STF trace file creation. The bmi_sanity elf supports tracing over specified regi
 Command line options are added to control STF trace generation.
 
 ```
-    --stf_trace <filename> Dump an STF trace to the given file
+    --stf_trace <file> Dump an STF trace to the given file
                   Use .zstf as the file extension for compressed trace
                   output. Use .stf for uncompressed output
     --stf_exit_on_stop_opc Terminate the simulation after 
@@ -107,27 +126,19 @@ Command line options are added to control STF trace generation.
                   switch will disable non-contiguous region
                   tracing. The first STOP_TRACE opcode will 
                   terminate the simulator.
-    --stf_memrecord_size_in_bits write memory access size in bits instead of bytes
+    --stf_memrecord_size_in_bits write memory access size in bits
+                   instead of bytes
     --stf_trace_register_state include register state in the STF
                    (default false)
     --stf_disable_memory_records Do not add memory records to 
                    STF trace. By default memory records are 
                    always traced.
                    (default false)
-    --stf_tracepoint Enable tracepoint detection for STF trace 
-                  generation.
-                  ALWAYS ENABLED IN THIS VERSION.
-    --stf_include_tracepoints Include the start/stop tracepoints 
-                  in the STF trace
-                  DISABLED IN THIS VERSION.
     --stf_priv_modes <USHM|USH|US|U> Specify which privilege 
                   modes to include for STF trace generation
     --stf_force_zero_sha Emit 0 for all SHA's in the STF header. This is a 
                   debug option. Also clears the dromajo version placed in
                   the STF header.
-    --stf_essential_mode DEPRECATED. NO LONGER NECESSARY. 
-                  The behavior controlled by this switch is now on by default.
-                  See: --stf_disable_memory_records, --stf_trace_register_state
 ```
 
 ## Enabling RISC-V extensions
@@ -223,7 +234,7 @@ Logs from running the `regress` target are available for review. Logs are locate
 
 - **stf_gen_ad_hoc:** This test generates and compares traces for various bare metal operations. It extracts ELF files, runs load/store operations, and compares the generated traces against golden (reference) traces to ensure they match. This process is done for both uncompressed and compressed traces, with the aim of validating the integrity of the STF (System Trace Format) files in different configurations.
 
-- **riscv_isa_test:** This test runs a suite of RISC-V ISA compliance tests using a predefined list of enabled tests. It simulates each test and compares the results to verify correct functionality. Tests can be enabled or disabled by moving files between the respective `enabled_isa_tests.txt` and `disabled_isa_tests.txt` test lists in the isa_test_suite directory. The `disabled_isa_tests.txt` file is only for documentation purposes and does not affect how the test runs. 
+- **riscv_isa_test:** This test runs a suite of RISC-V ISA compliance tests using a predefined list of enabled tests. It simulates each test and evaluates the results to verify correct functionality. Tests can be enabled/disabled in `isa_tests_list.txt` in the isa_test_suite directory. In this file, disabled tests are preceded by "x".
 
   This test can be run manually by navigating from dromajo directory:
 
@@ -233,12 +244,12 @@ Logs from running the `regress` target are available for review. Logs are locate
   bash run_riscv_isa_test_suite.sh 
   ```
 
-  To update `disabled_isa_tests.txt` run:
+  When `riscv-tests` submodule changes, new tests might be added. To update `isa_tests_list.txt` with those tests run:
 
   ```bash
   cd tests/isa_test_suite
   make
-  bash update_disabled_isa_tests_list.sh
+  bash update_isa_tests_list.sh
   ```
 
   General structure of isa test names:

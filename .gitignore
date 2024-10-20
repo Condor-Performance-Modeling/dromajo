@@ -1,5 +1,9 @@
 bin
 tests/isa/stfs
+tests/isa_test_suite/test_files
+tests/stf_gen/traces
+tests/stf_load_store/temp_traces
+tests/stf_load_store/traces
 *.o
 *.d
 snap.*

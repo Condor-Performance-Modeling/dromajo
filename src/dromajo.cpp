@@ -17,28 +17,11 @@
  */
 #include "dromajo.h"
 
-#include <assert.h>
-#include <errno.h>
-#include <fcntl.h>
-#include <getopt.h>
-#include <inttypes.h>
-#include <net/if.h>
-#include <signal.h>
-#include <stdarg.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/ioctl.h>
-#include <sys/stat.h>
-#include <termios.h>
-#include <time.h>
-#include <unistd.h>
-
-#include <unordered_map>
-
 #include "LiveCacheCore.h"
 #include "cutils.h"
 #include "iomem.h"
 #include "riscv_machine.h"
+#include "dromajo_protos.h"
 #include "virtio.h"
 
 //#define REGRESS_COSIM 1
@@ -47,7 +30,28 @@
 #endif
 
 #include "dromajo_stf.h"
+
+#include <assert.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <getopt.h>
+#include <inttypes.h>
+#include <iostream>
 #include <limits>
+#include <net/if.h>
+#include <signal.h>
+#include <stdarg.h>
+#include <stdlib.h>
+#include <string.h>
+#include <string>
+#include <sys/ioctl.h>
+#include <sys/stat.h>
+#include <termios.h>
+#include <time.h>
+#include <unistd.h>
+#include <unordered_map>
+
+using namespace std;
 
 #ifdef SIMPOINT_BB
 FILE *simpoint_bb_file = nullptr;
@@ -139,7 +143,9 @@ static int iterate_core(RISCVMachine *m, int hartid, int n_cycles) {
     uint64_t last_pc  = virt_machine_get_pc(m, hartid);
     int      priv     = riscv_get_priv_level(cpu);
     uint32_t insn_raw = -1;
-    bool     do_trace = false;
+    bool     en_trace       = false; //This is log or console tracing not STF
+    bool     in_interactive = false;
+    (void) in_interactive;
 
     (void)riscv_read_insn(cpu, &insn_raw, last_pc);
 
@@ -148,11 +154,14 @@ static int iterate_core(RISCVMachine *m, int hartid, int n_cycles) {
       n_cycles = 1;
     }
 
-    if (m->common.trace < (unsigned) n_cycles) {
+    if (m->common.exe_trace < (unsigned) n_cycles) {
         n_cycles = 1;
-        do_trace = true;
+        en_trace = true;
+    } else if(m->common.interactive) {
+        n_cycles = 1;
+        in_interactive = true;
     } else {
-        m->common.trace -= n_cycles;
+        m->common.exe_trace -= n_cycles;
     }
 
     int keep_going = virt_machine_run(m, hartid, n_cycles);
@@ -166,42 +175,11 @@ static int iterate_core(RISCVMachine *m, int hartid, int n_cycles) {
         }
     }
 
-    if (!do_trace) {
+    if (!en_trace && !in_interactive) {
         return keep_going;
     }
 
-    fprintf(dromajo_stderr,
-            "%d %d 0x%016" PRIx64 " (0x%08x)",
-            hartid,
-            priv,
-            last_pc,
-            (insn_raw & 3) == 3 ? insn_raw : (uint16_t)insn_raw);
-
-    int iregno = riscv_get_most_recently_written_reg(cpu);
-    int fregno = riscv_get_most_recently_written_fp_reg(cpu);
-
-    if (cpu->pending_exception != -1) {
-        fprintf(dromajo_stderr, " exception %d, tval %016" PRIx64,
-                cpu->pending_exception,
-                riscv_get_priv_level(cpu) == PRV_M ? cpu->mtval : cpu->stval);
-    } else if (iregno > 0) {
-        fprintf(dromajo_stderr, " x%2d 0x%016" PRIx64, 
-                iregno, virt_machine_get_reg(m, hartid, iregno));
-    } else if (fregno >= 0) {
-        fprintf(dromajo_stderr, " f%2d 0x%016" PRIx64, 
-                fregno, virt_machine_get_fpreg(m, hartid, fregno));
-    } else {
-        for (int i = 31; i >= 0; i--) {
-            if (cpu->most_recently_written_vregs[i]) {
-                fprintf(dromajo_stderr, " v%2d 0x", i);
-                for (int j = VLEN / 8 - 1; j >= 0; j--) {
-                    fprintf(dromajo_stderr, "%02" PRIx8, cpu->v_reg[i][j]);
-                }
-            }
-        }
-    }
-
-    putc('\n', dromajo_stderr);
+    if(en_trace) { execution_trace(m,hartid,insn_raw); }
 
     return keep_going;
 }
