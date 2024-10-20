@@ -76,7 +76,7 @@ extern uint32_t _XLEN;
 
 #define HALF_WORD_MASK 0xFFFF
 
-#define CAPTURE_LOG    1
+#define CAPTURE_LOG    0
 #define REPORT_ILLEGAL 0
 
 #if REPORT_ILLEGAL == 1
