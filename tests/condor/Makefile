@@ -14,6 +14,10 @@ default: andestar
 andestar:	
 	mkdir -p bin/andestar logs/andestar
 	$(MAKE) run_andestar X=rv64ui-p T=addigp
+	$(MAKE) run_andestar X=rv64ui-p T=bbc
+	$(MAKE) run_andestar X=rv64ui-p T=bbs
+	$(MAKE) run_andestar X=rv64ui-p T=beqc
+	$(MAKE) run_andestar X=rv64ui-p T=bnec
 	$(MAKE) run_andestar X=rv64ui-p T=bfos
 	$(MAKE) run_andestar X=rv64ui-p T=bfoz
 	$(MAKE) run_andestar X=rv64ui-p T=lea_h
