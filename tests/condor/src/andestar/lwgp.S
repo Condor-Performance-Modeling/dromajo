@@ -18,17 +18,17 @@ ASTAR_CODE_BEGIN
   # Basic tests
   #-------------------------------------------------------------
                     #  instr expect              offset  base symbol
-  ASTAR_TEST_LD_OP( 2, lwgp, 0x0000000000ff00ff, 0,      tdat );
-#  ASTAR_TEST_LD_OP( 3, lwgp, 0xffffffffff00ff00, 4,      tdat );
-  ASTAR_TEST_LD_OP( 4, lwgp, 0x000000000ff00ff0, 8,      tdat );
-#  ASTAR_TEST_LD_OP( 5, lwgp, 0xfffffffff00ff00f, 12,     tdat );
+  ASTAR_TEST_LD_OP( 2, lwgp, 0x0000000000ff00ff,  0,      tdat );
+  ASTAR_TEST_LD_OP( 3, lwgp, 0xffffffffff00ff00,  4,      tdat );
+  ASTAR_TEST_LD_OP( 4, lwgp, 0x000000000ff00ff0,  8,      tdat );
+  ASTAR_TEST_LD_OP( 5, lwgp, 0xfffffffff00ff00f, 12,      tdat );
 
   # Test with negative offset
 
-  ASTAR_TEST_LD_OP( 6, lwgp, 0x0000000000ff00ff, -12, tdat4 );
-#  ASTAR_TEST_LD_OP( 7, lwgp, 0xffffffffff00ff00, -8,  tdat4 );
-  ASTAR_TEST_LD_OP( 8, lwgp, 0x000000000ff00ff0, -4,  tdat4 );
-#  ASTAR_TEST_LD_OP( 9, lwgp, 0xfffffffff00ff00f, 0,   tdat4 );
+  ASTAR_TEST_LD_OP( 6, lwgp, 0x0000000000ff00ff, -12,  tdat4 );
+  ASTAR_TEST_LD_OP( 7, lwgp, 0xffffffffff00ff00,  -8,  tdat4 );
+  ASTAR_TEST_LD_OP( 8, lwgp, 0x000000000ff00ff0,  -4,  tdat4 );
+  ASTAR_TEST_LD_OP( 9, lwgp, 0xfffffffff00ff00f,   0,  tdat4 );
 
   # Test with a negative base
 
@@ -38,18 +38,12 @@ ASTAR_CODE_BEGIN
     lwgp x5, 32; \
   )
 
-#  TEST_CASE( 10, x5, 0x0000000000ff00ff, \
-#    la  x1, tdat; \
-#    addi x1, x1, -32; \
-#    lw x5, 32(x1); \
-#  )
+  # Test with unaligned base
 
-#  # Test with unaligned base
-#
-#  TEST_CASE( 11, x5, 0xffffffffff00ff00, \
-#    la  x1, tdat; \
-#    addi x1, x1, -3; \
-#    lw x5, 7(x1); \
+#  ASTAR_TEST_CASE( 11, x5, 0xffffffffff00ff00, \
+#    la   x3, tdat; \
+#    addi x3, x3, -3; \
+#    lwgp x5, 7; \
 #  )
 #
 #  #-------------------------------------------------------------

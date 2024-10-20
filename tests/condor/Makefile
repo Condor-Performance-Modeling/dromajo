@@ -13,10 +13,26 @@ default: andestar
 
 andestar:	
 	mkdir -p bin/andestar logs/andestar
-	$(MAKE) run_andestar X=rv64ui-p T=addi
 	$(MAKE) run_andestar X=rv64ui-p T=addigp
+	$(MAKE) run_andestar X=rv64ui-p T=bfos
+	$(MAKE) run_andestar X=rv64ui-p T=bfoz
+	$(MAKE) run_andestar X=rv64ui-p T=lea_h
+	$(MAKE) run_andestar X=rv64ui-p T=lea_w
+	$(MAKE) run_andestar X=rv64ui-p T=lea_d
+	$(MAKE) run_andestar X=rv64ui-p T=lea_b_ze
+	$(MAKE) run_andestar X=rv64ui-p T=lea_h_ze
+	$(MAKE) run_andestar X=rv64ui-p T=lea_w_ze
+	$(MAKE) run_andestar X=rv64ui-p T=lea_d_ze
+	$(MAKE) run_andestar X=rv64ui-p T=lbgp
+	$(MAKE) run_andestar X=rv64ui-p T=lbugp
+	$(MAKE) run_andestar X=rv64ui-p T=lhgp
+	$(MAKE) run_andestar X=rv64ui-p T=lhugp	
 	$(MAKE) run_andestar X=rv64ui-p T=lwgp
 	$(MAKE) run_andestar X=rv64ui-p T=lwugp
+	$(MAKE) run_andestar X=rv64ui-p T=ldgp
+	$(MAKE) run_andestar X=rv64ui-p T=sbgp
+	$(MAKE) run_andestar X=rv64ui-p T=shgp
+	$(MAKE) run_andestar X=rv64ui-p T=swgp
 	$(MAKE) run_andestar X=rv64ui-p T=sdgp
 
 run_andestar:
