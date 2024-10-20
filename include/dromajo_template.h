@@ -529,6 +529,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
     uint64_t     insn_counter_start = s->insn_counter;
 
     //Added for A*
+    val = 0;
     bool isBranchGroup=false;
     target_ulong _new_pc;
     uint64_t     simm11,cimm7,cimm6,zero32_rs2;
@@ -685,14 +686,6 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                                | get_field1(insn,14, 0, 0)),18);
                     addr = read_reg(_GP) + imm;
                     if (target_write_u8(s, addr, read_reg(rs2))) goto mmu_exception;
-                    val = (int8_t) _rval;
-
-
-                              std::cout << std::hex << "gp:" << read_reg(_GP) << std::endl;
-                              std::cout << std::hex << "imm:" << imm << std::endl;
-                              std::cout << std::hex << "addr:" << addr << std::endl;
-                              std::cout << std::hex << "val:" << val << std::endl;
-
                 } else {
                     ILLEGAL_INSTR("0xb-a")
                 }
@@ -1750,24 +1743,6 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
 
                     CAPTURED_INSTR("ANDN");
                     val = val & ~val2;
-
-//                } else if (EN_ZBB && _funct7 == 0x20) {
-//
-//                  switch(_funct3) {
-//                    case 0x0: CAPTURED_INSTR("SUB");
-//                              val = (intx_t)(val - val2);
-//                              break;
-//                    case 0x4: CAPTURED_INSTR("XNOR");
-//                              val = ~(val ^ val2);
-//                              break;
-//                    case 0x6: CAPTURED_INSTR("ORN");
-//                              val = val | ~val2;
-//                              break;
-//                    case 0x7: CAPTURED_INSTR("ANDN");
-//                              val = val & ~val2;
-//                              break;
-//                    default:  ILLEGAL_INSTR("X002")
-//                  }
 
                 } else if (EN_ZBC && _funct7 == 0x5 && _funct3 == 0x1) {
 
