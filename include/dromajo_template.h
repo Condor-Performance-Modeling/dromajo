@@ -1544,7 +1544,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
 
                 isBranchGroup = false;
 
-                if(_funct3 == 0x0) { //LEA group
+                if(_funct3 == 0x0) { //LEA and F* group
                     switch(_funct7) {
                       case 0x05: CAPTURED_INSTR("A* LEA.h");
                                  val = read_reg(rs1) + (read_reg(rs2) << 1);
@@ -1567,6 +1567,77 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                       case 0x0b: CAPTURED_INSTR("A* LEA.d.ze");
                                  val = read_reg(rs1) + (zero32_rs2 << 3);
                                  break;
+                      case 0x10: CAPTURED_INSTR("A* FFB");
+                                 {
+                                    uint64_t rs1_val = read_reg(rs1);
+                                    uint64_t rs2_byte = read_reg(rs2) & 0xff;
+                                    uint64_t mask = 0xff;
+                                    int byte_found = 8;
+                                    for (int i = 0; i < 8; ++i) {
+                                        uint64_t rs1_byte = rs1_val & mask;
+                                        if (rs1_byte == rs2_byte) {
+                                            byte_found = i;
+                                            break;
+                                        }
+                                        rs1_val >>= 8;
+                                    }
+                                    val = byte_found - 8;
+                                    break;
+                                 }
+                      case 0x11: CAPTURED_INSTR("A* FFZMISM");
+                                 {
+                                    uint64_t rs1_val = read_reg(rs1);
+                                    uint64_t rs2_val = read_reg(rs2);
+                                    uint64_t mask = 0xff;
+                                    int byte_found = 8;
+                                    for (int i = 0; i < 8; ++i) {
+                                       uint64_t rs1_byte = rs1_val & mask;
+                                       uint64_t rs2_byte = rs2_val & mask;
+                                       if (rs1_byte == 0 || rs1_byte != rs2_byte) {
+                                           byte_found = i;
+                                           break;
+                                       }
+                                       mask <<= 8;
+                                    }
+                                    val = byte_found - 8;
+                                    break;
+                                 }
+                      case 0x12: CAPTURED_INSTR("A* FFMISM");
+                                 {
+                                    uint64_t rs1_val = read_reg(rs1);
+                                    uint64_t rs2_val = read_reg(rs2);
+                                    uint64_t mask = 0xff;
+                                    int byte_found = 8;
+                                    for (int i = 0; i < 8; ++i) {
+                                       uint64_t rs1_byte = rs1_val & mask;
+                                       uint64_t rs2_byte = rs2_val & mask;
+                                       if (rs1_byte != rs2_byte) {
+                                           byte_found = i;
+                                           break;
+                                       }
+                                       mask <<= 8;
+                                    }
+                                    val = byte_found - 8;
+                                    break;
+                                 }
+                      case 0x13: CAPTURED_INSTR("A* FLMISM");
+                                 {
+                                    uint64_t rs1_val = read_reg(rs1);
+                                    uint64_t rs2_val = read_reg(rs2);
+                                    uint64_t mask = (uint64_t)0xff << 56;
+                                    int byte_found = 8;
+                                    for (int i = 7; i >= 0; --i) {
+                                       uint64_t rs1_byte = rs1_val & mask;
+                                       uint64_t rs2_byte = rs2_val & mask;
+                                       if (rs1_byte != rs2_byte) {
+                                           byte_found = i;
+                                           break;
+                                       }
+                                       mask >>= 8;
+                                    }
+                                    val = byte_found - 8;
+                                    break; 
+                                 }
                       default: ILLEGAL_INSTR("CUST2-1");
                     }
 
