@@ -23,7 +23,7 @@ CFLAGS=-march=rv64gc -mabi=lp64 -O2 -std=gnu11 -Wall -I. -nostartfiles -fno-comm
 LFLAGS=-static -nostdlib -Ttext=10000
 
 elf := $(build_dir)/bootrom.elf
-$(elf): bootrom.S
+$(elf): bootrom.S Makefile
 	$(CC) $(CFLAGS) $(LFLAGS) -o $@ $<
 
 .PHONY: elf
@@ -38,4 +38,4 @@ bin: $(bin)
 
 .PHONY: clean
 clean::
-	rm -rf $(hex) $(elf)
+	rm -rf $(bin) $(elf)
