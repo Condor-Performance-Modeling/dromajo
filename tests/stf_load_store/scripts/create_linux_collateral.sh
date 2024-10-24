@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set -e
-
 export COMMON_DIR=$(pwd)/common
 INPUT_FILE=$COMMON_DIR/stf_load_store.linux.riscv
 
@@ -42,6 +40,9 @@ if [ ! -d "linux-5.8-rc4" ]; then
     wget --no-check-certificate -nc https://git.kernel.org/torvalds/t/linux-5.8-rc4.tar.gz
     tar -xf linux-5.8-rc4.tar.gz
 fi
+
+grep -qxF 'KBUILD_CFLAGS += -march=rv64imafdc_zicsr_zifencei' linux-5.8-rc4/Makefile \
+|| echo 'KBUILD_CFLAGS += -march=rv64imafdc_zicsr_zifencei' >> linux-5.8-rc4/Makefile
 
 make -C linux-5.8-rc4 ARCH=riscv defconfig
 make -C linux-5.8-rc4 ARCH=riscv -j$(nproc)
