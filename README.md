@@ -28,7 +28,8 @@ git submodule update --init --recursive
 
 ## Building
 
-A debug build is built by default.  To create a release build use -DCMAKE_BUILD_TYPE=Release.
+A debug build is built by default.  To create a release 
+build use -DCMAKE_BUILD_TYPE=Release.
 
 ### Debug build
 The name of the directory is cosmetic.
@@ -292,3 +293,7 @@ Logs from running the `regress` target are available for review. Logs are locate
   ```
 
 - **andestar_tests:** This test runs a suite andestar tests: `addi`, `addigp`, `lwgp`, `lwugp`, `sdgp`.
+
+# Semihosting
+
+TDB
