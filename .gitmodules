@@ -4,3 +4,6 @@
 [submodule "tests/riscv-tests"]
 	path = tests/riscv-tests
 	url = https://github.com/riscv-software-src/riscv-tests.git
+[submodule "gdb_bench"]
+	path = gdb_bench
+	url = https://github.com/jeffnye-gh/gdb_bench.git
