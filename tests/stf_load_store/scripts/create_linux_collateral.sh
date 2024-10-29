@@ -43,6 +43,9 @@ if [ ! -d "linux-5.8-rc4" ]; then
     tar -xf linux-5.8-rc4.tar.gz
 fi
 
+grep -qxF 'KBUILD_CFLAGS += -march=rv64imafdc_zicsr_zifencei' linux-5.8-rc4/Makefile \
+|| echo 'KBUILD_CFLAGS += -march=rv64imafdc_zicsr_zifencei' >> linux-5.8-rc4/Makefile
+
 make -C linux-5.8-rc4 ARCH=riscv defconfig
 make -C linux-5.8-rc4 ARCH=riscv -j$(nproc)
 
