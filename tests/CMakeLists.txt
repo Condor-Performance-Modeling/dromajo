@@ -15,7 +15,7 @@ ProcessorCount(NUM_CORES)
 
 if (NOT NUM_CORES EQUAL 0)
   set(CTEST_BUILD_FLAGS -j${NUM_CORES})
-  set(ctest_test_args "--continue-on-failure --parallel ${NUM_CORES}")
+  set(ctest_test_args "--parallel")
 endif()
 
 message(STATUS "Found " ${NUM_CORES} " cores in machine (for ctest)")
