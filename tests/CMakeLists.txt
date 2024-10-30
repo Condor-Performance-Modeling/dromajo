@@ -59,10 +59,9 @@ add_test(NAME condor_isa_tests
          COMMAND ${CMAKE_COMMAND} -E env bash -c "bash run_condor_isa_test_suite.sh 2>&1"
          WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/isa_test_suite)
 
-# Disabled for now - need better way to compare zstf files
-#add_test(NAME reset_vector_tests
-#        COMMAND ${CMAKE_COMMAND} -E env bash -c "bash run_test.sh 2>&1"
-#        WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/reset_vector)
+add_test(NAME reset_vector_tests
+        COMMAND ${CMAKE_COMMAND} -E env bash -c "bash run_test.sh 2>&1"
+        WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/reset_vector)
 
 add_test(NAME andestar_tests
         COMMAND ${CMAKE_COMMAND} -E env bash -c "make"

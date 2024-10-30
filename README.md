@@ -199,6 +199,8 @@ make
 
 This will generate the `bootrom.elf` file to be used in `--bootrom` program option.
 
+This feature is tested by `reset_vector_tests` in the regress test suite.
+
 3. **Run Dromajo with custom options**
 
 Use the `--reset_vector`, `--memory_addr`, and `--bootrom` switches to run Dromajo with the desired start address. For example, to set the start address to `0x20000000`, run:
@@ -292,3 +294,5 @@ Logs from running the `regress` target are available for review. Logs are locate
   ```
 
 - **andestar_tests:** This test runs a suite andestar tests: `addi`, `addigp`, `lwgp`, `lwugp`, `sdgp`.
+
+- **reset_vector_tests:** This test verifies the functionality of running Dromajo with a custom start of program memory. It ensures that the simulator correctly processes the `--reset_vector` and `--memory_addr` option. The results are evaluated based on trace comparison with golden files to validate the accuracy of the reset vector implementation. The ELF files used in this test were manually built with a 0x0 starting address, then copied into the test directories, and are part of the project in the remote repository.
