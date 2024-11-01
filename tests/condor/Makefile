@@ -47,7 +47,7 @@ andestar:
 zicond:	
 	mkdir -p bin/zicond logs/zicond
 	$(MAKE) run_test X=rv64ui-p E=zicond T=czero_eqz
-	$(MAKE) run_test X=rv64ui-p E=zicond T=czero_neq
+	$(MAKE) run_test X=rv64ui-p E=zicond T=czero_nez
 
 run_test:
 	$(MAKE) cc_test  X=$(X) EXT=$(E) TST=$(T)

@@ -1851,12 +1851,12 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                     CAPTURED_INSTR("BINV");
                     val = (uintx_t)val ^ ((uintx_t)1 << (val2 & (XLEN - 1)));
 
-                } else if (EN_ZICOND && _funct7 == 0x07 && _funct3 == 0x5) {
+                } else if (EN_ZICOND && _funct7 == 0x0e && _funct3 == 0x5) {
 
                     CAPTURED_INSTR("CZERO.EQZ");
                     val = (uintx_t)val2 == 0 ? (uintx_t)0 : (uintx_t)val;
  
-                } else if (EN_ZICOND && _funct7 == 0x07 && _funct3 == 0x7) {
+                } else if (EN_ZICOND && _funct7 == 0x0e && _funct3 == 0x7) {
 
                     CAPTURED_INSTR("CZERO.NEZ");
                     val = (uintx_t)val2 != 0 ? (uintx_t)0 : (uintx_t)val;

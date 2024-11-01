@@ -3,6 +3,7 @@ RVTST_INC=-I./inc -I../riscv-tests/env/p -I../riscv-tests/isa/macros/scalar
 RVTST_LNK=-T../riscv-tests/env/p/link.ld
 # --------------------------------------------------------------------
 ANDES_CC=/data/tools/AndeSight_STD_v530/toolchains/nds64le-elf-newlib-v5f/bin/riscv64-unknown-elf-gcc
+#ANDES_CC=/data/tools/riscv64-embecosm-linux-gcc-ubuntu2204-20240407/bin/riscv64-unknown-linux-gnu-gcc
 
 ANDES_CC_OPTS =-mcpu=ax65 -march=rv64g_zba_zbb_zbc_zbs_xandes -mcmodel=medany -static -fvisibility=hidden -nostdlib -nostartfiles $(RVTST_INC) $(RVTST_LNK)
 #ANDES_CC_OPTS =-mcpu=ax65 -march=rv64gc_zba_zbb_zbc_zbs -mabi=lp64d -mcmodel=medany -static -fvisibility=hidden -nostdlib -nostartfiles $(RVTST_INC) $(RVTST_LNK)
