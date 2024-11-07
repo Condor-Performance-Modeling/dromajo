@@ -47,6 +47,10 @@
 #define VIRTIO_PAGE_SIZE 4096
 #define VIRTIO_ADDR_BITS 64
 
+#define VIRTIO_BASE_ADDR      0x40010000
+#define VIRTIO_SIZE           0x1000
+#define VIRTIO_IRQ            4
+
 typedef uint64_t virtio_phys_addr_t;
 
 typedef struct {

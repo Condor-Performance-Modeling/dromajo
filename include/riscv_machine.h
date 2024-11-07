@@ -3,6 +3,7 @@
  *
  * Copyright (c) 2016 Fabrice Bellard
  * Copyright (C) 2018,2019, Esperanto Technologies Inc.
+ * Contribution (C) 2024 Jeff Nye
  *
  * Licensed under the Apache License, Version 2.0 (the "License")
  * you may not use this file except in compliance with the License.
@@ -37,8 +38,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-#ifndef RISCV_MACHINE_H
-#define RISCV_MACHINE_H
+#pragma once
 
 #include "machine.h"
 #include "riscv_cpu.h"
@@ -50,17 +50,40 @@
 
 #define MAX_CPUS 8
 
-/* Hooks */
+#define PLIC_BASE_ADDR 0x10000000
+#define PLIC_SIZE      0x2000000
+
+#define CLINT_BASE_ADDR 0x02000000
+#define CLINT_SIZE      0x000c0000
+
+// CPU_FREQUENCY is a u32, so less than 4GHz
+#define CPU_FREQUENCY 2000000000
+#define RTC_FREQ      1000000
+
+#define RTC_FREQ_DIV (CPU_FREQUENCY / RTC_FREQ)
+
+#define HTIF_BASE_ADDR        0x40008000
+#define IDE_BASE_ADDR         0x40009000
+#define FRAMEBUFFER_BASE_ADDR 0x41000000
+// ---------------------------------------------------------------------------
+// Hooks
+// ---------------------------------------------------------------------------
 typedef struct RISCVMachineHooks {
     /* Returns -1 if invalid CSR, 0 if OK. */
     int (*csr_read)(RISCVCPUState *s, uint32_t funct3, uint32_t csr, uint64_t *pval);
     int (*csr_write)(RISCVCPUState *s, uint32_t funct3, uint32_t csr, uint64_t val);
 } RISCVMachineHooks;
 
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
 struct RISCVMachine {
+
+    RISCVMachine(int,char**);
+
     VirtMachine       common;
     RISCVMachineHooks hooks;
     PhysMemoryMap *   mem_map;
+
 #ifdef LIVECACHE
     LiveCache *llc;
 #endif
@@ -113,34 +136,3 @@ struct RISCVMachine {
     /* Extension state, not used by Dromajo itself */
     void *ext_state;
 };
-
-#define PLIC_BASE_ADDR 0x10000000
-#define PLIC_SIZE      0x2000000
-
-#define CLINT_BASE_ADDR 0x02000000
-#define CLINT_SIZE      0x000c0000
-
-// CPU_FREQUENCY is a u32, so less than 4GHz
-#define CPU_FREQUENCY 2000000000
-#define RTC_FREQ      1000000
-
-#define RTC_FREQ_DIV (CPU_FREQUENCY / RTC_FREQ)
-
-#define HTIF_BASE_ADDR        0x40008000
-#define IDE_BASE_ADDR         0x40009000
-#define VIRTIO_BASE_ADDR      0x40010000
-#define VIRTIO_SIZE           0x1000
-#define VIRTIO_IRQ            4
-#define FRAMEBUFFER_BASE_ADDR 0x41000000
-
-// sifive,uart, same as qemu UART0 (qemu has 2 sifive uarts)
-#ifdef ARIANE_UART
-#define UART0_BASE_ADDR 0x10000000
-#define UART0_SIZE      0x1000
-#else
-#define UART0_BASE_ADDR 0x54000000
-#define UART0_SIZE      32
-#endif
-#define UART0_IRQ       3
-
-#endif
