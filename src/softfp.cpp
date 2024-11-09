@@ -37,6 +37,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
+#include "cutils.h"
 #include "softfp.h"
 
 #include <assert.h>
@@ -44,7 +46,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "cutils.h"
 
 static inline int clz32(uint32_t a) {
     int r;

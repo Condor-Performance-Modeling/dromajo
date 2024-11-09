@@ -15,13 +15,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "dromajo.h"
 
 #include "LiveCacheCore.h"
 #include "cutils.h"
-#include "iomem.h"
-#include "riscv_machine.h"
+#include "dromajo.h"
 #include "dromajo_protos.h"
+#include "iomem.h"
+#include "options.h"
+#include "riscv_machine.h"
 #include "virtio.h"
 
 //#define REGRESS_COSIM 1
@@ -32,28 +33,16 @@
 #include "dromajo_stf.h"
 
 #include <assert.h>
-#include <errno.h>
-#include <fcntl.h>
-#include <getopt.h>
-#include <inttypes.h>
-#include <iostream>
-#include <limits>
-#include <net/if.h>
 #include <signal.h>
-#include <stdarg.h>
-#include <stdlib.h>
-#include <string.h>
-#include <string>
-#include <sys/ioctl.h>
-#include <sys/stat.h>
-#include <termios.h>
-#include <time.h>
-#include <unistd.h>
 #include <unordered_map>
 
 using namespace std;
 
+Options *Options::instance = 0;
+std::shared_ptr<Options> opts(Options::getInstance());
+
 #ifdef SIMPOINT_BB
+
 FILE *simpoint_bb_file = nullptr;
 int   simpoint_roi     = 0;  // start without ROI enabled
 

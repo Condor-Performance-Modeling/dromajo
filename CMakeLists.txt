@@ -48,9 +48,12 @@ option(GOLDMEM "GOLDMEM" OFF)
 option(WARMUP "WARMUP" OFF)
 
 # Set version numbers
-set(VERSION_MAJOR 2)
-set(VERSION_MINOR 2)
-set(VERSION_PATCH 2)
+set(VERSION_MAJOR 3)
+set(VERSION_MINOR 0)
+set(VERSION_PATCH 0)
+#add_definitions(-DVERSION_MAJOR=${VERSION_MAJOR})
+#add_definitions(-DVERSION_MINOR=${VERSION_MINOR})
+#add_definitions(-DVERSION_PATCH=${VERSION_PATCH})
 # -------------------------------------------------------------------------
 # -------------------------------------------------------------------------
 find_package(Boost REQUIRED COMPONENTS program_options)
@@ -153,6 +156,7 @@ endif ()
 
 # libdromajo_cosim
 add_library(dromajo_cosim STATIC
+        src/bin_utils.cpp
         src/block_device.cpp
         src/cutils.cpp
         src/dromajo_cosim.cpp
@@ -162,11 +166,14 @@ add_library(dromajo_cosim STATIC
         src/dromajo_trace.cpp
         src/dw_apb_uart.cpp
         src/elf64.cpp
+        src/fdt.cpp
         src/fs.cpp
         src/fs_disk.cpp
         src/iomem.cpp
+        src/interrupts.cpp
         src/json.cpp
         src/machine.cpp
+        src/misc.cpp
         src/network.cpp
         src/options.cpp
         src/pci.cpp

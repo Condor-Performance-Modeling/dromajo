@@ -38,31 +38,57 @@
  */
 
 #pragma once
-#include "virtio.h"
-#include <cstdint>
-#include <cstdio>
 
-typedef enum {
-    BF_MODE_RO,
-    BF_MODE_RW,
-    BF_MODE_SNAPSHOT,
-} BlockDeviceModeEnum;
+//#define DUMP_UART
+//#define DUMP_CLINT
+//#define DUMP_HTIF
+//#define DUMP_PLIC
+//#define DUMP_DTB
 
-typedef struct BlockDeviceFile {
-    FILE *              f;
-    int64_t             nb_sectors;
-    BlockDeviceModeEnum mode;
-    uint8_t **          sector_table;
-} BlockDeviceFile;
+//#define USE_SIFIVE_UART
 
-extern int64_t bf_get_sector_count(BlockDevice *bs);
+enum {
+    SIFIVE_UART_TXFIFO = 0,
+    SIFIVE_UART_RXFIFO = 4,
+    SIFIVE_UART_TXCTRL = 8,
+    SIFIVE_UART_TXMARK = 10,
+    SIFIVE_UART_RXCTRL = 12,
+    SIFIVE_UART_RXMARK = 14,
+    SIFIVE_UART_IE     = 16,
+    SIFIVE_UART_IP     = 20,
+    SIFIVE_UART_DIV    = 24,
+    SIFIVE_UART_MAX    = 32
+};
 
-extern int bf_read_async(BlockDevice *bs, uint64_t sector_num, uint8_t *buf, 
-                         int n, BlockDeviceCompletionFunc *cb, void *opaque);
+enum {
+    SIFIVE_UART_IE_TXWM = 1, /* Transmit watermark interrupt enable */
+    SIFIVE_UART_IE_RXWM = 2  /* Receive watermark interrupt enable */
+};
 
-extern int bf_write_async(BlockDevice *bs, uint64_t sector_num, 
-                         const uint8_t *buf, int n,
-                         BlockDeviceCompletionFunc *cb, void *opaque) ;
+enum {
+    SIFIVE_UART_IP_TXWM = 1, /* Transmit watermark interrupt pending */
+    SIFIVE_UART_IP_RXWM = 2  /* Receive watermark interrupt pending */
+};
 
-extern BlockDevice *block_device_init(const char *filename,
-                         BlockDeviceModeEnum mode);
+typedef struct SiFiveUARTState {
+    CharacterDevice *cs;  // Console
+    uint32_t         irq;
+    uint8_t          rx_fifo[8];
+    unsigned int     rx_fifo_len;
+    uint32_t         ie;
+    uint32_t         ip;
+    uint32_t         txctrl;
+    uint32_t         rxctrl;
+    uint32_t         div;
+} SiFiveUARTState;
+
+// sifive,uart, same as qemu UART0 (qemu has 2 sifive uarts)
+#ifdef ARIANE_UART
+#define UART0_BASE_ADDR 0x10000000
+#define UART0_SIZE      0x1000
+#else
+#define UART0_BASE_ADDR 0x54000000
+#define UART0_SIZE      32
+#endif
+#define UART0_IRQ       3
+

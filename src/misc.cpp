@@ -37,32 +37,25 @@
  * THE SOFTWARE.
  */
 
-#pragma once
-#include "virtio.h"
-#include <cstdint>
-#include <cstdio>
+#include "dromajo_protos.h"
+#include "riscv_machine.h"
+#include <cstdarg>
 
-typedef enum {
-    BF_MODE_RO,
-    BF_MODE_RW,
-    BF_MODE_SNAPSHOT,
-} BlockDeviceModeEnum;
+uint64_t rtc_get_time(RISCVMachine *m) { return m->cpu_state[0]->mcycle / RTC_FREQ_DIV; }
 
-typedef struct BlockDeviceFile {
-    FILE *              f;
-    int64_t             nb_sectors;
-    BlockDeviceModeEnum mode;
-    uint8_t **          sector_table;
-} BlockDeviceFile;
+void dromajo_default_error_log(int hartid, const char *fmt, ...) {
+    va_list args;
 
-extern int64_t bf_get_sector_count(BlockDevice *bs);
+    va_start(args, fmt);
+    vfprintf(dromajo_stderr, fmt, args);
+    va_end(args);
+}
 
-extern int bf_read_async(BlockDevice *bs, uint64_t sector_num, uint8_t *buf, 
-                         int n, BlockDeviceCompletionFunc *cb, void *opaque);
+void dromajo_default_debug_log(int hartid, const char *fmt, ...) {
+    va_list args;
 
-extern int bf_write_async(BlockDevice *bs, uint64_t sector_num, 
-                         const uint8_t *buf, int n,
-                         BlockDeviceCompletionFunc *cb, void *opaque) ;
+    va_start(args, fmt);
+    vfprintf(dromajo_stderr, fmt, args);
+    va_end(args);
+}
 
-extern BlockDevice *block_device_init(const char *filename,
-                         BlockDeviceModeEnum mode);

@@ -38,6 +38,12 @@
  * THE SOFTWARE.
  */
 
+#include "LiveCacheCore.h"
+#include "cutils.h"
+#include "dromajo.h"
+#include "iomem.h"
+#include "riscv_machine.h"
+
 #include <assert.h>
 #include <err.h>
 #include <fcntl.h>
@@ -47,12 +53,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-
-#include "LiveCacheCore.h"
-#include "cutils.h"
-#include "dromajo.h"
-#include "iomem.h"
-#include "riscv_machine.h"
 
 extern int simpoint_roi;
 

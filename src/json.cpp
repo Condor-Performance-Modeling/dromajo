@@ -37,6 +37,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
+#include "cutils.h"
+#include "fs_utils.h"
 #include "json.h"
 
 #include <assert.h>
@@ -50,9 +53,6 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
-
-#include "cutils.h"
-#include "fs_utils.h"
 
 static JSONValue parse_string(const char **pp) {
     char        buf[4096], *q;
