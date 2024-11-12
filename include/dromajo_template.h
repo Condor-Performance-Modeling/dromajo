@@ -77,9 +77,9 @@ extern uint32_t _XLEN;
 
 #define HALF_WORD_MASK 0xFFFF
 
-#define CAPTURE_LOG       1
-#define REPORT_ILLEGAL    1
-#define REPORT_MMU_EXCEPT 1
+#define CAPTURE_LOG       0
+#define REPORT_ILLEGAL    0
+#define REPORT_MMU_EXCEPT 0
 // ---------------------------------------------------------------------------
 #if REPORT_ILLEGAL == 1
 #define ILLEGAL_INSTR(S) { \
@@ -654,7 +654,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
 
         opcode = insn & 0x7f;
 
-fprintf(dromajo_stderr,"HERE PC:%lx INSN %08x OPC 0x%02x\n",GET_PC(),insn,opcode);
+//fprintf(dromajo_stderr,"HERE PC:%lx INSN %08x OPC 0x%02x\n",GET_PC(),insn,opcode);
 
         rd     = (insn >> 7) & 0x1f;
         rs1    = (insn >> 15) & 0x1f;
@@ -1871,12 +1871,12 @@ fprintf(dromajo_stderr,"HERE PC:%lx INSN %08x OPC 0x%02x\n",GET_PC(),insn,opcode
                     CAPTURED_INSTR("BINV");
                     val = (uintx_t)val ^ ((uintx_t)1 << (val2 & (XLEN - 1)));
 
-                } else if (EN_ZICOND && _funct7 == 0x0e && _funct3 == 0x5) {
+                } else if (EN_ZICOND && _funct7 == 0x07 && _funct3 == 0x5) {
 
                     CAPTURED_INSTR("CZERO.EQZ");
                     val = (uintx_t)val2 == 0 ? (uintx_t)0 : (uintx_t)val;
- 
-                } else if (EN_ZICOND && _funct7 == 0x0e && _funct3 == 0x7) {
+
+                } else if (EN_ZICOND && _funct7 == 0x07 && _funct3 == 0x7) {
 
                     CAPTURED_INSTR("CZERO.NEZ");
                     val = (uintx_t)val2 != 0 ? (uintx_t)0 : (uintx_t)val;
