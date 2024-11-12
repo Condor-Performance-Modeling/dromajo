@@ -77,9 +77,10 @@ extern uint32_t _XLEN;
 
 #define HALF_WORD_MASK 0xFFFF
 
-#define CAPTURE_LOG       0
-#define REPORT_ILLEGAL    0
-#define REPORT_MMU_EXCEPT 0
+#define CAPTURE_LOG       1
+#define REPORT_ILLEGAL    1
+#define REPORT_MMU_EXCEPT 1
+#define EXIT_ON_EXCEPT    1
 // ---------------------------------------------------------------------------
 #if REPORT_ILLEGAL == 1
 #define ILLEGAL_INSTR(S) { \
@@ -654,7 +655,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
 
         opcode = insn & 0x7f;
 
-//fprintf(dromajo_stderr,"HERE PC:%lx INSN %08x OPC 0x%02x\n",GET_PC(),insn,opcode);
+fprintf(dromajo_stderr,"HERE PC:%lx INSN %08x OPC 0x%02x\n",GET_PC(),insn,opcode);
 
         rd     = (insn >> 7) & 0x1f;
         rs1    = (insn >> 15) & 0x1f;
@@ -2749,6 +2750,11 @@ exception:
         }
 
         raise_exception2(s, s->pending_exception, s->pending_tval);
+
+#if EXIT_ON_EXCEPT
+exit(1);
+#endif
+
     }
     /* we exit because XLEN may have changed */
 

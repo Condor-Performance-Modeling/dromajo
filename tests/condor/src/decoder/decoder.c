@@ -42,8 +42,42 @@ void decoder()
 
 void zfa()
 {
-  
+//    asm volatile ("fleq.q x1, f1, f2");
+//    asm volatile ("fli.q f1, 3.14159265358979");
+//    asm volatile ("fltq.q x1, f1, f2");
+//    asm volatile ("fmaxm.q f3, f1, f2");
+//    asm volatile ("fminm.q f3, f1, f2");
+//    asm volatile ("fmvh.x.q x1, f1");
+//    asm volatile ("fmvp.q.x f1, x1");
+//    asm volatile ("fround.q f1, f2");
+//    asm volatile ("froundnx.q f1, f2");
+
+//    asm volatile ("fleq.d x1, f1, f2");
+//    asm volatile ("fleq.h x1, f1, f2");
+    asm volatile ("fleq.s x1, f1, f2");
+
+//    asm volatile ("fli.d f1, 3.14");
+//    asm volatile ("fli.d f1, 3");
+//    asm volatile ("fli.h f1, 1.5");
+//    asm volatile ("fli.h f1, 1");
+//    asm volatile ("fli.s f1, 2.71");
+//    asm volatile ("fltq.h x1, f1, f2");
+//    asm volatile ("fltq.d x1, f1, f2");
+//    asm volatile ("fltq.s x1, f1, f2");
+//    asm volatile ("fmaxm.d f3, f1, f2");
+//    asm volatile ("fmaxm.h f3, f1, f2");
+//    asm volatile ("fmaxm.s f3, f1, f2");
+//    asm volatile ("fminm.d f3, f1, f2");
+//    asm volatile ("fminm.h f3, f1, f2");
+//    asm volatile ("fminm.s f3, f1, f2");
+//    asm volatile ("fround.d f1, f2");
+//    asm volatile ("fround.h f1, f2");
+//    asm volatile ("fround.s f1, f2");
+//    asm volatile ("froundnx.d f1, f2");
+//    asm volatile ("froundnx.h f1, f2");
+//    asm volatile ("froundnx.s f1, f2");
 }
+
 void catch_all()
 {
     asm volatile ("nop");

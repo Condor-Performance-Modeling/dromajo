@@ -31,7 +31,7 @@ RISCV_CC=$(RISCV_CC_ROOT)/bin/riscv64-unknown-elf-gcc
 RISCV_OBJD=$(RISCV_CC_ROOT)/bin/riscv64-unknown-elf-objdump
 
 BASE_CC_OPTS=  \
- -march=rv64imacdf_zicond_zba_zbb_zbc_zbs_zfa -mabi=lp64d -mcmodel=medany \
+ -march=rv64imacdf_zicond_zba_zbb_zbc_zbs_zfa_zfh -mabi=lp64d -mcmodel=medany \
  -nostdlib -nostartfiles -ffast-math -funsafe-math-optimizations \
  -finline-functions -fno-common -fno-builtin-printf \
  -fno-tree-loop-distribute-patterns \
