@@ -64,9 +64,9 @@ add_test(NAME condor_isa_tests
 #        COMMAND ${CMAKE_COMMAND} -E env bash -c "bash run_test.sh 2>&1"
 #        WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/reset_vector)
 
-add_test(NAME andestar_tests
+add_test(NAME condor_tests
         COMMAND ${CMAKE_COMMAND} -E env bash -c "make"
-        WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/condor)     
+        WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/condor) 
    
 add_test(NAME riscv_isa_tests
          COMMAND ${CMAKE_COMMAND} -E env bash -c "bash run_riscv_isa_test_suite.sh 2>&1"

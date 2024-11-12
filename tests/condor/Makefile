@@ -9,58 +9,72 @@ else
     MAKEFLAGS += -s  # Enable silent mode
 endif
 
-default: andestar
-#default: andestar zicond
+default: andestar zicond
 
 andestar:	
 	mkdir -p bin/andestar logs/andestar
-	$(MAKE) run_test X=rv64ui-p E=andestar T=addigp
-	$(MAKE) run_test X=rv64ui-p E=andestar T=bbc
-	$(MAKE) run_test X=rv64ui-p E=andestar T=bbs
-	$(MAKE) run_test X=rv64ui-p E=andestar T=beqc
-	$(MAKE) run_test X=rv64ui-p E=andestar T=bnec
-	$(MAKE) run_test X=rv64ui-p E=andestar T=bfos
-	$(MAKE) run_test X=rv64ui-p E=andestar T=bfoz
-	$(MAKE) run_test X=rv64ui-p E=andestar T=lea_h
-	$(MAKE) run_test X=rv64ui-p E=andestar T=lea_w
-	$(MAKE) run_test X=rv64ui-p E=andestar T=lea_d
-	$(MAKE) run_test X=rv64ui-p E=andestar T=lea_b_ze
-	$(MAKE) run_test X=rv64ui-p E=andestar T=lea_h_ze
-	$(MAKE) run_test X=rv64ui-p E=andestar T=lea_w_ze
-	$(MAKE) run_test X=rv64ui-p E=andestar T=lea_d_ze
-	$(MAKE) run_test X=rv64ui-p E=andestar T=lbgp
-	$(MAKE) run_test X=rv64ui-p E=andestar T=lbugp
-	$(MAKE) run_test X=rv64ui-p E=andestar T=lhgp
-	$(MAKE) run_test X=rv64ui-p E=andestar T=lhugp	
-	$(MAKE) run_test X=rv64ui-p E=andestar T=lwgp
-	$(MAKE) run_test X=rv64ui-p E=andestar T=lwugp
-	$(MAKE) run_test X=rv64ui-p E=andestar T=ldgp
-	$(MAKE) run_test X=rv64ui-p E=andestar T=sbgp
-	$(MAKE) run_test X=rv64ui-p E=andestar T=shgp
-	$(MAKE) run_test X=rv64ui-p E=andestar T=swgp
-	$(MAKE) run_test X=rv64ui-p E=andestar T=sdgp
-	$(MAKE) run_test X=rv64ui-p E=andestar T=ffb
-	$(MAKE) run_test X=rv64ui-p E=andestar T=ffzmism
-	$(MAKE) run_test X=rv64ui-p E=andestar T=ffmism
-	$(MAKE) run_test X=rv64ui-p E=andestar T=flmism
+	$(MAKE) andes_run_test X=rv64ui-p E=andestar T=addigp
+	$(MAKE) andes_run_test X=rv64ui-p E=andestar T=bbc
+	$(MAKE) andes_run_test X=rv64ui-p E=andestar T=bbs
+	$(MAKE) andes_run_test X=rv64ui-p E=andestar T=beqc
+	$(MAKE) andes_run_test X=rv64ui-p E=andestar T=bnec
+	$(MAKE) andes_run_test X=rv64ui-p E=andestar T=bfos
+	$(MAKE) andes_run_test X=rv64ui-p E=andestar T=bfoz
+	$(MAKE) andes_run_test X=rv64ui-p E=andestar T=lea_h
+	$(MAKE) andes_run_test X=rv64ui-p E=andestar T=lea_w
+	$(MAKE) andes_run_test X=rv64ui-p E=andestar T=lea_d
+	$(MAKE) andes_run_test X=rv64ui-p E=andestar T=lea_b_ze
+	$(MAKE) andes_run_test X=rv64ui-p E=andestar T=lea_h_ze
+	$(MAKE) andes_run_test X=rv64ui-p E=andestar T=lea_w_ze
+	$(MAKE) andes_run_test X=rv64ui-p E=andestar T=lea_d_ze
+	$(MAKE) andes_run_test X=rv64ui-p E=andestar T=lbgp
+	$(MAKE) andes_run_test X=rv64ui-p E=andestar T=lbugp
+	$(MAKE) andes_run_test X=rv64ui-p E=andestar T=lhgp
+	$(MAKE) andes_run_test X=rv64ui-p E=andestar T=lhugp	
+	$(MAKE) andes_run_test X=rv64ui-p E=andestar T=lwgp
+	$(MAKE) andes_run_test X=rv64ui-p E=andestar T=lwugp
+	$(MAKE) andes_run_test X=rv64ui-p E=andestar T=ldgp
+	$(MAKE) andes_run_test X=rv64ui-p E=andestar T=sbgp
+	$(MAKE) andes_run_test X=rv64ui-p E=andestar T=shgp
+	$(MAKE) andes_run_test X=rv64ui-p E=andestar T=swgp
+	$(MAKE) andes_run_test X=rv64ui-p E=andestar T=sdgp
+	$(MAKE) andes_run_test X=rv64ui-p E=andestar T=ffb
+	$(MAKE) andes_run_test X=rv64ui-p E=andestar T=ffzmism
+	$(MAKE) andes_run_test X=rv64ui-p E=andestar T=ffmism
+	$(MAKE) andes_run_test X=rv64ui-p E=andestar T=flmism
 
 zicond:	
 	mkdir -p bin/zicond logs/zicond
-	$(MAKE) run_test X=rv64ui-p E=zicond T=czero_eqz
-	$(MAKE) run_test X=rv64ui-p E=zicond T=czero_nez
+	$(MAKE) riscv_run_test X=rv64ui-p E=zicond T=czero_eqz
+	$(MAKE) riscv_run_test X=rv64ui-p E=zicond T=czero_nez
 
-run_test:
-	$(MAKE) cc_test  X=$(X) EXT=$(E) TST=$(T)
-	$(MAKE) sim_test X=$(X) EXT=$(E) TST=$(T)
+andes_run_test:
+	$(MAKE) andes_cc_test  X=$(X) EXT=$(E) TST=$(T)
+	$(MAKE) andes_sim_test X=$(X) EXT=$(E) TST=$(T)
 
-cc_test:	
+andes_cc_test:	
 	$(Q)$(ANDES_CC) $(ANDES_CC_OPTS) -DXLEN=$(X) \
 	  ./src/$(EXT)/$(TST).S -o ./bin/$(EXT)/$(X)-$(TST)
 	$(Q)$(ANDES_OBJD) $(ANDES_OBJD_OPTS) \
 	  ./bin/$(EXT)/$(X)-$(TST) > ./logs/$(EXT)/$(X)-$(TST).dump
 
-sim_test:
+andes_sim_test:
 	$(Q)$(ANDES_SIM) $(ANDES_SIM_OPTS) \
+	  ./bin/$(EXT)/$(X)-$(TST) > ./logs/$(EXT)/$(X)-$(TST).log 2>&1 && \
+	echo "Running $(X)-$(TST) ...pass" || echo "Running $(X)-$(TST) ...fail"
+
+riscv_run_test:
+	$(MAKE) riscv_cc_test  X=$(X) EXT=$(E) TST=$(T)
+	$(MAKE) riscv_sim_test X=$(X) EXT=$(E) TST=$(T)
+
+riscv_cc_test:	
+	$(Q)$(RISCV_CC) $(RISCV_CC_OPTS) -DXLEN=$(X) \
+	  ./src/$(EXT)/$(TST).S -o ./bin/$(EXT)/$(X)-$(TST)
+	$(Q)$(RISCV_OBJD) $(RISCV_OBJD_OPTS) \
+	  ./bin/$(EXT)/$(X)-$(TST) > ./logs/$(EXT)/$(X)-$(TST).dump
+
+riscv_sim_test:
+	$(Q)$(RISCV_SIM) $(RISCV_SIM_OPTS) \
 	  ./bin/$(EXT)/$(X)-$(TST) > ./logs/$(EXT)/$(X)-$(TST).log 2>&1 && \
 	echo "Running $(X)-$(TST) ...pass" || echo "Running $(X)-$(TST) ...fail"
 
