@@ -77,9 +77,10 @@ extern uint32_t _XLEN;
 
 #define HALF_WORD_MASK 0xFFFF
 
-#define CAPTURE_LOG    0
-#define REPORT_ILLEGAL 0
-
+#define CAPTURE_LOG       1
+#define REPORT_ILLEGAL    1
+#define REPORT_MMU_EXCEPT 1
+// ---------------------------------------------------------------------------
 #if REPORT_ILLEGAL == 1
 #define ILLEGAL_INSTR(S) { \
   fprintf(dromajo_stderr,"ILLEGAL INSTR %s PC:0x%lx ENC:0x%08x OPC:%03x\n",S,s->pc,insn,insn&0x7F); \
@@ -91,12 +92,29 @@ extern uint32_t _XLEN;
 }
 #endif
 
+// ---------------------------------------------------------------------------
+#define FALLTHROUGH() { \
+  fprintf(dromajo_stderr,"UNEXPECTED FALL THROUGH PC:0x%lx ENC:0x%08x\n",s->pc,insn);  \
+  exit(1); \
+}
+
+// ---------------------------------------------------------------------------
 #if CAPTURE_LOG == 1 
 #define CAPTURED_INSTR(S) { \
   fprintf(dromajo_stderr,"CAPTURED INSTR %s PC:0x%lx ENC:0x%08x\n",S,s->pc,insn);  \
 }
 #else
 #define CAPTURED_INSTR(S)
+#endif
+
+// ---------------------------------------------------------------------------
+#if REPORT_MMU_EXCEPT == 1
+#define MMU_EXCEPT() { \
+  fprintf(dromajo_stderr,"MMU_EXCEPTION PC:0x%lx ENC:0x%08x\n",s->pc,insn);  \
+  exit(1); \
+}
+#else
+#define MMU_EXCEPT()
 #endif
 
 // =========================================================================
@@ -635,6 +653,8 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
         }
 
         opcode = insn & 0x7f;
+
+fprintf(dromajo_stderr,"HERE PC:%lx INSN %08x OPC 0x%02x\n",GET_PC(),insn,opcode);
 
         rd     = (insn >> 7) & 0x1f;
         rs1    = (insn >> 15) & 0x1f;
@@ -2542,8 +2562,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                 }
                 NEXT_INSN;
             case 0x53:
-                if (s->fs == 0)
-                    ILLEGAL_INSTR("092")
+                if (s->fs == 0) ILLEGAL_INSTR("092")
                 imm = insn >> 25;
                 rm  = (insn >> 12) & 7;
                 switch (imm) {
@@ -2707,13 +2726,18 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
 illegal_insn:
 
 #if REPORT_ILLEGAL == 1
-fprintf(dromajo_stderr,"ILLEGAL INSN FALLTHROUGH\n");
-exit(1);
+FALLTHROUGH()
 #endif
 
     s->pending_exception = CAUSE_ILLEGAL_INSTRUCTION;
     s->pending_tval      = 0;
+    goto exception;
+
 mmu_exception:
+#if REPORT_MMU_EXCEPT == 1
+MMU_EXCEPT()
+#endif
+
 exception:
     s->pc = GET_PC();
     if (s->pending_exception >= 0) {
