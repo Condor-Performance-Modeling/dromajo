@@ -18,12 +18,15 @@
  * Parse the trace output and check that we cosim correctly.
  */
 #include "dromajo_cosim.h"
+#include "dromajo.h"
+#include "options.h"
 
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
-#include "dromajo.h"
+Options *Options::instance = 0;
+std::shared_ptr<Options> opts(Options::getInstance());
 
 void usage(char *progname) {
     fprintf(stderr,

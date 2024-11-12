@@ -48,10 +48,16 @@ option(GOLDMEM "GOLDMEM" OFF)
 option(WARMUP "WARMUP" OFF)
 
 # Set version numbers
-set(VERSION_MAJOR 2)
-set(VERSION_MINOR 2)
-set(VERSION_PATCH 2)
-
+set(VERSION_MAJOR 3)
+set(VERSION_MINOR 0)
+set(VERSION_PATCH 0)
+#add_definitions(-DVERSION_MAJOR=${VERSION_MAJOR})
+#add_definitions(-DVERSION_MINOR=${VERSION_MINOR})
+#add_definitions(-DVERSION_PATCH=${VERSION_PATCH})
+# -------------------------------------------------------------------------
+# -------------------------------------------------------------------------
+find_package(Boost REQUIRED COMPONENTS program_options)
+include_directories(${Boost_INCLUDE_DIRS})
 # -------------------------------------------------------------------------
 # Capture GIT SHA in include/dromajo_sha.h
 # -------------------------------------------------------------------------
@@ -150,6 +156,7 @@ endif ()
 
 # libdromajo_cosim
 add_library(dromajo_cosim STATIC
+        src/bin_utils.cpp
         src/block_device.cpp
         src/cutils.cpp
         src/dromajo_cosim.cpp
@@ -159,11 +166,14 @@ add_library(dromajo_cosim STATIC
         src/dromajo_trace.cpp
         src/dw_apb_uart.cpp
         src/elf64.cpp
+        src/fdt.cpp
         src/fs.cpp
         src/fs_disk.cpp
         src/iomem.cpp
+        src/interrupts.cpp
         src/json.cpp
         src/machine.cpp
+        src/misc.cpp
         src/network.cpp
         src/options.cpp
         src/pci.cpp
@@ -171,6 +181,7 @@ add_library(dromajo_cosim STATIC
         src/riscv_machine.cpp
         src/softfp.cpp
         src/term_io.cpp
+        src/uart.cpp
         src/virtio.cpp
         src/LiveCache.cpp
         )
@@ -178,7 +189,9 @@ add_library(dromajo_cosim STATIC
 add_executable(dromajo src/dromajo.cpp)
 add_executable(dromajo_cosim_test src/dromajo_cosim_test.cpp)
 
-include_directories(include external ${CMAKE_CURRENT_BINARY_DIR})
+target_link_libraries(dromajo Boost::program_options)
+target_link_libraries(dromajo_cosim_test Boost::program_options)
+target_link_libraries(dromajo_cosim Boost::program_options)
 
 if (GOLDMEM)
   target_link_libraries(dromajo dromajo_cosim gold)
@@ -187,6 +200,8 @@ else ()
   target_link_libraries(dromajo dromajo_cosim)
   target_link_libraries(dromajo_cosim_test dromajo_cosim)
 endif ()
+
+include_directories(include external ${CMAKE_CURRENT_BINARY_DIR})
 
 # -------------------------------------------------------------------
 # Change the name of the copied file if SIMPOINT option is enabled
