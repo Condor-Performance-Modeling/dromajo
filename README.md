@@ -6,7 +6,7 @@ This is the Condor Computing fork of the Dromajo RISC-V golden model.
 This source is derived from the Esperanto source which was
 in turn derived from Fabrice Bellard's RISCVEMU/TinyEMU.
 
-The original contents of the Esperanto README.md are found in ESPERANTO_README.md.
+The original contents of the Esperanto README.md are found in doc/ESPERANTO_README.md.
 Some of the original contents are also duplicated here.
 
 The original repo is here: https://github.com/chipsalliance/dromajo.
@@ -53,7 +53,7 @@ make -j
 The artifacts produced by a build are the `dromajo` simulator and the
 `libdromajo_cosim.a` library with associated `dromajo_cosim.h` header file.
 
-See ESPERANTO_README.md for documentation on co-simulation.
+See doc/ESPERANTO_README.md for documentation on co-simulation.
 
 Check the [setup.md](doc/setup.md) for instructions how to compile tests like
 booting Linux and baremetal for dromajo.
