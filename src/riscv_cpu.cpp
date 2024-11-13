@@ -1363,6 +1363,7 @@ static int csr_read(RISCVCPUState *s, uint32_t funct3,
             if(opts->en_unimpl_csr_msg) fprintf(dromajo_stderr,"-W: access to unimpl mcontext iqnored\n");
             val = s->unimpl_mcontext;
             break; 
+
         case 0x7a0:  // tselect
             val = s->tselect;
             break;
