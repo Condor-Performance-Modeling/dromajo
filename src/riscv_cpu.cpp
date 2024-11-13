@@ -1279,8 +1279,6 @@ static int csr_read(RISCVCPUState *s, uint32_t funct3,
                     target_ulong *pval, uint32_t csr, BOOL will_write) {
     target_ulong val;
 
-//fprintf(dromajo_stderr,"HERE FLEN %0d\n",FLEN);
-
     if (((csr & 0xc00) == 0xc00) && will_write)
         return -1; /* read-only CSR */
     if (s->priv < ((csr >> 8) & 3))

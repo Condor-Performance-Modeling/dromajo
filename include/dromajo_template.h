@@ -77,7 +77,7 @@ extern uint32_t _XLEN;
 
 #define HALF_WORD_MASK 0xFFFF
 
-#define CAPTURE_LOG        1
+#define CAPTURE_LOG        0
 #define REPORT_ILLEGAL     0
 #define REPORT_MMU_EXCEPT  0
 #define EXIT_ON_EXCEPT     0
@@ -2571,7 +2571,6 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                 _funct12 = (insn >> 20) & 0xFFF;
                 _funct3  = (insn >> 12) & 0x07;
 
-//fprintf(dromajo_stderr,"HERE 2 PC:%lx INSN %08x OPC 0x%02x F7 0x%02x F3 0x%1x\n",GET_PC(),insn,opcode,_funct7,_funct3);
                 //FIXME: the .q versions have placeholders for decode
                 //they are treated as illegal for the time being
 

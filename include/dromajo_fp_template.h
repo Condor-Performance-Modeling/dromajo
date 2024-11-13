@@ -191,20 +191,6 @@ case (0x1a << 2) | OPID:
     s->fs = 3;
     break;
 
-//} else if(_funct7 == 0b1010001 && _funct3 == 0b010) { CAPTURED_INSTR("fleq.d");
-//} else if(_funct7 == 0b1010001 && _funct3 == 0b001) { CAPTURED_INSTR("fltq.d.d");
-//} else if(_funct7 == 0b1010001 && _funct3 == 0b001) { CAPTURED_INSTR("fltq.q");
-
-//case (0b1010001 << 2) | OPID:
-//fprintf(dromajo_stderr,"HERE 2 PC:%lx INSN %08x OPC 0x%02x F7 0x%02x F3 0x%1x\n",GET_PC(),insn,opcode,_funct7,_funct3);
-//
-//    if(_funct3 == 0b100)  {
-//      CAPTURED_INSTR("fleq.d");
-//    } else {
-//      ILLEGAL_INSTR("ZFA-1");
-//    }
-//    break;
-
 case (0x08 << 2) | OPID:
     rm = get_insn_rm(s, rm);
     if (rm < 0)
