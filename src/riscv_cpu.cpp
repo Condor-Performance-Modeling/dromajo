@@ -41,6 +41,7 @@
 #include "LiveCacheCore.h"
 #include "cutils.h"
 #include "dromajo.h"
+#include "options.h"
 #include "iomem.h"
 #include "riscv_machine.h"
 
@@ -1274,8 +1275,11 @@ static BOOL counter_access_ok(RISCVCPUState *s, uint32_t csr) {
 
 /* return -1 if invalid CSR. 0 if OK. 'will_write' indicate that the
    csr will be written after (used for CSR access check) */
-static int csr_read(RISCVCPUState *s, uint32_t funct3, target_ulong *pval, uint32_t csr, BOOL will_write) {
+static int csr_read(RISCVCPUState *s, uint32_t funct3, 
+                    target_ulong *pval, uint32_t csr, BOOL will_write) {
     target_ulong val;
+
+//fprintf(dromajo_stderr,"HERE FLEN %0d\n",FLEN);
 
     if (((csr & 0xc00) == 0xc00) && will_write)
         return -1; /* read-only CSR */
@@ -1357,6 +1361,10 @@ static int csr_read(RISCVCPUState *s, uint32_t funct3, target_ulong *pval, uint3
         case 0x343: val = s->mtval; break;
         case 0x344: val = s->mip; break;
 
+        case 0x744: //mcontext
+            if(opts->en_unimpl_csr_msg) fprintf(dromajo_stderr,"-W: access to unimpl mcontext iqnored\n");
+            val = s->unimpl_mcontext;
+            break; 
         case 0x7a0:  // tselect
             val = s->tselect;
             break;
@@ -1532,6 +1540,7 @@ static int csr_read(RISCVCPUState *s, uint32_t funct3, target_ulong *pval, uint3
         case CSR_PMPADDR(13):
         case CSR_PMPADDR(14):
         case CSR_PMPADDR(15): val = s->csr_pmpaddr[csr - CSR_PMPADDR(0)]; break;
+
 #ifdef SIMPOINT_BB
         case 0x8C2: val = 0; break;
 #endif
@@ -1756,6 +1765,10 @@ static int csr_write(RISCVCPUState *s, uint32_t funct3, uint32_t csr, target_ulo
             mask   = /* MEIP | */ MIP_SEIP | /*MIP_UEIP | MTIP | */ MIP_STIP | /*MIP_UTIP | MSIP | */ MIP_SSIP /*| MIP_USIP*/;
             s->mip = s->mip & ~mask | val & mask;
             break;
+
+        case 0x744: //mcontext
+            if(opts->en_unimpl_csr_msg) fprintf(dromajo_stderr,"-W: access to unimpl mcontext iqnored\n");
+            break; 
 
         case 0x7a0:  // tselect
             s->tselect = val % MAX_TRIGGERS;

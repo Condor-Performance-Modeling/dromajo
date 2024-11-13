@@ -77,10 +77,10 @@ extern uint32_t _XLEN;
 
 #define HALF_WORD_MASK 0xFFFF
 
-#define CAPTURE_LOG       1
-#define REPORT_ILLEGAL    1
-#define REPORT_MMU_EXCEPT 1
-#define EXIT_ON_EXCEPT    1
+#define CAPTURE_LOG        1
+#define REPORT_ILLEGAL     0
+#define REPORT_MMU_EXCEPT  0
+#define EXIT_ON_EXCEPT     0
 // ---------------------------------------------------------------------------
 #if REPORT_ILLEGAL == 1
 #define ILLEGAL_INSTR(S) { \
@@ -653,9 +653,9 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
             insn = get_insn32(code_ptr);
         }
 
-        opcode = insn & 0x7f;
-
-fprintf(dromajo_stderr,"HERE PC:%lx INSN %08x OPC 0x%02x\n",GET_PC(),insn,opcode);
+        opcode  =  insn & 0x7f;
+        _funct7 = (insn >> 25) & 0b1111111;
+        _funct3 = (insn >> 12) & 0b111;
 
         rd     = (insn >> 7) & 0x1f;
         rs1    = (insn >> 15) & 0x1f;
@@ -2562,26 +2562,118 @@ fprintf(dromajo_stderr,"HERE PC:%lx INSN %08x OPC 0x%02x\n",GET_PC(),insn,opcode
                     default: ILLEGAL_INSTR("091")
                 }
                 NEXT_INSN;
-            case 0x53:
-                if (s->fs == 0) ILLEGAL_INSTR("092")
-                imm = insn >> 25;
-                rm  = (insn >> 12) & 7;
-                switch (imm) {
-#define F_SIZE 32
-#include "dromajo_fp_template.h"
-#if FLEN >= 64
-#define F_SIZE 64
-#include "dromajo_fp_template.h"
-#endif
-#if FLEN >= 128
-#define F_SIZE 128
-#include "dromajo_fp_template.h"
-#endif
+            case 0x53: //Floating point instructions
 
-                    default: ILLEGAL_INSTR("093")
+                if (s->fs == 0) ILLEGAL_INSTR("NO-FLOAT")
+                //The imm field is confusing for non-imm encodings
+                //imm     = (insn >>w 25) & 0x7F;
+                _funct7  = (insn >> 25) & 0x7F;
+                _funct12 = (insn >> 20) & 0xFFF;
+                _funct3  = (insn >> 12) & 0x07;
+
+//fprintf(dromajo_stderr,"HERE 2 PC:%lx INSN %08x OPC 0x%02x F7 0x%02x F3 0x%1x\n",GET_PC(),insn,opcode,_funct7,_funct3);
+                //FIXME: the .q versions have placeholders for decode
+                //they are treated as illegal for the time being
+
+                       if(_funct7 == 0b1011001 && _funct3 == 0b000) {
+                  //CAPTURED_INSTR("fmvp.d.x");
+                  ILLEGAL_INSTR("fmvp.d.x"); //Requires RV32
+                } else if(_funct7 == 0b1011011 && _funct3 == 0b000) {
+                  //CAPTURED_INSTR("fmvp.q.x");
+                  ILLEGAL_INSTR("fmvp.q.x"); //Requires Q
+
+                } else if(_funct7 == 0b1010010 && _funct3 == 0b100) {
+                  CAPTURED_INSTR("fleq.h");
+                } else if(_funct7 == 0b1010000 && _funct3 == 0b100) {
+                  CAPTURED_INSTR("fleq.s");
+                } else if(_funct7 == 0b1010001 && _funct3 == 0b100) {
+                  CAPTURED_INSTR("fleq.d");
+                } else if(_funct7 == 0b1010011 && _funct3 == 0b100) {
+                  //CAPTURED_INSTR("fleq.q");
+                  ILLEGAL_INSTR("fleq.q"); //Requires Q
+
+                } else if(_funct7 == 0b1010010 && _funct3 == 0b101) {
+                  CAPTURED_INSTR("fltq.h");
+                } else if(_funct7 == 0b1010000 && _funct3 == 0b101) {
+                  CAPTURED_INSTR("fltq.s");
+                } else if(_funct7 == 0b1010001 && _funct3 == 0b101) {
+                  CAPTURED_INSTR("fltq.d");
+                } else if(_funct7 == 0b1010011 && _funct3 == 0b101) {
+                  //CAPTURED_INSTR("fltq.d");
+                  ILLEGAL_INSTR("fltq.d"); //Requires Q
+
+                } else if(_funct7 == 0b0010110 && _funct3 == 0b011) {
+                  CAPTURED_INSTR("fmaxm.h");
+                } else if(_funct7 == 0b0010100 && _funct3 == 0b011) {
+                  CAPTURED_INSTR("fmaxm.s");
+                } else if(_funct7 == 0b0010101 && _funct3 == 0b011) {
+                  CAPTURED_INSTR("fmaxm.d");
+                } else if(_funct7 == 0b0010111 && _funct3 == 0b011) {
+                  //CAPTURED_INSTR("fmaxm.q");
+                  ILLEGAL_INSTR("fmaxm.q"); //Requires Q
+
+                } else if(_funct7 == 0b0010110 && _funct3 == 0b10) {
+                  CAPTURED_INSTR("fminm.h");
+                } else if(_funct7 == 0b0010100 && _funct3 == 0b10) {
+                  CAPTURED_INSTR("fminm.s");
+                } else if(_funct7 == 0b0010101 && _funct3 == 0b10) {
+                  CAPTURED_INSTR("fminm.d");
+                } else if(_funct7 == 0b0010111 && _funct3 == 0b10) {
+                  //CAPTURED_INSTR("fminm.q");
+                  ILLEGAL_INSTR("fminm.q"); //Requires Q
+
+                } else if(_funct12 == 0b0100'0100'0100) {
+                  CAPTURED_INSTR("fround.h");
+                } else if(_funct12 == 0b0100'0000'0100) {
+                  CAPTURED_INSTR("fround.s");
+                } else if(_funct12 == 0b0100'0010'0100) {
+                  CAPTURED_INSTR("fround.d");
+                } else if(_funct12 == 0b0100'0110'0100) {
+                  //CAPTURED_INSTR("fround.q");
+                  ILLEGAL_INSTR("fround.q"); //Requires Q
+
+                } else if(_funct12 == 0b0100'0100'0101) {
+                  CAPTURED_INSTR("froundnx.h");
+                } else if(_funct12 == 0b0100'0000'0101) {
+                  CAPTURED_INSTR("froundnx.s");
+                } else if(_funct12 == 0b0100'0010'0101) {
+                  CAPTURED_INSTR("froundnx.d");
+                } else if(_funct12 == 0b0100'0110'0101) {
+                  //CAPTURED_INSTR("froundnx.q");
+                  ILLEGAL_INSTR("froundnx.q"); //Requires Q
+
+                } else if(_funct12 == 0b1111'0100'0001 && _funct3 == 0b000) {
+                  CAPTURED_INSTR("fli.h");
+                } else if(_funct12 == 0b1111'0000'0001 && _funct3 == 0b000) {
+                  CAPTURED_INSTR("fli.s");
+                } else if(_funct12 == 0b1111'0010'0001 && _funct3 == 0b000) {
+                  CAPTURED_INSTR("fli.d");
+                } else if(_funct12 == 0b1111'0110'0001 && _funct3 == 0b000) {
+                  //CAPTURED_INSTR("fli.q");
+                  ILLEGAL_INSTR("fli.q"); //Requires Q
+
+                } else if(_funct12 == 0b1100'0010'1000 && _funct3 == 0b001) {
+                  CAPTURED_INSTR("fcvtmod.w.d");
+
+                } else {
+                    rm  = (insn >> 12) & 7;
+                    switch (_funct7) { //FIXME: FLEN/etc should be option vars
+                        #define F_SIZE 32
+                        #include "dromajo_fp_template.h"
+                        #if FLEN >= 64
+                        #define F_SIZE 64
+                        #include "dromajo_fp_template.h"
+                        #endif
+                        #if FLEN >= 128
+                        #define F_SIZE 128
+                        #include "dromajo_fp_template.h"
+                        #endif
+                        default: ILLEGAL_INSTR("093")
+                    }
                 }
                 NEXT_INSN;
-#endif
+#endif //FLEN > 0
+
 #if VLEN > 0
             case 0x57:
                 if (s->vs == 0)

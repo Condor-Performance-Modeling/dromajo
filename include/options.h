@@ -158,6 +158,9 @@ struct Options
   bool allow_ctrlc{false};
   bool show_enabled_extensions{false};
 
+  //Control warning messages
+  bool en_unimpl_csr_msg{false};
+
   std::string march_string{"rv64gc"};
   std::string cfgfile;
   std::string _xlens;

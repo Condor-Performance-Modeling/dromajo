@@ -40,42 +40,125 @@ void decoder()
   zfa();
 }
 
-void zfa()
-{
-//    asm volatile ("fleq.q x1, f1, f2");
-//    asm volatile ("fli.q f1, 3.14159265358979");
-//    asm volatile ("fltq.q x1, f1, f2");
-//    asm volatile ("fmaxm.q f3, f1, f2");
-//    asm volatile ("fminm.q f3, f1, f2");
+// -----------------------------------------------------------------
+// Q: No required support for Q at the moment
 //    asm volatile ("fmvh.x.q x1, f1");
 //    asm volatile ("fmvp.q.x f1, x1");
-//    asm volatile ("fround.q f1, f2");
 //    asm volatile ("froundnx.q f1, f2");
+//    asm volatile ("fmvp.q.x f0, x10, x11");
+//
+//RV32: rv32 only
+//    asm volatile ("fmvp.d.x f0, x10, x11");
+// 
+// -----------------------------------------------------------------
+void zfa()
+{
+// ----------------------------------------------------
+//              3322 2222 2222 1111 1111 11-- ---- ----
+//              1098 7654 3210 9876 5432 1098 7654 3210
+// FLEQ_H = 32'b1010_010?_????_????_?100_????_?101_0011;
+// FLEQ_S = 32'b1010_000?_????_????_?100_????_?101_0011;
+// FLEQ_D = 32'b1010_001?_????_????_?100_????_?101_0011;
+// FLEQ_Q = 32'b1010_011?_????_????_?100_????_?101_0011;
 
-//    asm volatile ("fleq.d x1, f1, f2");
-//    asm volatile ("fleq.h x1, f1, f2");
+    asm volatile ("fleq.h x1, f1, f2");
     asm volatile ("fleq.s x1, f1, f2");
+    asm volatile ("fleq.d x1, f1, f2");
+//  asm volatile ("fleq.q x1, f1, f2"); //Requires Q
 
-//    asm volatile ("fli.d f1, 3.14");
-//    asm volatile ("fli.d f1, 3");
-//    asm volatile ("fli.h f1, 1.5");
-//    asm volatile ("fli.h f1, 1");
-//    asm volatile ("fli.s f1, 2.71");
-//    asm volatile ("fltq.h x1, f1, f2");
-//    asm volatile ("fltq.d x1, f1, f2");
-//    asm volatile ("fltq.s x1, f1, f2");
-//    asm volatile ("fmaxm.d f3, f1, f2");
-//    asm volatile ("fmaxm.h f3, f1, f2");
-//    asm volatile ("fmaxm.s f3, f1, f2");
-//    asm volatile ("fminm.d f3, f1, f2");
-//    asm volatile ("fminm.h f3, f1, f2");
-//    asm volatile ("fminm.s f3, f1, f2");
-//    asm volatile ("fround.d f1, f2");
-//    asm volatile ("fround.h f1, f2");
-//    asm volatile ("fround.s f1, f2");
-//    asm volatile ("froundnx.d f1, f2");
-//    asm volatile ("froundnx.h f1, f2");
-//    asm volatile ("froundnx.s f1, f2");
+// ----------------------------------------------------
+//              3322 2222 2222 1111 1111 11-- ---- ----
+//              1098 7654 3210 9876 5432 1098 7654 3210
+// FLTQ_H = 32'b1010_010?_????_????_?101_????_?101_0011;
+// FLTQ_S = 32'b1010_000?_????_????_?101_????_?101_0011;
+// FLTQ_D = 32'b1010_001?_????_????_?101_????_?101_0011;
+// FLTQ_Q = 32'b1010_011?_????_????_?101_????_?101_0011;
+
+    asm volatile ("fltq.h x1, f1, f2");
+    asm volatile ("fltq.s x1, f1, f2");
+    asm volatile ("fltq.d x1, f1, f2");
+//  asm volatile ("fltq.q x1, f1, f2"); //Requires Q
+
+// ----------------------------------------------------
+//               3322 2222 2222 1111 1111 11-- ---- ----
+//               1098 7654 3210 9876 5432 1098 7654 3210
+// FMAXM_H = 32'b0010_110?_????_????_?011_????_?101_0011;
+// FMAXM_S = 32'b0010_100?_????_????_?011_????_?101_0011;
+// FMAXM_D = 32'b0010_101?_????_????_?011_????_?101_0011;
+// FMAXM_Q = 32'b0010_111?_????_????_?011_????_?101_0011;
+
+    asm volatile ("fmaxm.h f3, f1, f2");
+    asm volatile ("fmaxm.s f3, f1, f2");
+    asm volatile ("fmaxm.d f3, f1, f2");
+//  asm volatile ("fmaxm.q f3, f1, f2"); //Requires Q
+
+// ----------------------------------------------------
+//               3322 2222 2222 1111 1111 11-- ---- ----
+//               1098 7654 3210 9876 5432 1098 7654 3210
+// FMINM_H = 32'b0010_110?_????_????_?010_????_?101_0011;
+// FMINM_S = 32'b0010_100?_????_????_?010_????_?101_0011;
+// FMINM_D = 32'b0010_101?_????_????_?010_????_?101_0011;
+// FMINM_Q = 32'b0010_111?_????_????_?010_????_?101_0011;
+
+    asm volatile ("fminm.h f3, f1, f2");
+    asm volatile ("fminm.s f3, f1, f2");
+    asm volatile ("fminm.d f3, f1, f2");
+//  asm volatile ("fminm.q f3, f1, f2"); //Requires Q
+
+// ----------------------------------------------------
+//                3322 2222 2222 1111 1111 11-- ---- ----
+//                1098 7654 3210 9876 5432 1098 7654 3210
+// FROUND_H = 32'b0100_0100_0100_????_????_????_?101_0011;
+// FROUND_S = 32'b0100_0000_0100_????_????_????_?101_0011;
+// FROUND_D = 32'b0100_0010_0100_????_????_????_?101_0011;
+// FROUND_Q = 32'b0100_0110_0100_????_????_????_?101_0011;
+
+    asm volatile ("fround.h f1, f2, rtz");
+    asm volatile ("fround.s f1, f2");
+    asm volatile ("fround.d f1, f2");
+//  asm volatile ("fround.q f1, f2"); //Requires Q
+
+// ----------------------------------------------------
+//                  3322 2222 2222 1111 1111 11-- ---- ----
+//                  1098 7654 3210 9876 5432 1098 7654 3210
+// FROUNDNX_H = 32'b0100_0100_0101_????_????_????_?101_0011;
+// FROUNDNX_S = 32'b0100_0000_0101_????_????_????_?101_0011;
+// FROUNDNX_D = 32'b0100_0010_0101_????_????_????_?101_0011;
+// FROUNDNX_Q = 32'b0100_0110_0101_????_????_????_?101_0011;
+
+    asm volatile ("froundnx.h f1, f2");
+    asm volatile ("froundnx.s f1, f2");
+    asm volatile ("froundnx.d f1, f2");
+//  asm volatile ("froundnx.q f1, f2"); //Requires Q
+
+// ----------------------------------------------------
+//             3322 2222 2222 1111 1111 11-- ---- ----
+//             1098 7654 3210 9876 5432 1098 7654 3210
+// FLI_H = 32'b1111_0100_0001_????_?000_????_?101_0011;
+// FLI_S = 32'b1111_0000_0001_????_?000_????_?101_0011;
+// FLI_D = 32'b1111_0010_0001_????_?000_????_?101_0011;
+// FLI_Q = 32'b1111_0110_0001_????_?000_????_?101_0011;
+
+    asm volatile ("fli.s f1, inf");
+    asm volatile ("fli.d f1, nan");
+//  asm volatile ("fli.q f1, min"); //Requires Q
+
+// ----------------------------------------------------
+//                   3322 2222 2222 1111 1111 11-- ---- ----
+//                   1098 7654 3210 9876 5432 1098 7654 3210
+// FCVTMOD_W_D = 32'b1100_0010_1000_????_?001_????_?101_0011;
+
+    int x5; double f2;
+    asm volatile ("fcvtmod.w.d %0, %1, rtz" : "=r"(x5) : "f"(f2));
+
+// ----------------------------------------------------
+//                3322 2222 2222 1111 1111 11-- ---- ----
+//                1098 7654 3210 9876 5432 1098 7654 3210
+// FMVP_D_X = 32'b1011_001?_????_????_?000_????_?101_0011;
+// FMVP_Q_X = 32'b1011_011?_????_????_?000_????_?101_0011;
+//    asm volatile ("fmvp.d.x f5,x1,x2"); //Requires RV32
+//    asm volatile ("fmvp.q.x f5,x1,x2"); //Requires Q
+
 }
 
 void catch_all()
@@ -97,6 +180,10 @@ void catch_all()
     asm volatile ("nop");
     asm volatile ("nop");
 
+//FIXME: keeping this for now, until every thing
+// has it's own subroutine, commented for now
+// to reduce time to execute tests
+/*
     asm volatile ("add	a5,a5,a3");
     asm volatile ("addi	sp,sp,-16");
     asm volatile ("addiw	a5,a5,1");
@@ -243,5 +330,6 @@ void catch_all()
     asm volatile ("zext.b	s9,t5");
     asm volatile ("zext.h	t1,a7");
     asm volatile ("zext.w	a4,a1");
+*/
 }
 

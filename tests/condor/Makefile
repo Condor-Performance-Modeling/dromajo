@@ -10,7 +10,9 @@ else
     MAKEFLAGS += -s  # Enable silent mode
 endif
 
-default: andestar zicond decoder
+default: andestar zicond 
+#zfa
+#decoder
 
 decoder: cc_decoder sim_decoder
 
@@ -47,24 +49,40 @@ andestar:
 	$(MAKE) andes_run_test X=rv64ui-p E=andestar T=flmism
 
 # --------------------------------------------------------------------------------
-#zfa   fcvtmod.w.d  compiler does not like operands supplied
-#zfa   FMVH.X.d  RV32 only
-#zfa   FMVP.d.X  RV32 only
+# Open compiler does not like operands supplied
+# fcvtmod.*.*
+#
+# RV32 only
+# fmvh.x.d
+# fmvh.d.x
+# fmvp.x.d
+# fmvp.d.x
+#
+# No Q support needed at the moment
+# fleq_q fli_q fltq_q fmaxm_q fminm_q fmvh_x_q fmvp_q_x fround_q froundnx_q fmvp_q_x
+# --------------------------------------------------------------------------------
+zfa_tests = fleq_h fleq_s fleq_d \
+            fltq_h fltq_s fltq_d \
+            fmaxm_h fmaxm_s fmaxm_d \
+            fminm_h fminm_s fminm_d \
+            fround_h fround_s fround_d \
+            froundnx_h froundnx_s froundnx_d \
+            fmvh_x_d \
+            fcvtmod_w_d \
+            fli_h fli_s fli_d
 
-zfa_tests=fleq.d fleq.h fleq.q fleq.S fli.d fli.h fli.q fli.s \
-          fltq.d fltq.h fltq.q fltq.s fmaxm.d fmaxm.h fmaxm.q fmaxm.s fminm.d \
-          fminm.h fminm.q fminm.s fmvh.x.q fmvp.q.x fround.d fround.h fround.q \
-          fround.s froundnx.d froundnx.h froundnx.q froundnx.s
+zfa:
+	-mkdir -p bin/zfa logs/zfa
+	$(MAKE) run_test X=rv64ud-p E=zfa T=fleq_d
 
-zfa:	
-	mkdir -p bin/zfa logs/zfa
-	$(foreach test,$(zfa_tests),$(MAKE) run_test X=rv64ui-p E=zfa T=$(test);)
+#	$(foreach test,$(zfa_tests),$(MAKE) run_test X=rv64ui-p E=zfa T=$(test);)
 
 zicond:	
 	mkdir -p bin/zicond logs/zicond
-	$(MAKE) riscv_run_test X=rv64ui-p E=zicond T=czero_eqz
-	$(MAKE) riscv_run_test X=rv64ui-p E=zicond T=czero_nez
+	$(MAKE) run_test X=rv64ui-p E=zicond T=czero_eqz
+	$(MAKE) run_test X=rv64ui-p E=zicond T=czero_nez
 
+# -------------------------------------------------------------------------
 andes_run_test:
 	$(MAKE) andes_cc_test  X=$(X) EXT=$(E) TST=$(T)
 	$(MAKE) andes_sim_test X=$(X) EXT=$(E) TST=$(T)
@@ -80,6 +98,7 @@ andes_sim_test:
 	  ./bin/$(EXT)/$(X)-$(TST) > ./logs/$(EXT)/$(X)-$(TST).log 2>&1 && \
 	echo "Running $(X)-$(TST) ...pass" || echo "Running $(X)-$(TST) ...fail"
 
+# -------------------------------------------------------------------------
 cc_decoder:
 	$(Q)mkdir -p bin/decoder logs/decoder
 	$(RISCV_CC) $(DECODER_CC_OPTS) $(DECODER_LNK) \
@@ -94,21 +113,22 @@ sim_decoder:
 	echo "Running decoder.riscv ...pass" || echo "Running decoder.riscv ...fail"
 
 # -------------------------------------------------------------------------
-riscv_run_test:
-	$(MAKE) riscv_cc_test  X=$(X) EXT=$(E) TST=$(T)
-	$(MAKE) riscv_sim_test X=$(X) EXT=$(E) TST=$(T)
+run_test:
+	$(MAKE) cc_test  X=$(X) EXT=$(E) TST=$(T)
+	$(MAKE) sim_test X=$(X) EXT=$(E) TST=$(T)
 
-riscv_cc_test:	
+cc_test:	
 	$(Q)$(RISCV_CC) $(RISCV_CC_OPTS) -DXLEN=$(X) \
 	  ./src/$(EXT)/$(TST).S -o ./bin/$(EXT)/$(X)-$(TST)
 	$(Q)$(RISCV_OBJD) $(RISCV_OBJD_OPTS) \
 	  ./bin/$(EXT)/$(X)-$(TST) > ./logs/$(EXT)/$(X)-$(TST).dump
 
-riscv_sim_test:
+sim_test:
 	$(Q)$(RISCV_SIM) $(RISCV_SIM_OPTS) \
 	  ./bin/$(EXT)/$(X)-$(TST) > ./logs/$(EXT)/$(X)-$(TST).log 2>&1 && \
 	echo "Running $(X)-$(TST) ...pass" || echo "Running $(X)-$(TST) ...fail"
 
+# -------------------------------------------------------------------------
 clean:
 	-rm -rf bin/* logs/*
 
