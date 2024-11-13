@@ -160,7 +160,6 @@ add_library(dromajo_cosim STATIC
         src/block_device.cpp
         src/cutils.cpp
         src/dromajo_cosim.cpp
-        src/dromajo_isa.cpp
         src/dromajo_main.cpp
         src/dromajo_stf.cpp
         src/dromajo_trace.cpp
@@ -178,6 +177,7 @@ add_library(dromajo_cosim STATIC
         src/options.cpp
         src/pci.cpp
         src/riscv_cpu.cpp
+        src/riscv_isa.cpp
         src/riscv_machine.cpp
         src/softfp.cpp
         src/term_io.cpp

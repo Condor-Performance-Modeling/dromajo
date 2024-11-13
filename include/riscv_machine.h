@@ -135,4 +135,5 @@ struct RISCVMachine {
 
     /* Extension state, not used by Dromajo itself */
     void *ext_state;
+
 };

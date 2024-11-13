@@ -36,7 +36,7 @@
  */
 
 #include "riscv_machine.h"
-#include "dromajo_isa.h"
+#include "riscv_isa.h"
 using namespace std;
 
 //TODO: Test this first with various typo's etc in the -D
@@ -48,34 +48,36 @@ using namespace std;
 
 // List of supported extensions
 // See also dromajo_isa.h
-std::unordered_map<char,bool ExtensionFlags::*> simpleExts = {
-    {'i', &ExtensionFlags::i},
-    {'e', &ExtensionFlags::e},
-    {'g', &ExtensionFlags::g},
-    {'m', &ExtensionFlags::m},
-    {'a', &ExtensionFlags::a},
-    {'f', &ExtensionFlags::f},
-    {'d', &ExtensionFlags::d},
-    {'c', &ExtensionFlags::c}
+std::unordered_map<char,bool IsaConfigFlags::*> simpleExts = {
+    {'i', &IsaConfigFlags::i},
+    {'e', &IsaConfigFlags::e},
+    {'g', &IsaConfigFlags::g},
+    {'m', &IsaConfigFlags::m},
+    {'a', &IsaConfigFlags::a},
+    {'f', &IsaConfigFlags::f},
+    {'d', &IsaConfigFlags::d},
+    {'c', &IsaConfigFlags::c}
 };
 
-std::unordered_map<std::string, bool ExtensionFlags::*> extensionMap = {
-    {"i", &ExtensionFlags::i},
-    {"e", &ExtensionFlags::e},
-    {"g", &ExtensionFlags::g},
-    {"m", &ExtensionFlags::m},
-    {"a", &ExtensionFlags::a},
-    {"f", &ExtensionFlags::f},
-    {"d", &ExtensionFlags::d},
-    {"c", &ExtensionFlags::c},
-    {"zba", &ExtensionFlags::zba},
-    {"zbb", &ExtensionFlags::zbb},
-    {"zbc", &ExtensionFlags::zbc},
-    {"zbs", &ExtensionFlags::zbs}
+std::unordered_map<std::string, bool IsaConfigFlags::*> extensionMap = {
+    {"i", &IsaConfigFlags::i},
+    {"e", &IsaConfigFlags::e},
+    {"g", &IsaConfigFlags::g},
+    {"m", &IsaConfigFlags::m},
+    {"a", &IsaConfigFlags::a},
+    {"f", &IsaConfigFlags::f},
+    {"d", &IsaConfigFlags::d},
+    {"c", &IsaConfigFlags::c},
+    {"zba", &IsaConfigFlags::zba},
+    {"zbb", &IsaConfigFlags::zbb},
+    {"zbc", &IsaConfigFlags::zbc},
+    {"zbs", &IsaConfigFlags::zbs},
+    {"zfh", &IsaConfigFlags::zfh},
+    {"zfa", &IsaConfigFlags::zfa}
 };
 // -----------------------------------------------------------------------
 // -----------------------------------------------------------------------
-void setExtensionFlags(const std::string& input, ExtensionFlags& flags)
+void setIsaConfigFlags(const std::string& input, IsaConfigFlags& flags)
 {
     // Iterate over each character for single-character extensions
     for (char ch : input) {
@@ -95,9 +97,9 @@ void setExtensionFlags(const std::string& input, ExtensionFlags& flags)
 // -----------------------------------------------------------------------
 // stderr because it is called from main
 // -----------------------------------------------------------------------
-void printExtensionFlags(const ExtensionFlags& flags,bool verbose) {
+void printIsaConfigFlags(const IsaConfigFlags& flags,bool verbose) {
 
-    fprintf(stderr,"Extension Flags State:\n");
+    fprintf(stderr,"Isa Flags State:\n");
 
     bool nothing_enabled = true;
     for (const auto& [key, flagPtr] : extensionMap) {
@@ -119,7 +121,7 @@ void printExtensionFlags(const ExtensionFlags& flags,bool verbose) {
 // -----------------------------------------------------------------------
 // Verify the common form and expand 'g' as needed
 // -----------------------------------------------------------------------
-bool validateInitialSegment(const std::string& segment,ExtensionFlags &flags)
+bool validateInitialSegment(const std::string& segment,IsaConfigFlags &flags)
 {
     // Valid base prefixes
     std::unordered_set<std::string> validBases = {"rv32", "rv64", "rv128"};
@@ -158,7 +160,7 @@ bool validateInitialSegment(const std::string& segment,ExtensionFlags &flags)
     for (char ch : remaining) {
         auto it = simpleExts.find(ch);
         if (it != simpleExts.end()) {
-            // Set the corresponding flag in ExtensionFlags
+            // Set the corresponding flag in IsaConfigFlags
             flags.*(it->second) = true;
             if(it->first == 'g') {
               flags.i = true;
@@ -178,10 +180,10 @@ bool validateInitialSegment(const std::string& segment,ExtensionFlags &flags)
 }
 // -----------------------------------------------------------------------
 // -----------------------------------------------------------------------
-bool parse_isa_string(const char *march,ExtensionFlags &flags)
+bool parse_isa_string(const char *march,IsaConfigFlags &flags)
 {
   //Message will be emitted by sub-functions
   if(!validateInitialSegment(std::string(march),flags)) return false;
-  setExtensionFlags(std::string(march), flags);
+  setIsaConfigFlags(std::string(march), flags);
   return true;
 }

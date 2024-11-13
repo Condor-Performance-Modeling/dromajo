@@ -53,23 +53,49 @@
 #error unsupported XLEN
 #endif
 
+#if FLEN == 32
+#define floatx_t float
+#elif FLEN == 64
+#define floatx_t double
+#elif FLEN == 128
+#define floatx_t long double
+#else
+#error unsupported FLEN
+#endif
+
 #include "dromajo_stf.h"
 #include <limits>
 
-//#define EN_ZBA (s->machine->common.ext_flags.zba == true)
-//#define EN_ZBB (s->machine->common.ext_flags.zbb == true)
-//#define EN_ZBC (s->machine->common.ext_flags.zbb == true)
-//#define EN_ZBS (s->machine->common.ext_flags.zbs == true)
+//FIXME: this would be preferred, but this ...arcane... template
+//inclusion scheme for XLEN sizes is a problem. 
+//the preferred method: isa_flags->has_zfh() 
 
-#define EN_ZICOND 1
-#define EN_ZBA 1
-#define EN_ZBB 1
-#define EN_ZBC 1
-#define EN_ZBS 1
+#define EN_F       1
+#define EN_ZFH     1
+#define EN_ZFA     1
+#define EN_ZBA     1
+#define EN_ZBB     1
+#define EN_ZBC     1
+#define EN_ZBS     1
+#define EN_ZICOND  1
+
+//FIXME: instructions in decoder are not gated on EN_ASTAR, should be
+#define EN_ASTAR   1
+#define EN_CODENSE 0
+
+//Hack to mimic being able to access the isa_flags
+
+//ZFH requires F, ZFA and ZFH
+#define has_zfh()     EN_F && EN_ZFA && EN_ZFH
+#define has_zba()     EN_ZBA
+#define has_zbb()     EN_ZBB
+#define has_zbc()     EN_ZBC
+#define has_zbs()     EN_ZBS
+#define has_zicond()  EN_ZICOND
+#define has_astar()   EN_ASTAR
+#define has_codense() EN_CODENSE
 
 //TODO: add this to extension support
-#define EN_ASTAR 1
-#define EN_CODENSE 0
 //TODO: add this to extension support
 #define _GP 0x3
 //TODO: modify src to use this instead of cond. compile
@@ -120,6 +146,14 @@ extern uint32_t _XLEN;
 
 // =========================================================================
 // =========================================================================
+static inline bool glue(fleq_s,XLEN) (uint32_t xlen,uint32_t flen,
+                                      uint32_t rd,uint32_t rs1,uint32_t rs2)
+{
+  return true;
+}
+
+// -------------------------------------------------------------------------
+// -------------------------------------------------------------------------
 static inline intx_t glue(div, XLEN)(intx_t a, intx_t b) {
     if (b == 0) {
         return -1;
@@ -251,6 +285,7 @@ static inline intx_t glue(clz,XLEN)(uintx_t val) {
     }
 }
 // -------------------------------------------------------------------------
+// -------------------------------------------------------------------------
 static inline intx_t glue(clzw,XLEN)(uintx_t val) { 
     if(val == 0) return 32;
     else {
@@ -260,6 +295,7 @@ static inline intx_t glue(clzw,XLEN)(uintx_t val) {
 }
 // -------------------------------------------------------------------------
 #if XLEN >= 64
+// -------------------------------------------------------------------------
 // -------------------------------------------------------------------------
 static inline uint64_t get_mask(int len) {
     return (len == 64) ? ~0ULL : (1ULL << len) - 1;
@@ -381,6 +417,8 @@ static inline uint64_t bfos_oper(uint32_t insn,uint64_t Rs1) {
 
     return Rd;
 }
+// -------------------------------------------------------------------------
+// -------------------------------------------------------------------------
 #endif
 // =========================================================================
 // =========================================================================
@@ -577,12 +615,13 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
     s->most_recently_written_fp_reg = -1;
     s->info                         = ctf_nop;
 
-    if (n_cycles == 0)
-        return 0;
+    if (n_cycles == 0) return 0;
     insn_counter_addend = s->insn_counter + n_cycles;
 
     /* check pending interrupts */
-    if (unlikely(((s->mip & s->mie) != 0) && (s->machine->common.pending_interrupt != -1 || !s->machine->common.cosim))) {
+    if (unlikely(((s->mip & s->mie) != 0)
+          && (s->machine->common.pending_interrupt != -1 || !s->machine->common.cosim)))
+    {
         if (raise_interrupt(s)) {
             --insn_counter_addend;
             goto done_interp;
@@ -626,10 +665,11 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
             if (likely(s->tlb_code[tlb_idx].vaddr == (addr & ~PG_MASK))) {
                 /* TLB match */
                 uintptr_t mem_addend;
-                mem_addend        = s->tlb_code[tlb_idx].mem_addend;
-                code_ptr          = (uint8_t *)(mem_addend + (uintptr_t)addr);
-                code_end          = (uint8_t *)(mem_addend + (uintptr_t)((addr & ~PG_MASK) + PG_MASK - 1));
+                mem_addend = s->tlb_code[tlb_idx].mem_addend;
+                code_ptr = (uint8_t *)(mem_addend + (uintptr_t)addr);
+                code_end = (uint8_t *)(mem_addend + (uintptr_t)((addr & ~PG_MASK) + PG_MASK - 1));
                 code_to_pc_addend = addr - (uintptr_t)code_ptr;
+
                 if (unlikely(code_ptr >= code_end)) {
                     /* instruction is potentially half way between two
                        pages ? */
@@ -1415,44 +1455,44 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                 switch (funct3) {
                     case 0: /* addi */ val = (intx_t)(read_reg(rs1) + imm); break;
                     case 1: /* cpop */
-                        if (EN_ZBB && (_funct12 == 0x601)) {
+                        if (has_zbb() && (_funct12 == 0x601)) {
 
                             CAPTURED_INSTR("CTZ");
                             val = (intx_t)glue(ctz_,XLEN)((intx_t)read_reg(rs1));
 
-                        } else if (EN_ZBB && (_funct12 == 0x600)) {
+                        } else if (has_zbb() && (_funct12 == 0x600)) {
 
                             CAPTURED_INSTR("CLZ");
                             val = (intx_t)glue(clz,XLEN)((intx_t)read_reg(rs1));
 
-                        } else if (EN_ZBB && (_funct12 == 0x602)) {
+                        } else if (has_zbb() && (_funct12 == 0x602)) {
 
                             CAPTURED_INSTR("CPOP");
                             val = (intx_t)glue(cpop,XLEN)((uintx_t)read_reg(rs1));
 
-                        } else if ( EN_ZBB && (_funct12 == 0x605)) {
+                        } else if ( has_zbb() && (_funct12 == 0x605)) {
 
                             CAPTURED_INSTR("SEXT.H");
                             val = (intx_t)glue(sext_h,XLEN)((intx_t)read_reg(rs1));
 
-                        } else if ( EN_ZBB && (_funct12 == 0x604)) {
+                        } else if ( has_zbb() && (_funct12 == 0x604)) {
 
                             CAPTURED_INSTR("SEXT.B");
                             val = (intx_t)glue(sext_b,XLEN)((intx_t)read_reg(rs1));
 
-                        } else if (EN_ZBS && ((XLEN == 32 && _funct7 == 0x14)
+                        } else if (has_zbs() && ((XLEN == 32 && _funct7 == 0x14)
                                           ||  (XLEN >= 64 && _funct6 == 0x0A))) {
 
                             CAPTURED_INSTR("BSETI");
                             val = (uintx_t)val | ((uintx_t)1 << (_shamt & (XLEN - 1)));
 
-                        } else if (EN_ZBS && ((XLEN == 32 && _funct7 == 0x24)
+                        } else if (has_zbs() && ((XLEN == 32 && _funct7 == 0x24)
                                           ||  (XLEN >= 64 && _funct6 == 0x12))) {
 
                             CAPTURED_INSTR("BCLRI");
                             val = (uintx_t)val & ~((uintx_t)1 << (_shamt & (XLEN - 1)));
 
-                        } else if (EN_ZBS && ((XLEN == 32 && _funct7 == 0x34)
+                        } else if (has_zbs() && ((XLEN == 32 && _funct7 == 0x34)
                                           ||  (XLEN >= 64 && _funct6 == 0x1A))) {
 
                             CAPTURED_INSTR("BINVI");
@@ -1472,7 +1512,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                     case 3: /* sltiu */ val = read_reg(rs1) < (target_ulong)imm; break;
                     case 4: /* xori  */ val = read_reg(rs1) ^ imm; break;
                     case 5: 
-                        if (EN_ZBS && ((XLEN == 32 && _funct7 == 0x24)
+                        if (has_zbs() && ((XLEN == 32 && _funct7 == 0x24)
                                    ||  (XLEN >= 64 && _funct6 == 0x12))) {
 
                             CAPTURED_INSTR("BEXTI");
@@ -1513,22 +1553,22 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                 switch (funct3) {
                     case 0: /* addiw */ val = (int32_t)(val + imm); break;
                     case 1:
-                        if (EN_ZBA && (_funct6 == 0x2)) {
+                        if (has_zba() && (_funct6 == 0x2)) {
 
                             CAPTURED_INSTR("SLLI.UW");
                             val = (uintx_t)(uint32_t)val << _shamt;
 
-                        } else if (EN_ZBB && (_funct12 == 0x601)) {
+                        } else if (has_zbb() && (_funct12 == 0x601)) {
 
                             CAPTURED_INSTR("CTZW");
                             val = (intx_t)glue(ctzw,XLEN)((intx_t)read_reg(rs1));
 
-                        } else if (EN_ZBB && (_funct12 == 0x602)) {
+                        } else if (has_zbb() && (_funct12 == 0x602)) {
 
                             CAPTURED_INSTR("CPOPW");
                             val = (intx_t)glue(cpopw,XLEN)((intx_t)read_reg(rs1));
 
-                        } else if (EN_ZBB && (_funct12 == 0x600)) {
+                        } else if (has_zbb() && (_funct12 == 0x600)) {
 
                             CAPTURED_INSTR("CLZW");
                             val = (intx_t)glue(clzw,XLEN)((intx_t)read_reg(rs1));
@@ -1786,7 +1826,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                 _funct7  = (insn >> 25) & 0x7F; (void) _funct7;
                 _funct3  = (insn >> 12) & 0x7;  (void) _funct3;
 
-                if (EN_ZBA && _funct7 == 0x10) {
+                if (has_zba() && _funct7 == 0x10) {
 
                    switch (_funct3) {
                         case 0x2: CAPTURED_INSTR("SH1ADD");
@@ -1801,83 +1841,83 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                         default:  ILLEGAL_INSTR("ZBA001")
                     }
 
-                } else if (EN_ZBB && _funct7 == 0x05 && _funct3 == 0x4) {
+                } else if (has_zbb() && _funct7 == 0x05 && _funct3 == 0x4) {
 
                     CAPTURED_INSTR("MIN");
                     val = ((intx_t)val < (intx_t)val2)   ? val : val2;
 
                 //Can't easily use switch, EN_ZBC::CLMULx shares _funct7 = 0x5
-                } else if (EN_ZBB && _funct7 == 0x05 && _funct3 == 0x5) {
+                } else if (has_zbb() && _funct7 == 0x05 && _funct3 == 0x5) {
 
                     CAPTURED_INSTR("MINU");
                     val = ((uintx_t)val < (uintx_t)val2) ? val : val2;
 
-                } else if (EN_ZBB && _funct7 == 0x05 && _funct3 == 0x6) {
+                } else if (has_zbb() && _funct7 == 0x05 && _funct3 == 0x6) {
 
                     CAPTURED_INSTR("MAX");
                     val = ((intx_t)val < (intx_t)val2)   ? val2 : val;
 
-                } else if (EN_ZBB && _funct7 == 0x05 && _funct3 == 0x7) {
+                } else if (has_zbb() && _funct7 == 0x05 && _funct3 == 0x7) {
 
                     CAPTURED_INSTR("MAXU");
                     val = ((uintx_t)val < (uintx_t)val2) ? val2 : val;
 
-                } else if (EN_ZBB && _funct7 == 0x20 && _funct3 == 0x4) {
+                } else if (has_zbb() && _funct7 == 0x20 && _funct3 == 0x4) {
 
                     CAPTURED_INSTR("XNOR");
                     val = ~(val ^ val2);
 
-                } else if (EN_ZBB && _funct7 == 0x20 && _funct3 == 0x6) {
+                } else if (has_zbb() && _funct7 == 0x20 && _funct3 == 0x6) {
 
                     CAPTURED_INSTR("ORN");
                     val = val | ~val2;
 
-                } else if (EN_ZBB && _funct7 == 0x20 && _funct3 == 0x7) {
+                } else if (has_zbb() && _funct7 == 0x20 && _funct3 == 0x7) {
 
                     CAPTURED_INSTR("ANDN");
                     val = val & ~val2;
 
-                } else if (EN_ZBC && _funct7 == 0x5 && _funct3 == 0x1) {
+                } else if (has_zbc() && _funct7 == 0x5 && _funct3 == 0x1) {
 
                     CAPTURED_INSTR("CLMUL");
                     val = (intx_t)glue(clmul, XLEN)(val, val2);
 
-                } else if (EN_ZBC && _funct7 == 0x5 && _funct3 == 0x2) {
+                } else if (has_zbc() && _funct7 == 0x5 && _funct3 == 0x2) {
 
                     CAPTURED_INSTR("CLMULR");
                     val = (intx_t)glue(clmulr, XLEN)(val, val2);
 
-                } else if (EN_ZBC && _funct7 == 0x5 && _funct3 == 0x3) {
+                } else if (has_zbc() && _funct7 == 0x5 && _funct3 == 0x3) {
 
                     CAPTURED_INSTR("CLMULH");
                     val = (intx_t)glue(clmulh, XLEN)(val, val2);
 
-                } else if (EN_ZBS && _funct7 == 0x14 && _funct3 == 0x1) {
+                } else if (has_zbs() && _funct7 == 0x14 && _funct3 == 0x1) {
 
                     CAPTURED_INSTR("BSET");
                     val = (uintx_t)val | ((uintx_t)1 << (val2 & (XLEN - 1)));
 
-                } else if (EN_ZBS && _funct7 == 0x24 && _funct3 == 0x1) {
+                } else if (has_zbs() && _funct7 == 0x24 && _funct3 == 0x1) {
 
                     CAPTURED_INSTR("BCLR");
                     val = (uintx_t)val & ~((uintx_t)1 << (val2 & (XLEN - 1)));
 
-                } else if (EN_ZBS && _funct7 == 0x24 && _funct3 == 0x5) {
+                } else if (has_zbs() && _funct7 == 0x24 && _funct3 == 0x5) {
 
                     CAPTURED_INSTR("BEXT");
                     val = ((uintx_t)val >> (val2 & (XLEN - 1))) & (uintx_t)1;
 
-                } else if (EN_ZBS && _funct7 == 0x34 && _funct3 == 0x1) {
+                } else if (has_zbs() && _funct7 == 0x34 && _funct3 == 0x1) {
 
                     CAPTURED_INSTR("BINV");
                     val = (uintx_t)val ^ ((uintx_t)1 << (val2 & (XLEN - 1)));
 
-                } else if (EN_ZICOND && _funct7 == 0x07 && _funct3 == 0x5) {
+                } else if (has_zicond() && _funct7 == 0x07 && _funct3 == 0x5) {
 
                     CAPTURED_INSTR("CZERO.EQZ");
                     val = (uintx_t)val2 == 0 ? (uintx_t)0 : (uintx_t)val;
 
-                } else if (EN_ZICOND && _funct7 == 0x07 && _funct3 == 0x7) {
+                } else if (has_zicond() && _funct7 == 0x07 && _funct3 == 0x7) {
 
                     CAPTURED_INSTR("CZERO.NEZ");
                     val = (uintx_t)val2 != 0 ? (uintx_t)0 : (uintx_t)val;
@@ -1927,19 +1967,19 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                 _funct7  = (insn >> 25) & 0x7F;
                 _funct3  = (insn >> 12) & 0x7;
 
-                if (EN_ZBA && _funct7 == 0x10 && _funct3 == 0x2) {
+                if (has_zba() && _funct7 == 0x10 && _funct3 == 0x2) {
                     CAPTURED_INSTR("SH1ADD.UW");
                     val = ((uintx_t)(uint32_t)val << 1) + (uintx_t)val2;
-                } else if (EN_ZBA && _funct7 == 0x10 && _funct3 == 0x4) {
+                } else if (has_zba() && _funct7 == 0x10 && _funct3 == 0x4) {
                     CAPTURED_INSTR("SH2ADD.UW");
                     val = ((uintx_t)(uint32_t)val << 2) + (uintx_t)val2;
-                } else if (EN_ZBA && _funct7 == 0x10 && _funct3 == 0x6) {
+                } else if (has_zba() && _funct7 == 0x10 && _funct3 == 0x6) {
                     CAPTURED_INSTR("SH3ADD.UW");
                     val = ((uintx_t)(uint32_t)val << 3) + (uintx_t)val2;
-                } else if (EN_ZBA && _funct7 == 0x04 && _funct3 == 0x0) {
+                } else if (has_zba() && _funct7 == 0x04 && _funct3 == 0x0) {
                     CAPTURED_INSTR("ADD.UW/ZEXT.W");
                     val = (uintx_t)(uint32_t)val + (uintx_t)val2;
-                } else if (EN_ZBB && _funct12 == 0x080 & _funct3 == 0x4) {
+                } else if (has_zbb() && _funct12 == 0x080 & _funct3 == 0x4) {
                    CAPTURED_INSTR("ZEXT.H");
                    val = val & HALF_WORD_MASK;
                 } else if (imm == 1) {
@@ -2437,13 +2477,11 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                 }
                 NEXT_INSN;
             case 0x47: /* fmsub */
-                if (s->fs == 0)
-                    ILLEGAL_INSTR("083")
+                if (s->fs == 0) ILLEGAL_INSTR("083")
                 funct3 = (insn >> 25) & 3;
                 rs3    = insn >> 27;
                 rm     = get_insn_rm(s, (insn >> 12) & 7);
-                if (rm < 0)
-                    ILLEGAL_INSTR("084")
+                if (rm < 0) ILLEGAL_INSTR("084")
                 switch (funct3) {
                     case 0:
                         write_fp_reg(rd,
@@ -2479,13 +2517,11 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                 }
                 NEXT_INSN;
             case 0x4b: /* fnmsub */
-                if (s->fs == 0)
-                    ILLEGAL_INSTR("086")
+                if (s->fs == 0) ILLEGAL_INSTR("086")
                 funct3 = (insn >> 25) & 3;
                 rs3    = insn >> 27;
                 rm     = get_insn_rm(s, (insn >> 12) & 7);
-                if (rm < 0)
-                    ILLEGAL_INSTR("087")
+                if (rm < 0) ILLEGAL_INSTR("087")
                 switch (funct3) {
                     case 0:
                         write_fp_reg(rd,
@@ -2521,13 +2557,11 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                 }
                 NEXT_INSN;
             case 0x4f: /* fnmadd */
-                if (s->fs == 0)
-                    ILLEGAL_INSTR("089")
+                if (s->fs == 0) ILLEGAL_INSTR("089")
                 funct3 = (insn >> 25) & 3;
                 rs3    = insn >> 27;
                 rm     = get_insn_rm(s, (insn >> 12) & 7);
-                if (rm < 0)
-                    ILLEGAL_INSTR("090")
+                if (rm < 0) ILLEGAL_INSTR("090")
                 switch (funct3) {
                     case 0:
                         write_fp_reg(rd,
@@ -2565,14 +2599,18 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
             case 0x53: //Floating point instructions
 
                 if (s->fs == 0) ILLEGAL_INSTR("NO-FLOAT")
-                //The imm field is confusing for non-imm encodings
-                //imm     = (insn >>w 25) & 0x7F;
-                _funct7  = (insn >> 25) & 0x7F;
-                _funct12 = (insn >> 20) & 0xFFF;
-                _funct3  = (insn >> 12) & 0x07;
+                rd       = (insn >>  7) & 0b11111;
+                rs1      = (insn >> 15) & 0b11111;
+                rs2      = (insn >> 20) & 0b11111;
+                _funct7  = (insn >> 25) & 0b1111111;
+                _funct12 = (insn >> 20) & 0b111111111111;
+                _funct3  = (insn >> 12) & 0b111;
+
+fprintf(dromajo_stderr,"HERE 3 xlen:%d flen:%d vlen:%d\n",XLEN,FLEN,VLEN);
 
 //fprintf(dromajo_stderr,"HERE 2 PC:%lx INSN %08x OPC 0x%02x F7 0x%02x F3 0x%1x\n",GET_PC(),insn,opcode,_funct7,_funct3);
-                //FIXME: the .q versions have placeholders for decode
+
+                //FIXME: the .q versions have placeholders in the decoder,
                 //they are treated as illegal for the time being
 
                        if(_funct7 == 0b1011001 && _funct3 == 0b000) {
@@ -2582,17 +2620,20 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                   //CAPTURED_INSTR("fmvp.q.x");
                   ILLEGAL_INSTR("fmvp.q.x"); //Requires Q
 
-                } else if(_funct7 == 0b1010010 && _funct3 == 0b100) {
+                } else if(has_zfh() && _funct7 == 0b1010010 && _funct3 == 0b100) {
                   CAPTURED_INSTR("fleq.h");
                 } else if(_funct7 == 0b1010000 && _funct3 == 0b100) {
                   CAPTURED_INSTR("fleq.s");
+
+                  if(!(bool)glue(fleq_s,XLEN)(XLEN,FLEN,rd,rs1,rs2)) ILLEGAL_INSTR("fleq.s");
+
                 } else if(_funct7 == 0b1010001 && _funct3 == 0b100) {
                   CAPTURED_INSTR("fleq.d");
                 } else if(_funct7 == 0b1010011 && _funct3 == 0b100) {
                   //CAPTURED_INSTR("fleq.q");
                   ILLEGAL_INSTR("fleq.q"); //Requires Q
 
-                } else if(_funct7 == 0b1010010 && _funct3 == 0b101) {
+                } else if(has_zfh() && _funct7 == 0b1010010 && _funct3 == 0b101) {
                   CAPTURED_INSTR("fltq.h");
                 } else if(_funct7 == 0b1010000 && _funct3 == 0b101) {
                   CAPTURED_INSTR("fltq.s");
@@ -2602,7 +2643,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                   //CAPTURED_INSTR("fltq.d");
                   ILLEGAL_INSTR("fltq.d"); //Requires Q
 
-                } else if(_funct7 == 0b0010110 && _funct3 == 0b011) {
+                } else if(has_zfh() && _funct7 == 0b0010110 && _funct3 == 0b011) {
                   CAPTURED_INSTR("fmaxm.h");
                 } else if(_funct7 == 0b0010100 && _funct3 == 0b011) {
                   CAPTURED_INSTR("fmaxm.s");
@@ -2612,7 +2653,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                   //CAPTURED_INSTR("fmaxm.q");
                   ILLEGAL_INSTR("fmaxm.q"); //Requires Q
 
-                } else if(_funct7 == 0b0010110 && _funct3 == 0b10) {
+                } else if(has_zfh() && _funct7 == 0b0010110 && _funct3 == 0b10) {
                   CAPTURED_INSTR("fminm.h");
                 } else if(_funct7 == 0b0010100 && _funct3 == 0b10) {
                   CAPTURED_INSTR("fminm.s");
@@ -2622,7 +2663,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                   //CAPTURED_INSTR("fminm.q");
                   ILLEGAL_INSTR("fminm.q"); //Requires Q
 
-                } else if(_funct12 == 0b0100'0100'0100) {
+                } else if(has_zfh() && _funct12 == 0b0100'0100'0100) {
                   CAPTURED_INSTR("fround.h");
                 } else if(_funct12 == 0b0100'0000'0100) {
                   CAPTURED_INSTR("fround.s");
@@ -2632,7 +2673,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                   //CAPTURED_INSTR("fround.q");
                   ILLEGAL_INSTR("fround.q"); //Requires Q
 
-                } else if(_funct12 == 0b0100'0100'0101) {
+                } else if(has_zfh() && _funct12 == 0b0100'0100'0101) {
                   CAPTURED_INSTR("froundnx.h");
                 } else if(_funct12 == 0b0100'0000'0101) {
                   CAPTURED_INSTR("froundnx.s");
@@ -2642,7 +2683,8 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                   //CAPTURED_INSTR("froundnx.q");
                   ILLEGAL_INSTR("froundnx.q"); //Requires Q
 
-                } else if(_funct12 == 0b1111'0100'0001 && _funct3 == 0b000) {
+                } else if(has_zfh() && _funct12 == 0b1111'0100'0001 
+                                    && _funct3 == 0b000) {
                   CAPTURED_INSTR("fli.h");
                 } else if(_funct12 == 0b1111'0000'0001 && _funct3 == 0b000) {
                   CAPTURED_INSTR("fli.s");
