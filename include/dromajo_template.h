@@ -81,7 +81,7 @@ extern uint32_t _XLEN;
 #define REPORT_ILLEGAL      0
 #define REPORT_MMU_EXCEPT   0
 #define EXIT_ON_EXCEPT      0
-#define EXIT_ON_ILLEGAL_CSR 0
+//#define EXIT_ON_ILLEGAL_CSR 0
 // ---------------------------------------------------------------------------
 #if REPORT_ILLEGAL == 1
 #define ILLEGAL_INSTR(S) { \
@@ -95,12 +95,12 @@ extern uint32_t _XLEN;
 #endif
 
 #if EXIT_ON_ILLEGAL_CSR == 1
-#define ILLEGAL_CSR(S) { \
-  fprintf(dromajo_stderr,"ILLEGAL CSR ACCESS %s\n",S); \
-  goto illegal_insn; \
+#define ILLEGAL_CSR(S) {  \
+  fprintf(dromajo_stderr,"ILLEGAL CSR ACCESS %s\n",S);  \
+  goto illegal_insn;  \
 }
 #else
-#define ILLEGAL_CSR(S)
+#define ILLEGAL_CSR(S) {}
 #endif
 
 // ---------------------------------------------------------------------------
@@ -2028,7 +2028,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                             s->mcycle += delta;
                             s->minstret += delta;
                         }
-                        if (csr_read(s, funct3, &val2, imm, TRUE)) ILLEGAL_CSR("044")
+                        if (csr_read(s, funct3, &val2, imm, TRUE)) ILLEGAL_INSTR("044")
                         val2 = (intx_t)val2;
                         err  = csr_write(s, funct3, imm, val);
                         if (err == -2)
@@ -2055,7 +2055,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                             s->mcycle += delta;
                             s->minstret += delta;
                         }
-                        if (csr_read(s, funct3, &val2, imm, (rs1 != 0))) ILLEGAL_CSR("046")
+                        if (csr_read(s, funct3, &val2, imm, (rs1 != 0))) ILLEGAL_INSTR("046")
                         val2 = (intx_t)val2;
                         if (rs1 != 0) {
                             if (funct3 == 2)
