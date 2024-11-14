@@ -1,11 +1,1 @@
-rv64mi-p-lw-misaligned
-rv64mi-p-breakpoint
-rv64mi-p-ld-misaligned
-rv64mi-p-zicntr
-rv64mi-p-lh-misaligned
-x rv64mi-p-illegal
-rv64mi-p-sd-misaligned
-rv64mi-p-ma_addr
-rv64mi-p-sh-misaligned
-rv64mi-p-sw-misaligned
-rv64mi-p-access
+condor-p-sanity
