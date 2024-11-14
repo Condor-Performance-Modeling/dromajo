@@ -6,12 +6,26 @@ This is the Condor Computing fork of the Dromajo RISC-V golden model.
 This source is derived from the Esperanto source which was
 in turn derived from Fabrice Bellard's RISCVEMU/TinyEMU.
 
-The original contents of the Esperanto README.md are found in doc/ESPERANTO_README.md.
-Some of the original contents are also duplicated here.
+The original contents of the Esperanto README.md are found in
+doc/ESPERANTO_README.md.  Some of the original contents are also duplicated
+here.
 
 The original repo is here: https://github.com/chipsalliance/dromajo.
 
-This file is located here: https://github.com/Condor-Performance-Modeling/dromajo.
+This file is located here:
+https://github.com/Condor-Performance-Modeling/dromajo.
+
+## Caveats
+
+This version has incomplete/limited support for configurations beyond 
+but RV64 XLEN=64 FLEN=64.
+
+Dromajo runs a subset of the riscv-isa-tests suite. The subset of tests run by
+Dromajo's is recorded in tests/isa\_test\_suite/isa\_tests\_list.txt. One test
+per line, lines beginning with x are commented out.
+
+As extension support is added tests from the riscv-isa-tests suite are enabled.
+
 
 
 ## Cloning
