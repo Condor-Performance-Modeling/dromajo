@@ -1,7 +1,15 @@
+# ===================================================================
+# NOTE: this file is generated, comments/ordering are not preserved
+# when running update_isa_tests_list.sh.
+# ===================================================================
+
+# -------------------------------------------------------------------
+# Passing mI (all RV64)
+# -------------------------------------------------------------------
 rv64mi-p-access
 rv64mi-p-breakpoint
 rv64mi-p-csr
-rv64mi-p-illegal
+x rv64mi-p-illegal
 rv64mi-p-ld-misaligned
 rv64mi-p-lh-misaligned
 rv64mi-p-lw-misaligned
@@ -14,6 +22,9 @@ rv64mi-p-sd-misaligned
 rv64mi-p-sh-misaligned
 rv64mi-p-sw-misaligned
 rv64mi-p-zicntr
+# -------------------------------------------------------------------
+# Passing sI (all RV64)
+# -------------------------------------------------------------------
 rv64si-p-csr
 rv64si-p-dirty
 rv64si-p-icache-alias
@@ -21,6 +32,9 @@ rv64si-p-ma_fetch
 rv64si-p-sbreak
 rv64si-p-scall
 rv64si-p-wfi
+# -------------------------------------------------------------------
+# Passing uA (all RV64)
+# -------------------------------------------------------------------
 rv64ua-p-amoadd_d
 rv64ua-p-amoadd_w
 rv64ua-p-amoand_d
@@ -59,8 +73,14 @@ rv64ua-v-amoswap_w
 rv64ua-v-amoxor_d
 rv64ua-v-amoxor_w
 rv64ua-v-lrsc
+# -------------------------------------------------------------------
+# Passing uC (all RV64)
+# -------------------------------------------------------------------
 rv64uc-p-rvc
 rv64uc-v-rvc
+# -------------------------------------------------------------------
+# Passing D (all RV64)
+# -------------------------------------------------------------------
 rv64ud-p-fadd
 rv64ud-p-fclass
 rv64ud-p-fcmp
@@ -85,6 +105,9 @@ rv64ud-v-ldst
 rv64ud-v-move
 rv64ud-v-recoding
 rv64ud-v-structural
+# -------------------------------------------------------------------
+# Passing F (all RV64)
+# -------------------------------------------------------------------
 rv64uf-p-fadd
 rv64uf-p-fclass
 rv64uf-p-fcmp
@@ -107,6 +130,9 @@ rv64uf-v-fmin
 rv64uf-v-ldst
 rv64uf-v-move
 rv64uf-v-recoding
+# -------------------------------------------------------------------
+# Passing I (all RV64)
+# -------------------------------------------------------------------
 rv64ui-p-add
 rv64ui-p-addi
 rv64ui-p-addiw
@@ -209,6 +235,9 @@ rv64ui-v-subw
 rv64ui-v-sw
 rv64ui-v-xor
 rv64ui-v-xori
+# -------------------------------------------------------------------
+# Passing M (all RV64)
+# -------------------------------------------------------------------
 rv64um-p-div
 rv64um-p-divu
 rv64um-p-divuw
@@ -235,381 +264,409 @@ rv64um-v-rem
 rv64um-v-remu
 rv64um-v-remuw
 rv64um-v-remw
-x rv64uzbs-p-bseti
-x rv32uf-p-fmin
-x rv32ui-p-sh
-x rv32ui-p-sb
-x rv64uzba-p-sh2add_uw
-x rv32ui-v-add
-x rv32uzbb-p-rol
-x rv64uzbb-p-orc_b
-x rv32uzfh-p-fmin
-x rv64uzbb-p-rolw
-x rv32uzbb-p-ror
-x rv32uf-v-fdiv
-x rv32um-v-mulhsu
-x rv32ui-p-sub
-x rv64uzbb-p-maxu
-x rv32uf-p-move
-x rv64uzbc-v-clmulh
-x rv32ud-p-fcmp
-x rv32uzbb-p-rori
-x rv32ua-v-amomax_w
-x rv32uzbs-v-bext
-x rv32uzfh-v-fdiv
-x rv32ui-v-bge
-x rv32um-v-rem
-x rv32ui-v-lbu
-x rv64uzbb-v-cpopw
-x rv32ui-p-bltu
-x rv32ui-p-lh
-x rv32ua-v-amominu_w
-x rv32um-p-mulh
-x rv32ui-p-lb
-x rv32uzfh-v-recoding
-x rv32uzfh-p-move
-x rv64uzbb-v-xnor
-x rv64uzbb-v-ror
-x rv32ui-p-jal
-x rv32uf-p-fadd
-x rv32ui-p-bne
-x rv32uzbb-v-cpop
-x rv32uzfh-p-fadd
-x rv32ua-v-lrsc
-x rv32uzfh-p-fcvt_w
-x rv64uzba-v-sh3add_uw
-x rv32uzbc-p-clmul
-x rv32ui-p-sll
-x rv64uzbb-v-rol
-x rv32uf-v-fcvt_w
-x rv32ui-v-srl
-x rv64uzbb-v-roriw
-x rv64uzfh-p-recoding
-x rv32uzfh-v-fclass
-x rv64uzfh-v-fcvt
-x rv64uzbs-p-binvi
-x rv32uzfh-v-fmadd
-x rv32uf-p-fclass
-x rv64uzbc-p-clmulr
-x rv32ui-v-sltiu
-x rv32um-p-div
-x rv64uzfh-v-fclass
-x rv32uzbs-v-binv
-x rv32mi-p-lh-misaligned
-x rv64uzba-p-sh3add_uw
-x rv64uzbb-p-rev8
-x rv32um-p-mulhu
-x rv32uzbc-p-clmulr
-x rv32ui-p-srai
-x rv32uzbb-v-max
-x rv32ud-p-fmin
-x rv32ui-v-sra
-x rv32uzfh-p-fcmp
-x rv32uf-p-fmadd
-x rv32uzbb-p-andn
-x rv64uzbb-p-minu
-x rv64uzfh-p-fcvt_w
-x rv32uf-p-fcmp
-x rv32uzbb-p-orn
-x rv32ud-v-fdiv
-x rv32uzbs-p-bset
-x rv32ud-v-fmadd
-x rv32ui-v-blt
-x rv32uzbs-p-bclr
-x rv32uzbs-p-bclri
-x rv32uzbc-v-clmulh
-x rv64ui-p-ma_data
-x rv64uzfh-p-ldst
-x rv64uzbb-p-max
-x rv64uzba-v-add_uw
-x rv64uzbb-v-ctzw
-x rv64uzba-v-sh2add_uw
-x rv32ud-p-fadd
-x rv64uzbb-v-orn
-x rv32ua-p-amoand_w
-x rv32ua-p-amominu_w
-x rv32uzbs-p-bexti
-x rv32um-p-remu
-x rv32uzbs-p-bseti
-x rv32ud-p-ldst
-x rv32ui-v-lh
-x rv32ua-v-amoand_w
-x rv32ui-v-lb
-x rv32uzbb-p-orc_b
-x rv64uzbb-v-cpop
-x rv64uzfh-v-fcvt_w
-x rv32si-p-sbreak
-x rv64uzfh-p-fadd
-x rv32um-v-div
-x rv32ui-v-addi
-x rv32ui-p-jalr
-x rv32ui-p-fence_i
-x rv64uzfh-p-fclass
-x rv32mi-p-lw-misaligned
-x rv32ui-v-bne
-x rv32uzfh-v-fcvt
-x rv64uzbb-p-ror
-x rv32ui-v-jal
-x rv32ui-v-slli
-x rv32ua-p-amoswap_w
-x rv32uzbc-v-clmulr
-x rv32uf-v-fcvt
-x rv32ui-p-srl
-x rv32ui-v-sh
-x rv32ui-p-xori
-x rv32ui-v-sb
-x rv64uzbb-p-rol
-x rv32ui-v-sll
-x rv64uzba-v-sh1add_uw
-x rv32ui-p-bgeu
-x rv32ui-v-andi
-x rv32ui-v-sub
-x rv64uzfh-p-fmin
-x rv64uzbc-p-clmul
-x rv32ui-p-bge
-x rv32um-p-rem
-x rv32ui-p-lbu
-x rv64mzicbo-p-zero
-x rv32ua-v-amomaxu_w
-x rv32uzbb-p-maxu
-x rv32uzbb-v-rol
-x rv32ui-p-add
-x rv32uzbc-p-clmulh
-x rv32uzbs-p-binvi
-x rv64uzbs-v-bext
-x rv64uzfh-v-fmadd
-x rv64uzbb-p-rori
-x rv32ui-v-auipc
-x rv32uzbb-v-ror
-x rv64uzba-p-add_uw
-x rv32ui-p-sltu
-x rv64uzfh-v-fdiv
-x rv64uzbb-p-clzw
-x rv64uzfh-p-move
-x rv64uzbb-p-rorw
-x rv32uzbb-v-xnor
-x rv64uzbs-p-bclr
-x rv32um-p-mulhsu
-x rv64uzbb-p-orn
-x rv32uzfh-p-ldst
-x rv64uzbc-p-clmulh
-x rv64uzfh-v-recoding
-x rv64uzba-p-sh1add_uw
-x rv32um-p-divu
-x rv32uf-p-ldst
-x rv32mi-p-illegal
-x rv64uzbb-v-max
-x rv32ua-p-amoor_w
-x rv32ud-v-fcvt
-x rv32ua-p-amomaxu_w
-x rv32mi-p-mcsr
-x rv64uzbs-v-binv
-x rv32uzfh-p-fclass
-x rv64uzbs-p-bclri
-x rv32ua-p-amomax_w
-x rv32uf-v-fclass
-x rv32ui-p-sra
-x rv32ui-p-ma_data
-x rv32uzfh-p-recoding
-x rv32uzbb-v-orn
-x rv64uzbc-v-clmulr
-x rv32uzbb-p-rev8
-x rv32ui-p-blt
-x rv32ui-v-srli
-x rv64uzfh-p-fcmp
-x rv64uzbb-p-andn
-x rv32ui-v-slti
-x rv32uzbb-p-minu
-x rv64uzbs-p-bexti
-x rv32uzfh-v-fcvt_w
-x rv32uf-p-fcvt_w
-x rv32ua-v-amoswap_w
-x rv32uzbb-p-max
-x rv64uzba-p-slli_uw
-x rv64uzbs-p-bset
-x rv64uzfh-v-fmin
-x rv32ui-v-fence_i
-x rv64uzbb-v-sext_h
-x rv32ui-p-andi
-x rv32ui-v-bgeu
-x rv64uzbb-v-sext_b
-x rv64uzbb-v-rorw
-x rv32uzbb-p-xnor
-x rv64uzbb-v-clzw
-x rv64uzfh-v-move
-x rv64uzfh-p-fdiv
-x rv64uzbb-v-min
-x rv32ui-v-sltu
-x rv64uzbb-v-rori
-x rv64uzba-p-sh3add
-x rv32uzbb-v-ctz
-x rv64uzbs-p-bext
-x rv32uzbb-v-orc_b
-x rv32uzbs-v-bseti
-x rv32ui-p-or
-x rv32uzbb-v-maxu
-x rv32uzba-p-sh1add
-x rv32ui-p-addi
-x rv32ui-v-jalr
-x rv64uzba-p-sh2add
-x rv32ui-p-auipc
-x rv64uzfh-v-fadd
-x rv32ud-p-recoding
-x rv64uzbb-p-cpop
-x rv64uzfh-p-fmadd
-x rv32uzbs-v-binvi
-x rv32ua-v-amoadd_w
-x rv32ud-v-ldst
-x rv32mi-p-sw-misaligned
-x rv64uzbb-p-ctz
-x rv32ui-v-xori
-x rv32mi-p-ma_addr
-x rv32uf-p-fcvt
-x rv64uzbc-v-clmul
-x rv32uzbb-p-zext_h
-x rv32ui-v-xor
-x rv32ui-v-ori
-x rv32ui-p-slli
-x rv32um-v-mul
-x rv32uzbb-p-min
-x rv32uzfh-p-fcvt
-x rv32ui-p-slt
-x rv32ui-p-srli
-x rv32si-p-csr
-x rv32ua-v-amoor_w
-x rv32uzbb-v-rev8
-x rv32uf-v-recoding
-x rv32ui-v-beq
-x rv64uzbb-p-zext_h
-x rv32mi-p-sbreak
-x rv64uzbs-p-binv
-x rv64uzbs-v-bset
-x rv32uzba-p-sh2add
-x rv32mi-p-zicntr
+# -------------------------------------------------------------------
+# Passing zba (all RV64)
+# -------------------------------------------------------------------
+rv64uzba-p-add_uw
+rv64uzba-p-sh1add
+rv64uzba-p-sh1add_uw
+rv64uzba-p-sh2add
+rv64uzba-p-sh2add_uw
+rv64uzba-p-sh3add
+rv64uzba-p-sh3add_uw
+rv64uzba-p-slli_uw
+rv64uzba-v-add_uw
+rv64uzba-v-sh1add
+rv64uzba-v-sh1add_uw
+rv64uzba-v-sh2add
+rv64uzba-v-sh2add_uw
+rv64uzba-v-sh3add
+rv64uzba-v-sh3add_uw
+rv64uzba-v-slli_uw
+# -------------------------------------------------------------------
+# Passing zbb
+# -------------------------------------------------------------------
+rv64uzbb-p-andn
+rv64uzbb-p-cpop
+rv64uzbb-p-cpopw
+rv64uzbb-p-ctz
+rv64uzbb-p-ctzw
+rv64uzbb-p-max
+rv64uzbb-p-maxu
+rv64uzbb-p-min
+rv64uzbb-p-minu
+rv64uzbb-p-orn
+rv64uzbb-p-sext_b
+rv64uzbb-p-sext_h
+rv64uzbb-p-xnor
+rv64uzbb-p-zext_h
+# -------------------------------------------------------------------
+# Passing zbc (all RV64)
+# -------------------------------------------------------------------
+rv64uzbc-p-clmul
+rv64uzbc-p-clmulh
+rv64uzbc-p-clmulr
+rv64uzbc-v-clmul
+rv64uzbc-v-clmulh
+rv64uzbc-v-clmulr
+# -------------------------------------------------------------------
+# Passing zbs (all RV64)
+# -------------------------------------------------------------------
+rv64uzbs-p-bclr
+rv64uzbs-p-bclri
+rv64uzbs-p-bext
+rv64uzbs-p-bexti
+rv64uzbs-p-binv
+rv64uzbs-p-binvi
+rv64uzbs-p-bset
+rv64uzbs-p-bseti
+rv64uzbs-v-bclr
+rv64uzbs-v-bclri
+rv64uzbs-v-bext
+rv64uzbs-v-bexti
+rv64uzbs-v-binv
+rv64uzbs-v-binvi
+rv64uzbs-v-bset
+rv64uzbs-v-bseti
+
+# -------------------------------------------------------------------
+# Failing zbb
+# -------------------------------------------------------------------
 x rv64uzbb-p-clz
-x rv32si-p-scall
-x rv32uzbb-v-minu
-x rv32ui-p-slti
+x rv64uzbb-p-clzw
+x rv64uzbb-p-orc_b
+x rv64uzbb-p-rev8
+x rv64uzbb-p-rol
+x rv64uzbb-p-rolw
+x rv64uzbb-p-ror
+x rv64uzbb-p-rori
+x rv64uzbb-p-roriw
+x rv64uzbb-p-rorw
 x rv64uzbb-v-andn
+x rv64uzbb-v-clz
+x rv64uzbb-v-clzw
+x rv64uzbb-v-cpop
+x rv64uzbb-v-cpopw
+x rv64uzbb-v-ctz
+x rv64uzbb-v-ctzw
+x rv64uzbb-v-max
+x rv64uzbb-v-maxu
+x rv64uzbb-v-min
+x rv64uzbb-v-minu
+x rv64uzbb-v-orc_b
+x rv64uzbb-v-orn
+x rv64uzbb-v-rev8
+x rv64uzbb-v-rol
+x rv64uzbb-v-rolw
+x rv64uzbb-v-ror
+x rv64uzbb-v-rori
+x rv64uzbb-v-roriw
+x rv64uzbb-v-rorw
+x rv64uzbb-v-sext_b
+x rv64uzbb-v-sext_h
+x rv64uzbb-v-xnor
+x rv64uzbb-v-zext_h
+
+x rv64uzfh-p-fadd
+x rv64uzfh-p-fclass
+x rv64uzfh-p-fcmp
+x rv64uzfh-p-fcvt
+x rv64uzfh-p-fcvt_w
+
+x rv64uzfh-p-fdiv
+x rv64uzfh-p-fmadd
+x rv64uzfh-p-fmin
+x rv64uzfh-p-ldst
+
+x rv64uzfh-p-move
+x rv64uzfh-p-recoding
+x rv64uzfh-v-fadd
+x rv64uzfh-v-fclass
+
 x rv64uzfh-v-fcmp
-x rv32mi-p-scall
-x rv32ua-v-amoxor_w
-x rv32uf-v-ldst
+x rv64uzfh-v-fcvt
+x rv64uzfh-v-fcvt_w
+x rv64uzfh-v-fdiv
+x rv64uzfh-v-fmadd
+x rv64uzfh-v-fmin
+x rv64uzfh-v-ldst
+x rv64uzfh-v-move
+x rv64uzfh-v-recoding
+
+# -------------------------------------------------------------------
+# Other Fails
+# -------------------------------------------------------------------
+x rv64mzicbo-p-zero
 x rv64ssvnapot-p-napot
-x rv32ud-v-fcvt_w
-x rv32ui-v-simple
-x rv64uzbs-v-bexti
-x rv32um-v-divu
-x rv32ua-v-amomin_w
-x rv64uzba-v-slli_uw
-x rv32uzba-p-sh3add
-x rv32ui-v-lhu
-x rv32uzfh-v-ldst
-x rv64uzbs-v-bclr
-x rv32ui-p-sw
-x rv64uzba-p-sh1add
-x rv32ui-v-ma_data
-x rv32uc-p-rvc
+x rv64ui-p-ma_data
+x rv64ui-v-ma_data
+
+# -------------------------------------------------------------------
+# RV32 is not tested
+# -------------------------------------------------------------------
+x rv32mi-p-breakpoint
+x rv32mi-p-csr
+x rv32mi-p-illegal
+x rv32mi-p-lh-misaligned
+x rv32mi-p-lw-misaligned
+x rv32mi-p-ma_addr
+x rv32mi-p-ma_fetch
+x rv32mi-p-mcsr
+x rv32mi-p-sbreak
+x rv32mi-p-scall
+x rv32mi-p-sh-misaligned
 x rv32mi-p-shamt
-x rv32ui-v-and
+x rv32mi-p-sw-misaligned
+x rv32mi-p-zicntr
+x rv32si-p-csr
+x rv32si-p-dirty
+x rv32si-p-ma_fetch
+x rv32si-p-sbreak
+x rv32si-p-scall
+x rv32si-p-wfi
+x rv32ua-p-amoadd_w
+x rv32ua-p-amoand_w
+x rv32ua-p-amomax_w
+x rv32ua-p-amomaxu_w
+x rv32ua-p-amomin_w
+x rv32ua-p-amominu_w
+x rv32ua-p-amoor_w
+x rv32ua-p-amoswap_w
+x rv32ua-p-amoxor_w
+x rv32ua-p-lrsc
+x rv32ua-v-amoadd_w
+x rv32ua-v-amoand_w
+x rv32ua-v-amomax_w
+x rv32ua-v-amomaxu_w
+x rv32ua-v-amomin_w
+x rv32ua-v-amominu_w
+x rv32ua-v-amoor_w
+x rv32ua-v-amoswap_w
+x rv32ua-v-amoxor_w
+x rv32ua-v-lrsc
+x rv32uc-p-rvc
+x rv32uc-v-rvc
+x rv32ud-p-fadd
+x rv32ud-p-fclass
+x rv32ud-p-fcmp
+x rv32ud-p-fcvt
+x rv32ud-p-fcvt_w
+x rv32ud-p-fdiv
+x rv32ud-p-fmadd
+x rv32ud-p-fmin
+x rv32ud-p-ldst
+x rv32ud-p-recoding
+x rv32ud-v-fadd
+x rv32ud-v-fclass
+x rv32ud-v-fcmp
+x rv32ud-v-fcvt
+x rv32ud-v-fcvt_w
+x rv32ud-v-fdiv
+x rv32ud-v-fmadd
+x rv32ud-v-fmin
+x rv32ud-v-ldst
+x rv32ud-v-recoding
+x rv32uf-p-fadd
+x rv32uf-p-fclass
+x rv32uf-p-fcmp
+x rv32uf-p-fcvt
+x rv32uf-p-fcvt_w
+x rv32uf-p-fdiv
+x rv32uf-p-fmadd
+x rv32uf-p-fmin
+x rv32uf-p-ldst
+x rv32uf-p-move
+x rv32uf-p-recoding
+x rv32uf-v-fadd
+x rv32uf-v-fclass
+x rv32uf-v-fcmp
+x rv32uf-v-fcvt
+x rv32uf-v-fcvt_w
+x rv32uf-v-fdiv
+x rv32uf-v-fmadd
+x rv32uf-v-fmin
+x rv32uf-v-ldst
+x rv32uf-v-move
+x rv32uf-v-recoding
+x rv32ui-p-add
+x rv32ui-p-addi
+x rv32ui-p-and
+x rv32ui-p-andi
+x rv32ui-p-auipc
+x rv32ui-p-beq
+x rv32ui-p-bge
+x rv32ui-p-bgeu
+x rv32ui-p-blt
+x rv32ui-p-bltu
+x rv32ui-p-bne
+x rv32ui-p-fence_i
+x rv32ui-p-jal
+x rv32ui-p-jalr
+x rv32ui-p-lb
+x rv32ui-p-lbu
+x rv32ui-p-lh
+x rv32ui-p-lhu
 x rv32ui-p-lui
 x rv32ui-p-lw
-x rv32uzbb-v-clz
-x rv32ud-p-fcvt
-x rv32uzbb-v-sext_h
-x rv32ud-p-fclass
-x rv64uzbs-v-bclri
-x rv32uzbb-v-sext_b
-x rv64uzbb-v-ctz
-x rv32uzba-v-sh2add
-x rv32ui-v-or
-x rv32si-p-dirty
-x rv64uzbb-p-cpopw
-x rv32uzfh-v-fadd
-x rv32ua-p-lrsc
-x rv32uzbb-p-cpop
-x rv32ui-v-slt
-x rv32ui-p-xor
+x rv32ui-p-ma_data
+x rv32ui-p-or
 x rv32ui-p-ori
-x rv32uf-v-fadd
-x rv32um-p-mul
-x rv32uzbb-v-min
-x rv32ua-p-amomin_w
-x rv64uzbb-v-zext_h
-x rv32si-p-ma_fetch
-x rv64uzbb-v-orc_b
-x rv64uzbs-v-bseti
-x rv32mi-p-ma_fetch
-x rv64uzfh-p-fcvt
-x rv64uzbb-p-min
-x rv64uzbb-v-rolw
-x rv32ui-p-sltiu
-x rv32mi-p-breakpoint
-x rv32uzfh-v-fmin
-x rv32uzbb-p-sext_h
-x rv32ua-p-amoxor_w
-x rv32uzfh-p-fmadd
-x rv64uzbs-v-binvi
-x rv32ud-v-fclass
-x rv32uf-v-fmin
-x rv32uzbb-p-ctz
-x rv32uzbb-p-sext_b
-x rv64uzbb-p-xnor
-x rv32uzfh-v-move
-x rv32um-v-mulh
-x rv32ud-p-fcvt_w
-x rv64uzbb-p-roriw
-x rv32uf-p-recoding
-x rv32ui-v-bltu
+x rv32ui-p-sb
+x rv32ui-p-sh
 x rv32ui-p-simple
-x rv32uzfh-p-fdiv
-x rv32uzbc-v-clmul
-x rv32uzbs-p-bext
-x rv32uzba-v-sh3add
-x rv32uzbb-v-rori
-x rv32ud-v-fcmp
-x rv32uf-v-move
-x rv64uzbb-v-maxu
-x rv32uf-p-fdiv
-x rv64uzba-v-sh1add
-x rv32ui-p-and
-x rv32ud-p-fmadd
-x rv32ud-v-fadd
+x rv32ui-p-sll
+x rv32ui-p-slli
+x rv32ui-p-slt
+x rv32ui-p-slti
+x rv32ui-p-sltiu
+x rv32ui-p-sltu
+x rv32ui-p-sra
+x rv32ui-p-srai
+x rv32ui-p-srl
+x rv32ui-p-srli
+x rv32ui-p-sub
+x rv32ui-p-sw
+x rv32ui-p-xor
+x rv32ui-p-xori
+x rv32ui-v-add
+x rv32ui-v-addi
+x rv32ui-v-and
+x rv32ui-v-andi
+x rv32ui-v-auipc
+x rv32ui-v-beq
+x rv32ui-v-bge
+x rv32ui-v-bgeu
+x rv32ui-v-blt
+x rv32ui-v-bltu
+x rv32ui-v-bne
+x rv32ui-v-fence_i
+x rv32ui-v-jal
+x rv32ui-v-jalr
+x rv32ui-v-lb
+x rv32ui-v-lbu
+x rv32ui-v-lh
+x rv32ui-v-lhu
 x rv32ui-v-lui
-x rv64uzbb-p-ctzw
-x rv32uc-v-rvc
-x rv64uzba-v-sh3add
-x rv64uzfh-v-ldst
-x rv32uzbb-p-clz
-x rv32uzbs-v-bclr
-x rv32uzba-v-sh1add
-x rv32uf-v-fmadd
-x rv32um-v-remu
-x rv32ud-v-recoding
-x rv32um-v-mulhu
-x rv32ua-p-amoadd_w
-x rv64uzbb-p-sext_h
-x rv32ui-p-lhu
-x rv64uzbb-p-sext_b
-x rv64uzbb-v-clz
-x rv32si-p-wfi
-x rv32ud-v-fmin
-x rv32uzbs-v-bexti
-x rv32ui-v-srai
-x rv64uzbb-v-rev8
-x rv32uzbb-v-zext_h
-x rv32uzbs-p-binv
 x rv32ui-v-lw
-x rv64ui-v-ma_data
-x rv32mi-p-csr
-x rv32uzbs-v-bset
-x rv64uzba-v-sh2add
-x rv32ud-p-fdiv
-x rv32ui-p-beq
-x rv32uf-v-fcmp
+x rv32ui-v-ma_data
+x rv32ui-v-or
+x rv32ui-v-ori
+x rv32ui-v-sb
+x rv32ui-v-sh
+x rv32ui-v-simple
+x rv32ui-v-sll
+x rv32ui-v-slli
+x rv32ui-v-slt
+x rv32ui-v-slti
+x rv32ui-v-sltiu
+x rv32ui-v-sltu
+x rv32ui-v-sra
+x rv32ui-v-srai
+x rv32ui-v-srl
+x rv32ui-v-srli
+x rv32ui-v-sub
 x rv32ui-v-sw
-x rv64uzbb-v-minu
+x rv32ui-v-xor
+x rv32ui-v-xori
+x rv32um-p-div
+x rv32um-p-divu
+x rv32um-p-mul
+x rv32um-p-mulh
+x rv32um-p-mulhsu
+x rv32um-p-mulhu
+x rv32um-p-rem
+x rv32um-p-remu
+x rv32um-v-div
+x rv32um-v-divu
+x rv32um-v-mul
+x rv32um-v-mulh
+x rv32um-v-mulhsu
+x rv32um-v-mulhu
+x rv32um-v-rem
+x rv32um-v-remu
+x rv32uzba-p-sh1add
+x rv32uzba-p-sh2add
+x rv32uzba-p-sh3add
+x rv32uzba-v-sh1add
+x rv32uzba-v-sh2add
+x rv32uzba-v-sh3add
+x rv32uzbb-p-andn
+x rv32uzbb-p-clz
+x rv32uzbb-p-cpop
+x rv32uzbb-p-ctz
+x rv32uzbb-p-max
+x rv32uzbb-p-maxu
+x rv32uzbb-p-min
+x rv32uzbb-p-minu
+x rv32uzbb-p-orc_b
+x rv32uzbb-p-orn
+x rv32uzbb-p-rev8
+x rv32uzbb-p-rol
+x rv32uzbb-p-ror
+x rv32uzbb-p-rori
+x rv32uzbb-p-sext_b
+x rv32uzbb-p-sext_h
+x rv32uzbb-p-xnor
+x rv32uzbb-p-zext_h
 x rv32uzbb-v-andn
-x rv32mi-p-sh-misaligned
+x rv32uzbb-v-clz
+x rv32uzbb-v-cpop
+x rv32uzbb-v-ctz
+x rv32uzbb-v-max
+x rv32uzbb-v-maxu
+x rv32uzbb-v-min
+x rv32uzbb-v-minu
+x rv32uzbb-v-orc_b
+x rv32uzbb-v-orn
+x rv32uzbb-v-rev8
+x rv32uzbb-v-rol
+x rv32uzbb-v-ror
+x rv32uzbb-v-rori
+x rv32uzbb-v-sext_b
+x rv32uzbb-v-sext_h
+x rv32uzbb-v-xnor
+x rv32uzbb-v-zext_h
+x rv32uzbc-p-clmul
+x rv32uzbc-p-clmulh
+x rv32uzbc-p-clmulr
+x rv32uzbc-v-clmul
+x rv32uzbc-v-clmulh
+x rv32uzbc-v-clmulr
+x rv32uzbs-p-bclr
+x rv32uzbs-p-bclri
+x rv32uzbs-p-bext
+x rv32uzbs-p-bexti
+x rv32uzbs-p-binv
+x rv32uzbs-p-binvi
+x rv32uzbs-p-bset
+x rv32uzbs-p-bseti
+x rv32uzbs-v-bclr
 x rv32uzbs-v-bclri
+x rv32uzbs-v-bext
+x rv32uzbs-v-bexti
+x rv32uzbs-v-binv
+x rv32uzbs-v-binvi
+x rv32uzbs-v-bset
+x rv32uzbs-v-bseti
+x rv32uzfh-p-fadd
+x rv32uzfh-p-fclass
+x rv32uzfh-p-fcmp
+x rv32uzfh-p-fcvt
+x rv32uzfh-p-fcvt_w
+x rv32uzfh-p-fdiv
+x rv32uzfh-p-fmadd
+x rv32uzfh-p-fmin
+x rv32uzfh-p-ldst
+x rv32uzfh-p-move
+x rv32uzfh-p-recoding
+x rv32uzfh-v-fadd
+x rv32uzfh-v-fclass
 x rv32uzfh-v-fcmp
+x rv32uzfh-v-fcvt
+x rv32uzfh-v-fcvt_w
+x rv32uzfh-v-fdiv
+x rv32uzfh-v-fmadd
+x rv32uzfh-v-fmin
+x rv32uzfh-v-ldst
+x rv32uzfh-v-move
+x rv32uzfh-v-recoding

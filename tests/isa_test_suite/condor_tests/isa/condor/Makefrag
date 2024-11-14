@@ -1,0 +1,8 @@
+#=======================================================================
+# Makefrag for condor tests
+#-----------------------------------------------------------------------
+
+condor_sc_tests = \
+	sanity \
+
+condor_p_tests = $(addprefix condor-p-, $(condor_sc_tests))

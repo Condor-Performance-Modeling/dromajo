@@ -8,7 +8,7 @@ src_dir := .
 riscv_tests_isa_dir = ../../../riscv-tests/isa
 
 ifeq ($(XLEN),64)
-include $(src_dir)/rv64mi/Makefrag
+include $(src_dir)/condor/Makefrag
 endif
 
 default: all
@@ -62,7 +62,7 @@ endif
 endef
 
 ifeq ($(XLEN),64)
-$(eval $(call compile_template,rv64mi,-march=rv64g -mabi=lp64))
+$(eval $(call compile_template,condor,-march=rv64g -mabi=lp64))
 endif
 
 tests_dump = $(addsuffix .dump, $(tests))
