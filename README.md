@@ -295,7 +295,7 @@ Logs from running the `regress` target are available for review. Logs are locate
     - `xor`
     - `fadd`
   
-- **condor_isa_tests:** The `condor_isa_tests`  runs a collection of RISC-V ISA compliance tests specifically implemented by Condor. Unlike the `riscv_isa_test`, which may selectively run tests, the `condor_isa_tests` executes every test that has been implemented.
+- **condor_isa_tests:** The `condor_isa_tests`  runs a collection of RISC-V ISA compliance tests specifically implemented by Condor. Tests can be enabled/disabled in `condor_tests_list.txt` in the isa_test_suite directory. In this file, disabled tests are preceded by "x".
 
   To add new test, follow structure defined in `tests/isa_test_suite/condor_tests/isa` directory.
 

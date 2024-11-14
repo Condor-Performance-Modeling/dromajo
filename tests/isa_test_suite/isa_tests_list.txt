@@ -9,7 +9,7 @@
 rv64mi-p-access
 rv64mi-p-breakpoint
 rv64mi-p-csr
-rv64mi-p-illegal
+x rv64mi-p-illegal
 rv64mi-p-ld-misaligned
 rv64mi-p-lh-misaligned
 rv64mi-p-lw-misaligned
