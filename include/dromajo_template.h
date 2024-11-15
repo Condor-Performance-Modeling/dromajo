@@ -77,7 +77,7 @@ extern uint32_t _XLEN;
 
 #define HALF_WORD_MASK 0xFFFF
 
-#define CAPTURE_LOG         0
+#define CAPTURE_LOG         1
 #define REPORT_ILLEGAL      0
 #define REPORT_MMU_EXCEPT   0
 #define EXIT_ON_EXCEPT      0
@@ -129,7 +129,72 @@ extern uint32_t _XLEN;
 #endif
 
 // =========================================================================
+// Helper funcs
 // =========================================================================
+static inline uint32_t shift_mask()
+{
+  assert(XLEN == 32 || XLEN == 64);
+  return (XLEN == 64) ? 0x3f : 0x1f;
+}
+// =========================================================================
+// =========================================================================
+static inline uintx_t glue(orc_b,XLEN)(uintx_t rs) { 
+  auto bytes = std::bit_cast<std::array<uint8_t, sizeof(uintx_t)>>(rs);
+  for (size_t i = 0; i < bytes.size(); i++) {
+    bytes[i] = (bytes[i] == 0 ? 0 : UINT8_MAX);
+  }
+  uintx_t rd = std::bit_cast<uintx_t>(bytes);
+  return rd;
+}
+// -------------------------------------------------------------------------
+static inline uintx_t glue(rev8,XLEN)(uintx_t rs) { 
+  uintx_t rd = 0;
+  int num_bytes = sizeof(uintx_t);
+  // Reverse the bytes
+  for (int i = 0; i < num_bytes; i++) {
+      uint8_t byte = (rs >> (i * 8)) & 0xFF;
+      rd |= ((uintx_t)byte) << ((num_bytes - 1 - i) * 8);
+  }
+
+  return rd;
+}
+// -------------------------------------------------------------------------
+static inline uintx_t glue(rol,XLEN)(uintx_t rs1,uintx_t rs2) { 
+    int shift = rs2 % XLEN; // Ensure shift is within the register size
+    return (rs1 << shift) | (rs1 >> (XLEN - shift));
+}
+// -------------------------------------------------------------------------
+static inline uintx_t rolw64(uintx_t rs1,uintx_t rs2) { 
+  uint32_t len   = 32;
+  uint32_t mask  = 32 - 1;
+  uint32_t shamt = rs2 & mask;
+  uint32_t v1    = rs1;
+  uint32_t res32 = (v1 << shamt) | (v1 >> ((len - shamt) & mask));
+  uint64_t rd    = int32_t(res32);  // Sign extend to 64-bits.
+  return rd;
+}
+// -------------------------------------------------------------------------
+static inline uintx_t glue(ror,XLEN)(uintx_t rs1,uintx_t rs2) { 
+  uint32_t shamt = rs2 & shift_mask();
+  uintx_t v1 = rs1;
+  uintx_t rd = (v1 >> shamt) | (v1 << ((XLEN - shamt) & shift_mask()));
+  return rd;
+}
+// -------------------------------------------------------------------------
+static inline uintx_t glue(rori,XLEN)(uintx_t rd,uintx_t rs1,uintx_t shamt) { 
+//  assert(XLEN == 32 || XLEN == 64);
+//
+//  //is sh amount bigger than XLEN-1
+//  bool tooLarge = shamt > (XLEN-1);
+//  if(tooLarge) return rd;
+//
+//  uintx_t v1  = rs1;
+//  uintx_t _rd = (v1 >> shamt) | (v1 << ((XLEN - rot) & shift_mask()));
+//  return _rd;
+//  return _rd;
+}
+// -------------------------------------------------------------------------
+// -------------------------------------------------------------------------
 static inline int32_t div32(int32_t a, int32_t b) {
     if (b == 0) {
         return -1;
@@ -148,15 +213,6 @@ static inline int64_t div64(int64_t a, int64_t b) {
         return a / b;
     }
 }
-//static inline intx_t glue(div, XLEN)(intx_t a, intx_t b) {
-//    if (b == 0) {
-//        return -1;
-//    } else if (a == ((intx_t)1 << (XLEN - 1)) && b == -1) {
-//        return a;
-//    } else {
-//        return a / b;
-//    }
-//}
 // -------------------------------------------------------------------------
 // -------------------------------------------------------------------------
 static inline uint32_t divu32(uint32_t a, uint32_t b) {
@@ -173,13 +229,6 @@ static inline uint64_t divu64(uint64_t a, uint64_t b) {
         return a / b;
     }
 }
-//static inline uintx_t glue(divu, XLEN)(uintx_t a, uintx_t b) {
-//    if (b == 0) {
-//        return -1;
-//    } else {
-//        return a / b;
-//    }
-//}
 // -------------------------------------------------------------------------
 // -------------------------------------------------------------------------
 static inline int32_t rem32(int32_t a, int32_t b) {
@@ -200,15 +249,6 @@ static inline int64_t rem64(int64_t a, int64_t b) {
         return a % b;
     }
 }
-//static inline intx_t glue(rem, XLEN)(intx_t a, intx_t b) {
-//    if (b == 0) {
-//        return a;
-//    } else if (a == ((intx_t)1 << (XLEN - 1)) && b == -1) {
-//        return 0;
-//    } else {
-//        return a % b;
-//    }
-//}
 // -------------------------------------------------------------------------
 // -------------------------------------------------------------------------
 static inline uint32_t remu32(uint32_t a, uint32_t b) {
@@ -225,13 +265,6 @@ static inline uint64_t remu64(uint64_t a, uint64_t b) {
         return a % b;
     }
 }
-//static inline uintx_t glue(remu, XLEN)(uintx_t a, uintx_t b) {
-//    if (b == 0) {
-//        return a;
-//    } else {
-//        return a % b;
-//    }
-//}
 // =========================================================================
 // =========================================================================
 static inline uintx_t glue(clmul,XLEN)(uintx_t v1,uintx_t v2) { 
@@ -311,26 +344,14 @@ static inline intx_t glue(sext_b,XLEN)(uintx_t val) {
     return (intx_t) (((intx_t)tmp) >> (XLEN-8));
 }
 // -------------------------------------------------------------------------
-static inline intx_t glue(clz,XLEN)(uintx_t val) { 
-    assert(XLEN == 32 || XLEN == 64 || XLEN == 128);
-    if(val == 0) return XLEN;
-    else if(XLEN == 32) return __builtin_ctz(val);
-    else if(XLEN == 64) return __builtin_ctzl(val);   
-    else {
-        for (int i = XLEN-1; i >= 0; i--) {
-            if (val & ((__uint128_t)1 << i)) {
-                return XLEN-1 - i;
-            }
-        }      
-    }
+static inline uintx_t glue(clz,XLEN)(uintx_t val) { 
+  assert(XLEN == 64);
+  return std::countl_zero(val);
 }
 // -------------------------------------------------------------------------
-static inline intx_t glue(clzw,XLEN)(uintx_t val) { 
-    if(val == 0) return 32;
-    else {
-      uint32_t _val = (uint32_t)val;
-      return __builtin_ctz(_val);
-    }
+static inline uintx_t glue(clzw,XLEN)(uintx_t val) { 
+  assert(XLEN == 64);
+  return std::countl_zero((uint32_t)val);
 }
 // -------------------------------------------------------------------------
 #if XLEN >= 64
@@ -616,7 +637,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
     uint32_t     opcode, insn, rd, rs1, rs2, funct2, funct3;
     uint32_t     _funct3, _funct6, _funct7, _funct12, _shamt;
     int32_t      imm, cond, err;
-    target_ulong addr, val, val2;
+    target_ulong addr, val, val1, val2;
     uint8_t *    code_ptr, *code_end;
     target_ulong code_to_pc_addend;
     uint64_t     insn_counter_addend;
@@ -1488,21 +1509,21 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
 
                 switch (funct3) {
                     case 0: /* addi */ val = (intx_t)(read_reg(rs1) + imm); break;
-                    case 1: /* cpop */
+                    case 1: 
                         if (EN_ZBB && (_funct12 == 0x601)) {
 
                             CAPTURED_INSTR("CTZ");
-                            val = (intx_t)glue(ctz_,XLEN)((intx_t)read_reg(rs1));
+                            val = (uintx_t)glue(ctz_,XLEN)((intx_t)read_reg(rs1));
 
                         } else if (EN_ZBB && (_funct12 == 0x600)) {
 
                             CAPTURED_INSTR("CLZ");
-                            val = (intx_t)glue(clz,XLEN)((intx_t)read_reg(rs1));
+                            val = (uintx_t)glue(clz,XLEN)((intx_t)read_reg(rs1));
 
                         } else if (EN_ZBB && (_funct12 == 0x602)) {
 
                             CAPTURED_INSTR("CPOP");
-                            val = (intx_t)glue(cpop,XLEN)((uintx_t)read_reg(rs1));
+                            val = (uintx_t)glue(cpop,XLEN)((uintx_t)read_reg(rs1));
 
                         } else if ( EN_ZBB && (_funct12 == 0x605)) {
 
@@ -1546,22 +1567,37 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                     case 3: /* sltiu */ val = read_reg(rs1) < (target_ulong)imm; break;
                     case 4: /* xori  */ val = read_reg(rs1) ^ imm; break;
                     case 5: 
-                        if (EN_ZBS && ((XLEN == 32 && _funct7 == 0x24)
-                                   ||  (XLEN >= 64 && _funct6 == 0x12))) {
+                        if (EN_ZBB && _funct12 == 0x287) {
+
+                            CAPTURED_INSTR("ORC.B");
+                            val = (uintx_t)glue(orc_b,XLEN)((uintx_t)read_reg(rs1));
+
+                        } else if (EN_ZBB && _funct12 == 0x6b8) {
+
+                            CAPTURED_INSTR("REV8");
+                            val = (uintx_t)glue(rev8,XLEN)((uintx_t)read_reg(rs1));
+
+                        } else if (EN_ZBS && ((XLEN == 32 && _funct7 == 0x24)
+                                          ||  (XLEN >= 64 && _funct6 == 0x12))) {
 
                             CAPTURED_INSTR("BEXTI");
                             val = ((uintx_t)val >> (_shamt & (XLEN - 1))) & (uintx_t)1;
 
-                          /* srli/srai */
+                        } else if (EN_ZBB && ((XLEN == 32 && _funct7 == 0x30)
+                                          ||  (XLEN >= 64 && _funct6 == 0x18))) {
+
+                            CAPTURED_INSTR("RORI");
+//                            val = (uintx_t)glue(rori,XLEN)((uintx_t)read_reg(rs1));
+
                         } else if ((imm & ~((XLEN - 1) | 0x400)) != 0) {
 
                             ILLEGAL_INSTR("028")
 
-                        } else if (imm & 0x400) {
+                        } else if (imm & 0x400) { /*srai */
 
                             val = (intx_t)read_reg(rs1) >> (imm & (XLEN - 1));
 
-                        } else {
+                        } else { /* srli */
 
                             val = (intx_t)((uintx_t)read_reg(rs1) >> (imm & (XLEN - 1)));
 
@@ -1595,17 +1631,17 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                         } else if (EN_ZBB && (_funct12 == 0x601)) {
 
                             CAPTURED_INSTR("CTZW");
-                            val = (intx_t)glue(ctzw,XLEN)((intx_t)read_reg(rs1));
+                            val = (uintx_t)glue(ctzw,XLEN)((intx_t)read_reg(rs1));
 
                         } else if (EN_ZBB && (_funct12 == 0x602)) {
 
                             CAPTURED_INSTR("CPOPW");
-                            val = (intx_t)glue(cpopw,XLEN)((intx_t)read_reg(rs1));
+                            val = (uintx_t)glue(cpopw,XLEN)((intx_t)read_reg(rs1));
 
                         } else if (EN_ZBB && (_funct12 == 0x600)) {
 
                             CAPTURED_INSTR("CLZW");
-                            val = (intx_t)glue(clzw,XLEN)((intx_t)read_reg(rs1));
+                            val = (uintx_t)glue(clzw,XLEN)((intx_t)read_reg(rs1));
 
                         } else if ((imm & ~31) != 0) {
                             ILLEGAL_INSTR("029")
@@ -1851,7 +1887,8 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
 #endif
             case 0x33:
                 imm  = insn >> 25;
-                val  = read_reg(rs1);
+                //val  = read_reg(rs1);
+                val1 = read_reg(rs1);
                 val2 = read_reg(rs2);
 
                 //These are defined separately to avoid clashing with other vars of similar name.
@@ -1860,114 +1897,135 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                 _funct7  = (insn >> 25) & 0x7F; (void) _funct7;
                 _funct3  = (insn >> 12) & 0x7;  (void) _funct3;
 
+                // ZBA -----------------------------------------------------------
                 if (EN_ZBA && _funct7 == 0x10) {
 
                    switch (_funct3) {
                         case 0x2: CAPTURED_INSTR("SH1ADD");
-                                  val = ((uintx_t)val << 1) + (uintx_t)val2;
+                                  val = ((uintx_t)val1 << 1) + (uintx_t)val2;
                                   break;
                         case 0x4: CAPTURED_INSTR("SH2ADD");
-                                  val = ((uintx_t)val << 2) + (uintx_t)val2;
+                                  val = ((uintx_t)val1 << 2) + (uintx_t)val2;
                                   break;
                         case 0x6: CAPTURED_INSTR("SH3ADD");
-                                  val = ((uintx_t)val << 3) + (uintx_t)val2;
+                                  val = ((uintx_t)val1 << 3) + (uintx_t)val2;
                                   break;
                         default:  ILLEGAL_INSTR("ZBA001")
                     }
 
+                // ZBB -----------------------------------------------------------
                 } else if (EN_ZBB && _funct7 == 0x05 && _funct3 == 0x4) {
 
                     CAPTURED_INSTR("MIN");
-                    val = ((intx_t)val < (intx_t)val2)   ? val : val2;
+                    val = ((intx_t)val1 < (intx_t)val2)   ? val1 : val2;
 
                 //Can't easily use switch, EN_ZBC::CLMULx shares _funct7 = 0x5
                 } else if (EN_ZBB && _funct7 == 0x05 && _funct3 == 0x5) {
 
                     CAPTURED_INSTR("MINU");
-                    val = ((uintx_t)val < (uintx_t)val2) ? val : val2;
+                    val = ((uintx_t)val1 < (uintx_t)val2) ? val1 : val2;
 
                 } else if (EN_ZBB && _funct7 == 0x05 && _funct3 == 0x6) {
 
                     CAPTURED_INSTR("MAX");
-                    val = ((intx_t)val < (intx_t)val2)   ? val2 : val;
+                    val = ((intx_t)val1 < (intx_t)val2)   ? val2 : val1;
 
                 } else if (EN_ZBB && _funct7 == 0x05 && _funct3 == 0x7) {
 
                     CAPTURED_INSTR("MAXU");
-                    val = ((uintx_t)val < (uintx_t)val2) ? val2 : val;
+                    val = ((uintx_t)val1 < (uintx_t)val2) ? val2 : val1;
 
                 } else if (EN_ZBB && _funct7 == 0x20 && _funct3 == 0x4) {
 
                     CAPTURED_INSTR("XNOR");
-                    val = ~(val ^ val2);
+                    val = ~(val1 ^ val2);
 
                 } else if (EN_ZBB && _funct7 == 0x20 && _funct3 == 0x6) {
 
                     CAPTURED_INSTR("ORN");
-                    val = val | ~val2;
+                    val = val1 | ~val2;
 
                 } else if (EN_ZBB && _funct7 == 0x20 && _funct3 == 0x7) {
 
                     CAPTURED_INSTR("ANDN");
-                    val = val & ~val2;
+                    val = val1 & ~val2;
 
+                } else if (EN_ZBB && _funct7 == 0x30 && _funct3 == 0x1) {
+
+                    CAPTURED_INSTR("ROL");
+                    val = (intx_t)glue(rol, XLEN)(val1, val2);
+
+                } else if (EN_ZBB && _funct7 == 0x30 && _funct3 == 0x1) {
+
+                    CAPTURED_INSTR("ROL");
+                    val = (intx_t)glue(rol, XLEN)(val1, val2);
+
+                } else if (EN_ZBB && _funct7 == 0x30 && _funct3 == 0x5) {
+
+                    CAPTURED_INSTR("ROR");
+                    val = (intx_t)glue(ror, XLEN)(val1, val2);
+
+                // ZBC -----------------------------------------------------------
                 } else if (EN_ZBC && _funct7 == 0x5 && _funct3 == 0x1) {
 
                     CAPTURED_INSTR("CLMUL");
-                    val = (intx_t)glue(clmul, XLEN)(val, val2);
+                    val = (intx_t)glue(clmul, XLEN)(val1, val2);
 
                 } else if (EN_ZBC && _funct7 == 0x5 && _funct3 == 0x2) {
 
                     CAPTURED_INSTR("CLMULR");
-                    val = (intx_t)glue(clmulr, XLEN)(val, val2);
+                    val = (intx_t)glue(clmulr, XLEN)(val1, val2);
 
                 } else if (EN_ZBC && _funct7 == 0x5 && _funct3 == 0x3) {
 
                     CAPTURED_INSTR("CLMULH");
-                    val = (intx_t)glue(clmulh, XLEN)(val, val2);
+                    val = (intx_t)glue(clmulh, XLEN)(val1, val2);
 
+                // ZBS -----------------------------------------------------------
                 } else if (EN_ZBS && _funct7 == 0x14 && _funct3 == 0x1) {
 
                     CAPTURED_INSTR("BSET");
-                    val = (uintx_t)val | ((uintx_t)1 << (val2 & (XLEN - 1)));
+                    val = (uintx_t)val1 | ((uintx_t)1 << (val2 & (XLEN - 1)));
 
                 } else if (EN_ZBS && _funct7 == 0x24 && _funct3 == 0x1) {
 
                     CAPTURED_INSTR("BCLR");
-                    val = (uintx_t)val & ~((uintx_t)1 << (val2 & (XLEN - 1)));
+                    val = (uintx_t)val1 & ~((uintx_t)1 << (val2 & (XLEN - 1)));
 
                 } else if (EN_ZBS && _funct7 == 0x24 && _funct3 == 0x5) {
 
                     CAPTURED_INSTR("BEXT");
-                    val = ((uintx_t)val >> (val2 & (XLEN - 1))) & (uintx_t)1;
+                    val = ((uintx_t)val1 >> (val2 & (XLEN - 1))) & (uintx_t)1;
 
                 } else if (EN_ZBS && _funct7 == 0x34 && _funct3 == 0x1) {
 
                     CAPTURED_INSTR("BINV");
-                    val = (uintx_t)val ^ ((uintx_t)1 << (val2 & (XLEN - 1)));
+                    val = (uintx_t)val1 ^ ((uintx_t)1 << (val2 & (XLEN - 1)));
 
+                // ZICOND---------------------------------------------------------
                 } else if (EN_ZICOND && _funct7 == 0x07 && _funct3 == 0x5) {
 
                     CAPTURED_INSTR("CZERO.EQZ");
-                    val = (uintx_t)val2 == 0 ? (uintx_t)0 : (uintx_t)val;
+                    val = (uintx_t)val2 == 0 ? (uintx_t)0 : (uintx_t)val1;
 
                 } else if (EN_ZICOND && _funct7 == 0x07 && _funct3 == 0x7) {
 
                     CAPTURED_INSTR("CZERO.NEZ");
-                    val = (uintx_t)val2 != 0 ? (uintx_t)0 : (uintx_t)val;
+                    val = (uintx_t)val2 != 0 ? (uintx_t)0 : (uintx_t)val1;
 
+                // OTHER ---------------------------------------------------------
                 } else if (imm == 1) {
                     //TODO CAN BE REMOVED - this is the original code before zbb
                     funct3 = (insn >> 12) & 7;
                     switch (funct3) {
-                        case 0: /* mul */ val = (intx_t)((intx_t)val * (intx_t)val2); break;
-                        case 1: /* mulh */ val = (intx_t)glue(mulh, XLEN)(val, val2); break;
-                        case 2: /* mulhsu */ val = (intx_t)glue(mulhsu, XLEN)(val, val2); break;
-                        case 3: /* mulhu */ val = (intx_t)glue(mulhu, XLEN)(val, val2); break;
-                        case 4: /* div */ val = glue(div, XLEN)(val, val2); break;
-                        case 5: /* divu */ val = (intx_t)glue(divu, XLEN)(val, val2); break;
-                        case 6: /* rem */ val = glue(rem, XLEN)(val, val2); break;
-                        case 7: /* remu */ val = (intx_t)glue(remu, XLEN)(val, val2); break;
+                        case 0: /* mul */ val = (intx_t)((intx_t)val1 * (intx_t)val2); break;
+                        case 1: /* mulh */ val = (intx_t)glue(mulh, XLEN)(val1, val2); break;
+                        case 2: /* mulhsu */ val = (intx_t)glue(mulhsu, XLEN)(val1, val2); break;
+                        case 3: /* mulhu */ val = (intx_t)glue(mulhu, XLEN)(val1, val2); break;
+                        case 4: /* div */ val = glue(div, XLEN)(val1, val2); break;
+                        case 5: /* divu */ val = (intx_t)glue(divu, XLEN)(val1, val2); break;
+                        case 6: /* rem */ val = glue(rem, XLEN)(val1, val2); break;
+                        case 7: /* remu */ val = (intx_t)glue(remu, XLEN)(val1, val2); break;
                         default: ILLEGAL_INSTR("035")
                     }
                 } else {
@@ -1976,16 +2034,16 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                     }
                     funct3 = ((insn >> 12) & 7) | ((insn >> (30 - 3)) & (1 << 3));
                     switch (funct3) {
-                        case 0: /* add */ val = (intx_t)(val + val2); break;
-                        case 0 | 8: /* sub */ val = (intx_t)(val - val2); break;
-                        case 1: /* sll */ val = (intx_t)(val << (val2 & (XLEN - 1))); break;
-                        case 2: /* slt */ val = (target_long)val < (target_long)val2; break;
-                        case 3: /* sltu */ val = val < val2; break;
-                        case 4: /* xor */ val = val ^ val2; break;
-                        case 5: /* srl */ val = (intx_t)((uintx_t)val >> (val2 & (XLEN - 1))); break;
-                        case 5 | 8: /* sra */ val = (intx_t)val >> (val2 & (XLEN - 1)); break;
-                        case 6: /* or */ val = val | val2; break;
-                        case 7: /* and */ val = val & val2; break;
+                        case 0: /* add */ val = (intx_t)(val1 + val2); break;
+                        case 0 | 8: /* sub */ val = (intx_t)(val1 - val2); break;
+                        case 1: /* sll */ val = (intx_t)(val1 << (val2 & (XLEN - 1))); break;
+                        case 2: /* slt */ val = (target_long)val1 < (target_long)val2; break;
+                        case 3: /* sltu */ val = val1 < val2; break;
+                        case 4: /* xor */ val = val1 ^ val2; break;
+                        case 5: /* srl */ val = (intx_t)((uintx_t)val1 >> (val2 & (XLEN - 1))); break;
+                        case 5 | 8: /* sra */ val = (intx_t)val1 >> (val2 & (XLEN - 1)); break;
+                        case 6: /* or */ val = val1 | val2; break;
+                        case 7: /* and */ val = val1 & val2; break;
                         default: ILLEGAL_INSTR("037")
                     }
                 }
@@ -1996,6 +2054,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
             case 0x3b: /* OP-32 */
                 imm  = insn >> 25;
                 val  = read_reg(rs1);
+                val1 = read_reg(rs1);
                 val2 = read_reg(rs2);
                 _funct12 = (insn >> 20) & 0xFFF;
                 _funct7  = (insn >> 25) & 0x7F;
@@ -2003,38 +2062,41 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
 
                 if (EN_ZBA && _funct7 == 0x10 && _funct3 == 0x2) {
                     CAPTURED_INSTR("SH1ADD.UW");
-                    val = ((uintx_t)(uint32_t)val << 1) + (uintx_t)val2;
+                    val = ((uintx_t)(uint32_t)val1 << 1) + (uintx_t)val2;
                 } else if (EN_ZBA && _funct7 == 0x10 && _funct3 == 0x4) {
                     CAPTURED_INSTR("SH2ADD.UW");
-                    val = ((uintx_t)(uint32_t)val << 2) + (uintx_t)val2;
+                    val = ((uintx_t)(uint32_t)val1 << 2) + (uintx_t)val2;
                 } else if (EN_ZBA && _funct7 == 0x10 && _funct3 == 0x6) {
                     CAPTURED_INSTR("SH3ADD.UW");
-                    val = ((uintx_t)(uint32_t)val << 3) + (uintx_t)val2;
+                    val = ((uintx_t)(uint32_t)val1 << 3) + (uintx_t)val2;
                 } else if (EN_ZBA && _funct7 == 0x04 && _funct3 == 0x0) {
                     CAPTURED_INSTR("ADD.UW/ZEXT.W");
-                    val = (uintx_t)(uint32_t)val + (uintx_t)val2;
+                    val = (uintx_t)(uint32_t)val1 + (uintx_t)val2;
                 } else if (EN_ZBB && _funct12 == 0x080 & _funct3 == 0x4) {
                    CAPTURED_INSTR("ZEXT.H");
-                   val = val & HALF_WORD_MASK;
+                   val = val1 & HALF_WORD_MASK;
+                } else if (EN_ZBB && _funct7 == 0x30 & _funct3 == 0x1) {
+                   CAPTURED_INSTR("ROLW");
+                   val = (uintx_t)rolw64(val1, val2);
                 } else if (imm == 1) {
                     funct3 = (insn >> 12) & 7;
                     switch (funct3) {
-                        case 0: /* mulw */ val = (int32_t)((int32_t)val * (int32_t)val2); break;
-                        case 4: /* divw */ val = div32(val, val2); break;
-                        case 5: /* divuw */ val = (int32_t)divu32(val, val2); break;
-                        case 6: /* remw */ val = rem32(val, val2); break;
-                        case 7: /* remuw */ val = (int32_t)remu32(val, val2); break;
+                        case 0: /* mulw */ val = (int32_t)((int32_t)val1 * (int32_t)val2); break;
+                        case 4: /* divw */ val = div32(val1, val2); break;
+                        case 5: /* divuw */ val = (int32_t)divu32(val1, val2); break;
+                        case 6: /* remw */ val = rem32(val1, val2); break;
+                        case 7: /* remuw */ val = (int32_t)remu32(val1, val2); break;
                         default: ILLEGAL_INSTR("038")
                     }
                 } else {
                     if (imm & ~0x20) ILLEGAL_INSTR("039")
                     funct3 = ((insn >> 12) & 7) | ((insn >> (30 - 3)) & (1 << 3));
                     switch (funct3) {
-                        case 0: /* addw */ val = (int32_t)(val + val2); break;
-                        case 0 | 8: /* subw */ val = (int32_t)(val - val2); break;
-                        case 1: /* sllw */ val = (int32_t)((uint32_t)val << (val2 & 31)); break;
-                        case 5: /* srlw */ val = (int32_t)((uint32_t)val >> (val2 & 31)); break;
-                        case 5 | 8: /* sraw */ val = (int32_t)val >> (val2 & 31); break;
+                        case 0: /* addw */ val = (int32_t)(val1 + val2); break;
+                        case 0 | 8: /* subw */ val = (int32_t)(val1 - val2); break;
+                        case 1: /* sllw */ val = (int32_t)((uint32_t)val1 << (val2 & 31)); break;
+                        case 5: /* srlw */ val = (int32_t)((uint32_t)val1 >> (val2 & 31)); break;
+                        case 5 | 8: /* sraw */ val = (int32_t)val1 >> (val2 & 31); break;
                         default: ILLEGAL_INSTR("040")
                     }
                 }

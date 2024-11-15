@@ -4,12 +4,42 @@
 # ===================================================================
 
 # -------------------------------------------------------------------
+# Passing M (all RV64)
+# -------------------------------------------------------------------
+rv64um-p-div
+rv64um-p-divu
+rv64um-p-divuw
+rv64um-p-divw
+rv64um-p-mul
+rv64um-p-mulh
+rv64um-p-mulhsu
+rv64um-p-mulhu
+rv64um-p-mulw
+rv64um-p-rem
+rv64um-p-remu
+rv64um-p-remuw
+rv64um-p-remw
+rv64um-v-div
+rv64um-v-divu
+rv64um-v-divuw
+rv64um-v-divw
+rv64um-v-mul
+rv64um-v-mulh
+rv64um-v-mulhsu
+rv64um-v-mulhu
+rv64um-v-mulw
+rv64um-v-rem
+rv64um-v-remu
+rv64um-v-remuw
+rv64um-v-remw
+
+# -------------------------------------------------------------------
 # Passing mI (all RV64)
 # -------------------------------------------------------------------
 rv64mi-p-access
 rv64mi-p-breakpoint
 rv64mi-p-csr
-x rv64mi-p-illegal
+rv64mi-p-illegal
 rv64mi-p-ld-misaligned
 rv64mi-p-lh-misaligned
 rv64mi-p-lw-misaligned
@@ -236,35 +266,6 @@ rv64ui-v-sw
 rv64ui-v-xor
 rv64ui-v-xori
 # -------------------------------------------------------------------
-# Passing M (all RV64)
-# -------------------------------------------------------------------
-rv64um-p-div
-rv64um-p-divu
-rv64um-p-divuw
-rv64um-p-divw
-rv64um-p-mul
-rv64um-p-mulh
-rv64um-p-mulhsu
-rv64um-p-mulhu
-rv64um-p-mulw
-rv64um-p-rem
-rv64um-p-remu
-rv64um-p-remuw
-rv64um-p-remw
-rv64um-v-div
-rv64um-v-divu
-rv64um-v-divuw
-rv64um-v-divw
-rv64um-v-mul
-rv64um-v-mulh
-rv64um-v-mulhsu
-rv64um-v-mulhu
-rv64um-v-mulw
-rv64um-v-rem
-rv64um-v-remu
-rv64um-v-remuw
-rv64um-v-remw
-# -------------------------------------------------------------------
 # Passing zba (all RV64)
 # -------------------------------------------------------------------
 rv64uzba-p-add_uw
@@ -300,6 +301,15 @@ rv64uzbb-p-sext_b
 rv64uzbb-p-sext_h
 rv64uzbb-p-xnor
 rv64uzbb-p-zext_h
+
+rv64uzbb-p-clz
+rv64uzbb-p-clzw
+
+rv64uzbb-p-orc_b
+rv64uzbb-p-rev8
+rv64uzbb-p-rol
+rv64uzbb-p-rolw
+rv64uzbb-p-ror
 # -------------------------------------------------------------------
 # Passing zbc (all RV64)
 # -------------------------------------------------------------------
@@ -332,13 +342,6 @@ rv64uzbs-v-bseti
 # -------------------------------------------------------------------
 # Failing zbb
 # -------------------------------------------------------------------
-x rv64uzbb-p-clz
-x rv64uzbb-p-clzw
-x rv64uzbb-p-orc_b
-x rv64uzbb-p-rev8
-x rv64uzbb-p-rol
-x rv64uzbb-p-rolw
-x rv64uzbb-p-ror
 x rv64uzbb-p-rori
 x rv64uzbb-p-roriw
 x rv64uzbb-p-rorw
