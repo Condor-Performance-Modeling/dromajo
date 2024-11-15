@@ -191,7 +191,7 @@ static inline uintx_t glue(rori,XLEN)(uintx_t rd,uintx_t rs1,uintx_t shamt) {
 //  uintx_t v1  = rs1;
 //  uintx_t _rd = (v1 >> shamt) | (v1 << ((XLEN - rot) & shift_mask()));
 //  return _rd;
-//  return _rd;
+  return rd;
 }
 // -------------------------------------------------------------------------
 // -------------------------------------------------------------------------
@@ -637,7 +637,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
     uint32_t     opcode, insn, rd, rs1, rs2, funct2, funct3;
     uint32_t     _funct3, _funct6, _funct7, _funct12, _shamt;
     int32_t      imm, cond, err;
-    target_ulong addr, val, val1, val2;
+    target_ulong addr, vald, val, val1, val2;
     uint8_t *    code_ptr, *code_end;
     target_ulong code_to_pc_addend;
     uint64_t     insn_counter_addend;
@@ -1501,57 +1501,59 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
             case 0x13:
                 funct3   = (insn >> 12) & 7;
                 imm      = (int32_t)insn >> 20;
-                val      = read_reg(rs1);
+                vald     = read_reg(rd);
+                val1     = read_reg(rs1);
+                val2     = read_reg(rs2);
                 _funct12 = (insn >> 20) & 0xFFF;
                 _funct7  = (insn >> 25) & 0x7F;
                 _funct6  = (insn >> 26) & 0x3F;
                 _shamt   = (insn >> 20) & (XLEN == 32 ? 0x1F : 0x3F);
 
                 switch (funct3) {
-                    case 0: /* addi */ val = (intx_t)(read_reg(rs1) + imm); break;
+                    case 0: /* addi */ val = (intx_t)(val1 + imm); break;
                     case 1: 
                         if (EN_ZBB && (_funct12 == 0x601)) {
 
                             CAPTURED_INSTR("CTZ");
-                            val = (uintx_t)glue(ctz_,XLEN)((intx_t)read_reg(rs1));
+                            val = (uintx_t)glue(ctz_,XLEN)((intx_t)val1);
 
                         } else if (EN_ZBB && (_funct12 == 0x600)) {
 
                             CAPTURED_INSTR("CLZ");
-                            val = (uintx_t)glue(clz,XLEN)((intx_t)read_reg(rs1));
+                            val = (uintx_t)glue(clz,XLEN)((intx_t)val1);
 
                         } else if (EN_ZBB && (_funct12 == 0x602)) {
 
                             CAPTURED_INSTR("CPOP");
-                            val = (uintx_t)glue(cpop,XLEN)((uintx_t)read_reg(rs1));
+                            val = (uintx_t)glue(cpop,XLEN)((uintx_t)val1);
 
                         } else if ( EN_ZBB && (_funct12 == 0x605)) {
 
                             CAPTURED_INSTR("SEXT.H");
-                            val = (intx_t)glue(sext_h,XLEN)((intx_t)read_reg(rs1));
+                            val = (intx_t)glue(sext_h,XLEN)((intx_t)val1);
 
                         } else if ( EN_ZBB && (_funct12 == 0x604)) {
 
                             CAPTURED_INSTR("SEXT.B");
-                            val = (intx_t)glue(sext_b,XLEN)((intx_t)read_reg(rs1));
+                            val = (intx_t)glue(sext_b,XLEN)((intx_t)val1);
 
                         } else if (EN_ZBS && ((XLEN == 32 && _funct7 == 0x14)
                                           ||  (XLEN >= 64 && _funct6 == 0x0A))) {
 
                             CAPTURED_INSTR("BSETI");
-                            val = (uintx_t)val | ((uintx_t)1 << (_shamt & (XLEN - 1)));
+                            val = (uintx_t)val1 | ((uintx_t)1 << (_shamt & (XLEN - 1)));
 
                         } else if (EN_ZBS && ((XLEN == 32 && _funct7 == 0x24)
                                           ||  (XLEN >= 64 && _funct6 == 0x12))) {
 
                             CAPTURED_INSTR("BCLRI");
-                            val = (uintx_t)val & ~((uintx_t)1 << (_shamt & (XLEN - 1)));
+                            val = (uintx_t)val1 & ~((uintx_t)1 << (_shamt & (XLEN - 1)));
 
                         } else if (EN_ZBS && ((XLEN == 32 && _funct7 == 0x34)
                                           ||  (XLEN >= 64 && _funct6 == 0x1A))) {
 
                             CAPTURED_INSTR("BINVI");
-                            val = (uintx_t)val ^ ((uintx_t)1 << (_shamt & (XLEN - 1)));
+                            val = (uintx_t)val1 ^ ((uintx_t)1 << (_shamt & (XLEN - 1)));
 
                         } else if ((imm & ~(XLEN - 1)) != 0) {
 
@@ -1559,35 +1561,35 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
 
                         } else {
 
-                            val = (intx_t)(read_reg(rs1) << (imm & (XLEN - 1)));
+                            val = (intx_t)(val1 << (imm & (XLEN - 1)));
 
                         }
                         break;
-                    case 2: /* slti  */ val = (target_long)read_reg(rs1) < (target_long)imm; break;
-                    case 3: /* sltiu */ val = read_reg(rs1) < (target_ulong)imm; break;
-                    case 4: /* xori  */ val = read_reg(rs1) ^ imm; break;
+                    case 2: /* slti  */ val = (target_long)val1 < (target_long)imm; break;
+                    case 3: /* sltiu */ val = val1 < (target_ulong)imm; break;
+                    case 4: /* xori  */ val = val1 ^ imm; break;
                     case 5: 
                         if (EN_ZBB && _funct12 == 0x287) {
 
                             CAPTURED_INSTR("ORC.B");
-                            val = (uintx_t)glue(orc_b,XLEN)((uintx_t)read_reg(rs1));
+                            val = (uintx_t)glue(orc_b,XLEN)((uintx_t)val1);
 
                         } else if (EN_ZBB && _funct12 == 0x6b8) {
 
                             CAPTURED_INSTR("REV8");
-                            val = (uintx_t)glue(rev8,XLEN)((uintx_t)read_reg(rs1));
+                            val = (uintx_t)glue(rev8,XLEN)((uintx_t)val1);
 
                         } else if (EN_ZBS && ((XLEN == 32 && _funct7 == 0x24)
                                           ||  (XLEN >= 64 && _funct6 == 0x12))) {
 
                             CAPTURED_INSTR("BEXTI");
-                            val = ((uintx_t)val >> (_shamt & (XLEN - 1))) & (uintx_t)1;
+                            val = ((uintx_t)val1 >> (_shamt & (XLEN - 1))) & (uintx_t)1;
 
                         } else if (EN_ZBB && ((XLEN == 32 && _funct7 == 0x30)
                                           ||  (XLEN >= 64 && _funct6 == 0x18))) {
 
                             CAPTURED_INSTR("RORI");
-//                            val = (uintx_t)glue(rori,XLEN)((uintx_t)read_reg(rs1));
+                            val = (uintx_t)glue(rori,XLEN)(vald,val1,val2);
 
                         } else if ((imm & ~((XLEN - 1) | 0x400)) != 0) {
 
@@ -1595,17 +1597,17 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
 
                         } else if (imm & 0x400) { /*srai */
 
-                            val = (intx_t)read_reg(rs1) >> (imm & (XLEN - 1));
+                            val = (intx_t)val1 >> (imm & (XLEN - 1));
 
                         } else { /* srli */
 
-                            val = (intx_t)((uintx_t)read_reg(rs1) >> (imm & (XLEN - 1)));
+                            val = (intx_t)((uintx_t)val1 >> (imm & (XLEN - 1)));
 
                         }
                         break;
-                    case 6: /* ori */ val = read_reg(rs1) | imm; break;
+                    case 6: /* ori */ val = val1 | imm; break;
                     default:
-                    case 7: /* andi */ val = read_reg(rs1) & imm; break;
+                    case 7: /* andi */ val = val1 & imm; break;
 
                 }
                 if (rd != 0)
@@ -1615,48 +1617,48 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
             case 0x1b: /* OP-IMM-32 */
                 funct3   = (insn >> 12) & 7;
                 imm      = (int32_t)insn >> 20;
-                val      = read_reg(rs1);
+                val1     = read_reg(rs1);
                 _funct12 = (insn >> 20) & 0xFFF;
                 _funct6  = (insn >> 26) & 0x3F;
                 _shamt   = (insn >> 20) & 0x3F;
 
                 switch (funct3) {
-                    case 0: /* addiw */ val = (int32_t)(val + imm); break;
+                    case 0: /* addiw */ val = (int32_t)(val1 + imm); break;
                     case 1:
                         if (EN_ZBA && (_funct6 == 0x2)) {
 
                             CAPTURED_INSTR("SLLI.UW");
-                            val = (uintx_t)(uint32_t)val << _shamt;
+                            val = (uintx_t)(uint32_t)val1 << _shamt;
 
                         } else if (EN_ZBB && (_funct12 == 0x601)) {
 
                             CAPTURED_INSTR("CTZW");
-                            val = (uintx_t)glue(ctzw,XLEN)((intx_t)read_reg(rs1));
+                            val = (uintx_t)glue(ctzw,XLEN)((intx_t)val1);
 
                         } else if (EN_ZBB && (_funct12 == 0x602)) {
 
                             CAPTURED_INSTR("CPOPW");
-                            val = (uintx_t)glue(cpopw,XLEN)((intx_t)read_reg(rs1));
+                            val = (uintx_t)glue(cpopw,XLEN)((intx_t)val1);
 
                         } else if (EN_ZBB && (_funct12 == 0x600)) {
 
                             CAPTURED_INSTR("CLZW");
-                            val = (uintx_t)glue(clzw,XLEN)((intx_t)read_reg(rs1));
+                            val = (uintx_t)glue(clzw,XLEN)((intx_t)val1);
 
                         } else if ((imm & ~31) != 0) {
                             ILLEGAL_INSTR("029")
                         } else {
                           /* slliw */
-                          val = (int32_t)(val << (imm & 31));
+                          val = (int32_t)(val1 << (imm & 31));
                         }
                         break;
                     case 5: /* srliw/sraiw */
                         if ((imm & ~(31 | 0x400)) != 0)
                             ILLEGAL_INSTR("030")
                         if (imm & 0x400)
-                            val = (int32_t)val >> (imm & 31);
+                            val = (int32_t)val1 >> (imm & 31);
                         else
-                            val = (int32_t)((uint32_t)val >> (imm & 31));
+                            val = (int32_t)((uint32_t)val1 >> (imm & 31));
                         break;
                     default: ILLEGAL_INSTR("031")
                 }
