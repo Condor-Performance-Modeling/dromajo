@@ -368,7 +368,7 @@ rv64uzbs-v-bseti
 # -------------------------------------------------------------------
 # Failing zfh
 # -------------------------------------------------------------------
-rv64uzfh-p-fadd
+x rv64uzfh-p-fadd
 x rv64uzfh-p-fclass
 x rv64uzfh-p-fcmp
 x rv64uzfh-p-fcvt
