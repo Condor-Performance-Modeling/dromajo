@@ -285,7 +285,7 @@ rv64uzba-v-sh3add
 rv64uzba-v-sh3add_uw
 rv64uzba-v-slli_uw
 # -------------------------------------------------------------------
-# Passing zbb
+# Passing zbb (all RV64)
 # -------------------------------------------------------------------
 rv64uzbb-p-andn
 rv64uzbb-p-cpop
@@ -301,15 +301,41 @@ rv64uzbb-p-sext_b
 rv64uzbb-p-sext_h
 rv64uzbb-p-xnor
 rv64uzbb-p-zext_h
-
 rv64uzbb-p-clz
 rv64uzbb-p-clzw
-
 rv64uzbb-p-orc_b
 rv64uzbb-p-rev8
 rv64uzbb-p-rol
 rv64uzbb-p-rolw
 rv64uzbb-p-ror
+rv64uzbb-p-rori
+rv64uzbb-p-roriw
+rv64uzbb-p-rorw
+rv64uzbb-v-andn
+rv64uzbb-v-clz
+rv64uzbb-v-clzw
+rv64uzbb-v-cpop
+rv64uzbb-v-cpopw
+rv64uzbb-v-ctz
+rv64uzbb-v-ctzw
+rv64uzbb-v-max
+rv64uzbb-v-maxu
+rv64uzbb-v-min
+rv64uzbb-v-minu
+rv64uzbb-v-orc_b
+rv64uzbb-v-orn
+rv64uzbb-v-rev8
+rv64uzbb-v-rol
+rv64uzbb-v-rolw
+rv64uzbb-v-ror
+rv64uzbb-v-rori
+rv64uzbb-v-roriw
+rv64uzbb-v-rorw
+rv64uzbb-v-sext_b
+rv64uzbb-v-sext_h
+rv64uzbb-v-xnor
+rv64uzbb-v-zext_h
+
 # -------------------------------------------------------------------
 # Passing zbc (all RV64)
 # -------------------------------------------------------------------
@@ -340,37 +366,9 @@ rv64uzbs-v-bset
 rv64uzbs-v-bseti
 
 # -------------------------------------------------------------------
-# Failing zbb
+# Failing zfh
 # -------------------------------------------------------------------
-x rv64uzbb-p-rori
-x rv64uzbb-p-roriw
-x rv64uzbb-p-rorw
-x rv64uzbb-v-andn
-x rv64uzbb-v-clz
-x rv64uzbb-v-clzw
-x rv64uzbb-v-cpop
-x rv64uzbb-v-cpopw
-x rv64uzbb-v-ctz
-x rv64uzbb-v-ctzw
-x rv64uzbb-v-max
-x rv64uzbb-v-maxu
-x rv64uzbb-v-min
-x rv64uzbb-v-minu
-x rv64uzbb-v-orc_b
-x rv64uzbb-v-orn
-x rv64uzbb-v-rev8
-x rv64uzbb-v-rol
-x rv64uzbb-v-rolw
-x rv64uzbb-v-ror
-x rv64uzbb-v-rori
-x rv64uzbb-v-roriw
-x rv64uzbb-v-rorw
-x rv64uzbb-v-sext_b
-x rv64uzbb-v-sext_h
-x rv64uzbb-v-xnor
-x rv64uzbb-v-zext_h
-
-x rv64uzfh-p-fadd
+rv64uzfh-p-fadd
 x rv64uzfh-p-fclass
 x rv64uzfh-p-fcmp
 x rv64uzfh-p-fcvt

@@ -155,7 +155,6 @@ static inline uintx_t glue(rev8,XLEN)(uintx_t rs) {
       uint8_t byte = (rs >> (i * 8)) & 0xFF;
       rd |= ((uintx_t)byte) << ((num_bytes - 1 - i) * 8);
   }
-
   return rd;
 }
 // -------------------------------------------------------------------------
@@ -182,15 +181,32 @@ static inline uintx_t glue(ror,XLEN)(uintx_t rs1,uintx_t rs2) {
 }
 // -------------------------------------------------------------------------
 static inline uintx_t glue(rori,XLEN)(uintx_t rd,uintx_t rs1,uintx_t shamt) { 
-//  assert(XLEN == 32 || XLEN == 64);
-//
-//  //is sh amount bigger than XLEN-1
-//  bool tooLarge = shamt > (XLEN-1);
-//  if(tooLarge) return rd;
-//
-//  uintx_t v1  = rs1;
-//  uintx_t _rd = (v1 >> shamt) | (v1 << ((XLEN - rot) & shift_mask()));
-//  return _rd;
+  assert(XLEN == 32 || XLEN == 64);
+  //is sh amount bigger than XLEN-1?
+  bool tooLarge = shamt > (XLEN-1);
+  if(tooLarge) return rd; //Do nothing
+  uintx_t v1  = rs1;
+  uintx_t _rd = (v1 >> shamt) | (v1 << ((XLEN - shamt) & shift_mask()));
+  return _rd;
+}
+// -------------------------------------------------------------------------
+static inline uintx_t glue(roriw,XLEN)(uintx_t rs1,uintx_t shamt5) { 
+  assert(XLEN == 64);
+  uint32_t len  = 32;
+  unsigned mask = len - 1;
+  uint32_t  u32 =  (rs1 >> shamt5) | (rs1 << ((len - shamt5) & mask));
+  uint64_t  u64 = int32_t(u32);
+  return u64;
+}
+// -------------------------------------------------------------------------
+static inline uintx_t glue(rorw,XLEN)(uintx_t rs1,uintx_t rs2) { 
+  assert(XLEN == 64);
+  uint32_t len   = 32;
+  uint32_t mask  = 32 - 1;
+  uint32_t shamt = rs2 & mask;
+  uint32_t v1    = rs1;
+  uint32_t res32 = (v1 >> shamt) | (v1 << ((len - shamt) & mask));
+  uint64_t rd    = int32_t(res32);
   return rd;
 }
 // -------------------------------------------------------------------------
@@ -635,7 +651,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles);
 
 int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
     uint32_t     opcode, insn, rd, rs1, rs2, funct2, funct3;
-    uint32_t     _funct3, _funct6, _funct7, _funct12, _shamt;
+    uint32_t     _funct3, _funct6, _funct7, _funct12, _shamt5, _shamt6, _shamt;
     int32_t      imm, cond, err;
     target_ulong addr, vald, val, val1, val2;
     uint8_t *    code_ptr, *code_end;
@@ -1589,7 +1605,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                                           ||  (XLEN >= 64 && _funct6 == 0x18))) {
 
                             CAPTURED_INSTR("RORI");
-                            val = (uintx_t)glue(rori,XLEN)(vald,val1,val2);
+                            val = (uintx_t)glue(rori,XLEN)(vald,val1,_shamt);
 
                         } else if ((imm & ~((XLEN - 1) | 0x400)) != 0) {
 
@@ -1620,7 +1636,10 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                 val1     = read_reg(rs1);
                 _funct12 = (insn >> 20) & 0xFFF;
                 _funct6  = (insn >> 26) & 0x3F;
-                _shamt   = (insn >> 20) & 0x3F;
+                _shamt6  = (insn >> 20) & 0x3F;
+
+                _funct7  = (insn >> 25) & 0x7F;
+                _shamt5  = (insn >> 20) & 0x1F;
 
                 switch (funct3) {
                     case 0: /* addiw */ val = (int32_t)(val1 + imm); break;
@@ -1628,7 +1647,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                         if (EN_ZBA && (_funct6 == 0x2)) {
 
                             CAPTURED_INSTR("SLLI.UW");
-                            val = (uintx_t)(uint32_t)val1 << _shamt;
+                            val = (uintx_t)(uint32_t)val1 << _shamt6;
 
                         } else if (EN_ZBB && (_funct12 == 0x601)) {
 
@@ -1652,13 +1671,28 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                           val = (int32_t)(val1 << (imm & 31));
                         }
                         break;
-                    case 5: /* srliw/sraiw */
-                        if ((imm & ~(31 | 0x400)) != 0)
-                            ILLEGAL_INSTR("030")
-                        if (imm & 0x400)
-                            val = (int32_t)val1 >> (imm & 31);
-                        else
-                            val = (int32_t)((uint32_t)val1 >> (imm & 31));
+                    case 5: 
+                        if(EN_ZBB && _funct7 == 0x30 && _funct3 == 0x5) {
+
+                            CAPTURED_INSTR("RORIW");
+                            val = (uintx_t)glue(roriw,XLEN)(val1,_shamt5);
+
+                        } else {  /* srliw/sraiw */
+
+                            if ((imm & ~(31 | 0x400)) != 0) {
+
+                              ILLEGAL_INSTR("030")
+
+                            } else if (imm & 0x400) {
+
+                              val = (int32_t)val1 >> (imm & 31);
+
+                            } else {
+
+                              val = (int32_t)((uint32_t)val1 >> (imm & 31));
+
+                            }
+                        }
                         break;
                     default: ILLEGAL_INSTR("031")
                 }
@@ -2080,13 +2114,16 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                 } else if (EN_ZBB && _funct7 == 0x30 & _funct3 == 0x1) {
                    CAPTURED_INSTR("ROLW");
                    val = (uintx_t)rolw64(val1, val2);
+                } else if (EN_ZBB && _funct7 == 0x30 & _funct3 == 0x5) {
+                   CAPTURED_INSTR("RORW");
+                   val = (uintx_t)glue(rorw,XLEN)(val1,val2);
                 } else if (imm == 1) {
                     funct3 = (insn >> 12) & 7;
                     switch (funct3) {
-                        case 0: /* mulw */ val = (int32_t)((int32_t)val1 * (int32_t)val2); break;
-                        case 4: /* divw */ val = div32(val1, val2); break;
+                        case 0: /* mulw */  val = (int32_t)((int32_t)val1 * (int32_t)val2); break;
+                        case 4: /* divw */  val = div32(val1, val2); break;
                         case 5: /* divuw */ val = (int32_t)divu32(val1, val2); break;
-                        case 6: /* remw */ val = rem32(val1, val2); break;
+                        case 6: /* remw */  val = rem32(val1, val2); break;
                         case 7: /* remuw */ val = (int32_t)remu32(val1, val2); break;
                         default: ILLEGAL_INSTR("038")
                     }
