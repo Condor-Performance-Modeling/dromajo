@@ -587,15 +587,18 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
 #endif
     }
 
-    if(!parse_isa_string(march_string,s->common.ext_flags)) {
-      fprintf(stderr, "Parsing --march string failed\n");
-      exit(1);
-    }
-
-    if(show_enabled_extensions) {
-      printExtensionFlags(s->common.ext_flags,false); //not verbose
-      exit(1);
-    }
+    (void) march_string;
+//    //WTF: original code, s = RISCVMachine...
+//    if(!parse_isa_string(march_string,*isa_flags)) {
+//      fprintf(stderr, "Parsing --march string failed\n");
+//      exit(1);
+//    }
+//
+    (void) show_enabled_extensions;
+//    if(show_enabled_extensions) {
+//      printIsaConfigFlags(*isa_flags,false); //not verbose
+//      exit(1);
+//    }
 
     s->common.snapshot_save_name = snapshot_save_name;
     s->common.exe_trace          = exe_trace;
@@ -651,6 +654,7 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
 
     s->common.stf_prog_asid = 0;
     s->common.stf_count     = 0;
+
 
     // Allow the command option argument to overwrite the value
     // specified in the configuration file

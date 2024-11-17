@@ -1,0 +1,49 @@
+
+#define TEST_FP_OP1_H( testnum, inst, flags, result, val1 ) \
+#define TEST_FP_OP1_S( testnum, inst, flags, result, val1 ) \
+#define TEST_FP_OP1_D( testnum, inst, flags, result, val1 ) \
+isa/rv64uzfh/fdiv.S: TEST_FP_OP1_H(5,  fsqrt.h, 1, 1.7724538498928541, 3.14159265 );
+
+#define TEST_FP_OP2_S( testnum, inst, flags, result, val1, val2 ) \
+#define TEST_FP_OP2_H( testnum, inst, flags, result, val1, val2 ) \
+#define TEST_FP_OP2_D( testnum, inst, flags, result, val1, val2 ) \
+isa/rv64uf/fmin.S:  TEST_FP_OP2_S( 2,  fmin.s, 0,  1.0, 2.5, 1.0 );
+
+
+#define TEST_FP_OP3_S( testnum, inst, flags, result, val1, val2, val3 ) \
+#define TEST_FP_OP3_H( testnum, inst, flags, result, val1, val2, val3 ) \
+#define TEST_FP_OP3_D( testnum, inst, flags, result, val1, val2, val3 ) \
+isa/rv64uf/fmadd.S:  TEST_FP_OP3_S( 2,  fmadd.s, 0,3.5,  1.0, 2.5, 1.0 );
+
+
+#define TEST_FP_INT_OP_S( testnum, inst, flags, result, val1, rm ) \
+#define TEST_FP_INT_OP_H( testnum, inst, flags, result, val1, rm ) \
+#define TEST_FP_INT_OP_D( testnum, inst, flags, result, val1, rm ) \
+isa/rv64uf/fcvt_w.S:  TEST_FP_INT_OP_S( 2,  fcvt.w.s, 0x01, -1, -1.1, rtz);
+
+
+#define TEST_FP_CMP_OP_S( testnum, inst, flags, result, val1, val2 ) \
+#define TEST_FP_CMP_OP_H( testnum, inst, flags, result, val1, val2 ) \
+#define TEST_FP_CMP_OP_D( testnum, inst, flags, result, val1, val2 ) \
+isa/rv64uf/fcmp.S:  TEST_FP_CMP_OP_S( 2, feq.s, 0x00, 1, -1.36, -1.36)
+
+#define TEST_FP_OP1_S_DWORD_RESULT( testnum, inst, flags, result, val1 ) \
+fdiv.S TEST_FP_OP1_S_DWORD_RESULT(7,  fsqrt.s, 0x10, 0x7FC00000, -1.0 );
+
+#define TEST_FP_OP1_H_DWORD_RESULT( testnum, inst, flags, result, val1 ) \
+fdiv.S TEST_FP_OP1_H_DWORD_RESULT(7,  fsqrt.h, 0x10, 0x00007e00, -1.0 );
+
+#define TEST_FP_OP1_D_DWORD_RESULT( testnum, inst, flags, result, val1 ) \
+fdiv.S TEST_FP_OP1_S_DWORD_RESULT(7,  fsqrt.s, 0x10, 0x7FC00000, -1.0 );
+
+#define TEST_FP_OP3_D32( testnum, inst, flags, result, val1, val2, val3 ) \
+?
+#define TEST_FP_OP1_D32_DWORD_RESULT( testnum, inst, flags, result, val1 ) \
+?
+#define TEST_FP_OP2_D32( testnum, inst, flags, result, val1, val2 ) \
+?
+#define TEST_FP_INT_OP_D32( testnum, inst, flags, result, val1, rm ) \
+?
+#define TEST_FP_CMP_OP_D32( testnum, inst, flags, result, val1, val2 ) \
+?
+

@@ -40,7 +40,7 @@
 #
 
 cmake_minimum_required(VERSION 3.1)
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 project(dromajo)
 option(TRACEOS "TRACEOS" OFF)
 option(SIMPOINT "SIMPOINT" OFF)
@@ -97,6 +97,8 @@ configure_file(
 )
 
 # -------------------------------------------------------------------------
+# remove -Wno-deprecated-declarations once STF_LIB is patched for c++20
+# -------------------------------------------------------------------------
 add_compile_options(
         -g
         -std=c++17
@@ -108,6 +110,7 @@ add_compile_options(
         -D_LARGEFILE_SOURCE
         -D_GNU_SOURCE
         -D__STDC_FORMAT_MACROS
+        -Wno-deprecated-declarations
 )
 
 add_compile_options($<$<CONFIG:Release>:-Ofast>)
@@ -160,7 +163,6 @@ add_library(dromajo_cosim STATIC
         src/block_device.cpp
         src/cutils.cpp
         src/dromajo_cosim.cpp
-        src/dromajo_isa.cpp
         src/dromajo_main.cpp
         src/dromajo_stf.cpp
         src/dromajo_trace.cpp
@@ -178,12 +180,14 @@ add_library(dromajo_cosim STATIC
         src/options.cpp
         src/pci.cpp
         src/riscv_cpu.cpp
+        src/riscv_isa.cpp
         src/riscv_machine.cpp
         src/softfp.cpp
         src/term_io.cpp
         src/uart.cpp
         src/virtio.cpp
         src/LiveCache.cpp
+        src/zfa.cpp
         )
 
 add_executable(dromajo src/dromajo.cpp)

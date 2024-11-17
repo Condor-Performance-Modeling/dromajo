@@ -23,6 +23,7 @@
 #include "iomem.h"
 #include "options.h"
 #include "riscv_machine.h"
+#include "riscv_isa.h"
 #include "virtio.h"
 
 //#define REGRESS_COSIM 1
@@ -40,6 +41,13 @@ using namespace std;
 
 Options *Options::instance = 0;
 std::shared_ptr<Options> opts(Options::getInstance());
+
+//FIXME: for now create a singleton for ISA configuration
+//in future isa configuration should be unique for each
+//cpu instance, requires extension to the CFG file options
+//parsing. True heterogenous multi-core is down the road
+IsaConfigFlags *IsaConfigFlags::instance = 0;
+std::shared_ptr<IsaConfigFlags> isa_flags(IsaConfigFlags::getInstance());
 
 #ifdef SIMPOINT_BB
 

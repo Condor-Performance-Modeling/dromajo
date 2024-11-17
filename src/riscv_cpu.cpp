@@ -55,6 +55,7 @@
 #include <string.h>
 #include <unistd.h>
 
+extern std::shared_ptr<IsaConfigFlags> isa_flags;
 extern int simpoint_roi;
 
 // NOTE: Use GET_INSN_COUNTER not mcycle because this is just to track advancement of simulation
@@ -2230,8 +2231,8 @@ static sfloat64 f_unbox32(sfloat64 r) {
 
 static sfloat64 f_unbox64(sfloat64 r) { return r; }
 
-#define XLEN 32
-#include "dromajo_template.h"
+//#define XLEN 32
+//#include "dromajo_template.h"
 
 #define XLEN 64
 #include "dromajo_template.h"

@@ -42,7 +42,7 @@
 
 #include "json.h"
 #include "dromajo_stf.h"
-#include "dromajo_isa.h"
+#include "riscv_isa.h"
 
 #include <cstdint>
 
@@ -243,7 +243,8 @@ typedef struct VirtMachine {
     dromajo_logging_func_t *error_log;
     dromajo_logging_func_t *debug_log;
 
-    ExtensionFlags ext_flags;
+    IsaConfigFlags *isa_flags{nullptr};
+
 } VirtMachine;
 
 int load_file(uint8_t **pbuf, const char *filename);

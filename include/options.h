@@ -41,6 +41,7 @@
 #include "riscv_machine.h"
 #include <boost/program_options.hpp>
 #include <cstdio>
+#include <memory>
 #include <string>
 #include <vector>
 
