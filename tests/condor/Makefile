@@ -47,9 +47,11 @@ andestar:
 	$(MAKE) andes_run_test X=rv64ui-p E=andestar T=ffmism
 	$(MAKE) andes_run_test X=rv64ui-p E=andestar T=flmism
 
-# --------------------------------------------------------------------------------
+# -----------------------------------------------------------------------
 # zfa work in progress - these are the intended tests
-# --------------------------------------------------------------------------------
+# -----------------------------------------------------------------------
+zfa_tests = fli_h fli_s fli_d
+
 #zfa_tests = fleq_h fleq_s fleq_d \
 #            fltq_h fltq_s fltq_d \
 #            fmaxm_h fmaxm_s fmaxm_d \
@@ -58,12 +60,11 @@ andestar:
 #            froundnx_h froundnx_s froundnx_d \
 #            fmvh_x_d \
 #            fcvtmod_w_d \
-#            fli_h fli_s fli_d
-#
-#zfa:
-#	-mkdir -p bin/zfa logs/zfa
-#	$(foreach test,$(zfa_tests),$(MAKE) run_test X=rv64ui-p E=zfa T=$(test);)
-# --------------------------------------------------------------------------------
+
+zfa:
+	-mkdir -p bin/zfa logs/zfa
+	$(foreach test,$(zfa_tests),$(MAKE) run_test X=rv64ud-p E=zfa T=$(test);)
+# -------------------------------------------------------------------------
 zicond:	
 	mkdir -p bin/zicond logs/zicond
 	$(MAKE) run_test X=rv64ui-p E=zicond T=czero_eqz

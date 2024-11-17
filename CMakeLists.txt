@@ -187,6 +187,7 @@ add_library(dromajo_cosim STATIC
         src/uart.cpp
         src/virtio.cpp
         src/LiveCache.cpp
+        src/zfa.cpp
         )
 
 add_executable(dromajo src/dromajo.cpp)

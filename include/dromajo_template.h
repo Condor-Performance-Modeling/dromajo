@@ -54,6 +54,7 @@
 #endif
 
 #include "dromajo_stf.h"
+#include "dromajo_protos.h"
 #include <limits>
 
 //#define EN_ZBA (s->machine->common.ext_flags.zba == true)
@@ -2739,10 +2740,11 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
 
                 if (s->fs == 0) ILLEGAL_INSTR("NO-FLOAT")
                 //The imm field is confusing for non-imm encodings
-                //imm     = (insn >>w 25) & 0x7F;
+                //imm    = (insn >>w 25) & 0x7F;
                 _funct7  = (insn >> 25) & 0x7F;
                 _funct12 = (insn >> 20) & 0xFFF;
                 _funct3  = (insn >> 12) & 0x07;
+                rs1      = (insn >> 15) & 0x1F;
 
                 //FIXME: the .q versions have placeholders for decode
                 //they are treated as illegal for the time being
@@ -2815,12 +2817,25 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                   ILLEGAL_INSTR("froundnx.q"); //Requires Q
 
                 } else if(_funct12 == 0b1111'0100'0001 && _funct3 == 0b000) {
+
                   CAPTURED_INSTR("fli.h");
+                   //Note using the encoding for rs1 not the contents
+                   val = (uintx_t)fli_h64(rs1);
+
                 } else if(_funct12 == 0b1111'0000'0001 && _funct3 == 0b000) {
+
                   CAPTURED_INSTR("fli.s");
+                   //Note using the encoding for rs1 not the contents
+                   val = (uintx_t)fli_s64(rs1);
+
                 } else if(_funct12 == 0b1111'0010'0001 && _funct3 == 0b000) {
+
                   CAPTURED_INSTR("fli.d");
+                   //Note using the encoding for rs1 not the contents
+                   val = (uintx_t)fli_d64(rs1);
+
                 } else if(_funct12 == 0b1111'0110'0001 && _funct3 == 0b000) {
+
                   //CAPTURED_INSTR("fli.q");
                   ILLEGAL_INSTR("fli.q"); //Requires Q
 
