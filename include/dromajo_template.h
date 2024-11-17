@@ -2739,12 +2739,12 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
             case 0x53: //Floating point instructions
 
                 if (s->fs == 0) ILLEGAL_INSTR("NO-FLOAT")
-                //The imm field is confusing for non-imm encodings
-                //imm    = (insn >>w 25) & 0x7F;
                 _funct7  = (insn >> 25) & 0x7F;
                 _funct12 = (insn >> 20) & 0xFFF;
                 _funct3  = (insn >> 12) & 0x07;
+                rm       = (insn >> 12) & 0x07;
                 rs1      = (insn >> 15) & 0x1F;
+                rs2      = (insn >> 20) & 0x1F;
 
                 //FIXME: the .q versions have placeholders for decode
                 //they are treated as illegal for the time being
@@ -2797,21 +2797,39 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                   ILLEGAL_INSTR("fminm.q"); //Requires Q
 
                 } else if(_funct12 == 0b0100'0100'0100) {
+
                   CAPTURED_INSTR("fround.h");
+                  val = (uintx_t)fround_h64(rs1,rm,&s->fflags);
+
                 } else if(_funct12 == 0b0100'0000'0100) {
+
                   CAPTURED_INSTR("fround.s");
+                  val = (uintx_t)fround_s64(rs1,rm,&s->fflags);
+
                 } else if(_funct12 == 0b0100'0010'0100) {
+
                   CAPTURED_INSTR("fround.d");
+                  val = (uintx_t)fround_d64(rs1,rm,&s->fflags);
+
                 } else if(_funct12 == 0b0100'0110'0100) {
                   //CAPTURED_INSTR("fround.q");
                   ILLEGAL_INSTR("fround.q"); //Requires Q
 
                 } else if(_funct12 == 0b0100'0100'0101) {
+
                   CAPTURED_INSTR("froundnx.h");
+                  val = (uintx_t)froundnx_h64(rs1,rm,&s->fflags);
+
                 } else if(_funct12 == 0b0100'0000'0101) {
+
                   CAPTURED_INSTR("froundnx.s");
+                  val = (uintx_t)froundnx_s64(rs1,rm,&s->fflags);
+
                 } else if(_funct12 == 0b0100'0010'0101) {
+
                   CAPTURED_INSTR("froundnx.d");
+                  val = (uintx_t)froundnx_d64(rs1,rm,&s->fflags);
+
                 } else if(_funct12 == 0b0100'0110'0101) {
                   //CAPTURED_INSTR("froundnx.q");
                   ILLEGAL_INSTR("froundnx.q"); //Requires Q

@@ -6,14 +6,43 @@
 // =========================================================================
 // ZFA
 //
-// The magic numbers for fli_X are explained in the zfa adoc, see also test files
+// fli/fround
 // =========================================================================
+// -------------------------------------------------------------------------
+// -------------------------------------------------------------------------
+uint64_t fround_h64(uint32_t rs1, uint32_t rm, uint32_t *pfflags) { return 0; }
+uint64_t fround_s64(uint32_t rs1, uint32_t rm, uint32_t *pfflags) { return 0; }
+uint64_t fround_d64(uint32_t rs1, uint32_t rm, uint32_t *pfflags) { return 0; }
+uint64_t froundnx_h64(uint32_t rs1, uint32_t rm, uint32_t *pfflags) { return 0; }
+uint64_t froundnx_s64(uint32_t rs1, uint32_t rm, uint32_t *pfflags) { return 0; }
+uint64_t froundnx_d64(uint32_t rs1, uint32_t rm, uint32_t *pfflags) { return 0; }
+// -------------------------------------------------------------------------
+enum FormatField {
+ FMT_S = 0, //00 S 32-bit single-precision
+ FMT_D = 1, //01 D 64-bit double-precision
+ FMT_H = 2, //10 H 16-bit half-precision
+ FMT_Q = 3  //11 Q 128-bit quad-precision
+};
+// -------------------------------------------------------------------------
+enum RoundingModes {
+  RNE = 0,    //000 RNE Round to Nearest, ties to Even
+  RTZ = 1,    //001 RTZ Round towards Zero
+  RDN = 2,    //010 RDN Round Down (towards )
+  RUP = 3,    //011 RUP Round Up (towards )
+  RMM = 4,    //100 RMM Round to Nearest, ties to Max Magnitude
+  RSRV0 = 5,  //101 Reserved for future use.
+  RSRV1 = 6,  //1110 Reserved for future use.
+  DYN   = 7   //111 DYN In instruction’s rm field, selects dynamic rounding mode; 
+};
+// -------------------------------------------------------------------------
+// The magic numbers for fli_X are explained in the zfa adoc, see also test files
+// -------------------------------------------------------------------------
 struct FPSizes {
     uint16_t half;   // Half-precision (16-bit)
     uint32_t single; // Single-precision (32-bit)
     uint64_t dbl;    // Double-precision (64-bit)
 };
-// -------------------------------------------------------------------------
+
 static const std::unordered_map<uint32_t, FPSizes> FLI_MAGIC = {
     {0,  {0xBC00, 0xBF800000, 0xBFF0000000000000}},
     {1,  {0x0400, 0x00800000, 0x0010000000000000}},
@@ -65,17 +94,17 @@ T get_fli(uint32_t idx) {
 }
 // -------------------------------------------------------------------------
 // -------------------------------------------------------------------------
-uint64_t fli_h64(uint64_t rs) {
+uint64_t fli_h64(uint32_t rs) {
     uint32_t idx = rs & 0x1F;
     return get_fli<uint16_t>(idx);
 }
 
-uint64_t fli_s64(uint64_t rs) {
+uint64_t fli_s64(uint32_t rs) {
     uint32_t idx = rs & 0x1F;
     return get_fli<uint32_t>(idx);
 }
 
-uint64_t fli_d64(uint64_t rs) {
+uint64_t fli_d64(uint32_t rs) {
     uint32_t idx = rs & 0x1F;
     return get_fli<uint64_t>(idx);
 }

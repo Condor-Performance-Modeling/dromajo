@@ -1,5 +1,5 @@
-.PHONY: default andestar decoder cc_decoder sim_decoder run_test cc_test sim_test \
-        zfa zicond
+.PHONY: default andestar decoder cc_decoder sim_decoder run_test cc_test \
+        sim_test zfazfh zicond
 
 include Vars.mk
 
@@ -11,7 +11,7 @@ else
 endif
 
 default: andestar zicond decoder
-#zfa work in progress
+#zfazfh work in progress
 
 decoder: cc_decoder sim_decoder
 
@@ -49,21 +49,34 @@ andestar:
 
 # -----------------------------------------------------------------------
 # zfa work in progress - these are the intended tests
+# fli_h fli_s fli_d
+# fminm_h fminm_s fminm_d
+# fmaxm_h fmaxm_s fmaxm_d
+# fround_h fround_s fround_d
+# froundnx_h froundnx_s froundnx_d
+# fcvtmod_w_d
 # -----------------------------------------------------------------------
-zfa_tests = fli_h fli_s fli_d
-
-#zfa_tests = fleq_h fleq_s fleq_d \
-#            fltq_h fltq_s fltq_d \
-#            fmaxm_h fmaxm_s fmaxm_d \
-#            fminm_h fminm_s fminm_d \
-#            fround_h fround_s fround_d \
-#            froundnx_h froundnx_s froundnx_d \
-#            fmvh_x_d \
-#            fcvtmod_w_d \
-
-zfa:
+# These are RV32D only or RV64Q only, neither are planned
+# fmvh_x_d fmvh_d_x fmvh_x_q fmvh_q_x
+# -----------------------------------------------------------------------
+# fminm_x test both fminm_x and fmaxm_x
+#
+zfazfh:
 	-mkdir -p bin/zfa logs/zfa
-	$(foreach test,$(zfa_tests),$(MAKE) run_test X=rv64ud-p E=zfa T=$(test);)
+	$(MAKE) run_test X=rv64uzfh-p E=zfh T=fli_h
+	$(MAKE) run_test X=rv64uf-p   E=zfa T=fli_s
+	$(MAKE) run_test X=rv64ud-p   E=zfa T=fli_d
+	#	$(MAKE) run_test X=rv64uzfh-p E=zfh T=fround_h
+	# $(MAKE) run_test X=rv64uf-p   E=zfa T=fround_s
+	# $(MAKE) run_test X=rv64ud-p   E=zfa T=fround_d
+	# $(MAKE) run_test X=rv64uzfh-p E=zfh T=froundnx_h
+	# $(MAKE) run_test X=rv64uf-p   E=zfa T=froundnx_s
+	# $(MAKE) run_test X=rv64ud-p   E=zfa T=froundnx_d
+	\
+	$(MAKE) run_test X=rv64uzfh-p E=zfh T=fminm_h
+	$(MAKE) run_test X=rv64uf-p   E=zfa T=fminm_s
+	$(MAKE) run_test X=rv64ud-p   E=zfa T=fminm_d
+
 # -------------------------------------------------------------------------
 zicond:	
 	mkdir -p bin/zicond logs/zicond

@@ -78,6 +78,14 @@ extern uint64_t rtc_get_time(RISCVMachine *m);
 extern void dromajo_default_error_log(int hartid, const char *fmt, ...);
 extern void dromajo_default_debug_log(int hartid, const char *fmt, ...);
 
-extern uint64_t fli_h64(uint64_t rs);
-extern uint64_t fli_s64(uint64_t rs);
-extern uint64_t fli_d64(uint64_t rs);
+extern uint64_t fli_h64(uint32_t rs);
+extern uint64_t fli_s64(uint32_t rs);
+extern uint64_t fli_d64(uint32_t rs);
+
+extern uint64_t fround_h64(uint32_t rs1,uint32_t rm,uint32_t *flags);
+extern uint64_t fround_s64(uint32_t rs1,uint32_t rm,uint32_t *flags);
+extern uint64_t fround_d64(uint32_t rs1,uint32_t rm,uint32_t *flags);
+
+extern uint64_t froundnx_h64(uint32_t rs1,uint32_t rm,uint32_t *flags);
+extern uint64_t froundnx_s64(uint32_t rs1,uint32_t rm,uint32_t *flags);
+extern uint64_t froundnx_d64(uint32_t rs1,uint32_t rm,uint32_t *flags);
