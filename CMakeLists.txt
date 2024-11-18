@@ -101,7 +101,7 @@ configure_file(
 # -------------------------------------------------------------------------
 add_compile_options(
         -g
-        -std=c++17
+        -std=c++20
         -g
         -Wall
         -Wno-parentheses

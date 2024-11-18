@@ -55,6 +55,7 @@
 
 #include "dromajo_stf.h"
 #include "dromajo_protos.h"
+#include <bit>
 #include <limits>
 
 //#define EN_ZBA (s->machine->common.ext_flags.zba == true)
