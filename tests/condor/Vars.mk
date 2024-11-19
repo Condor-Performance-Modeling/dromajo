@@ -4,13 +4,12 @@ RVTST_LNK=-T../riscv-tests/env/p/link.ld
 # --------------------------------------------------------------------
 # Common settings
 # --------------------------------------------------------------------
-OBJD_OPTS=--disassemble-all --disassemble-zeroes --section=.text --section=.text.startup \
-               --section=.text.init --section=.data -Mnumeric,no-aliases
+OBJD_OPTS=--disassemble-all --disassemble-zeroes --section=.text \
+  --section=.text.startup --section=.text.init --section=.data \
+  -Mnumeric,no-aliases
 # --------------------------------------------------------------------
-
 DROM=$(CPM_DROMAJO)/bin/cpm_dromajo
 DROM_OPTS=--ctrlc --trace 0 --march=rv64g_zba_zbb_zbc_zbs_xandes_zfa
-
 # --------------------------------------------------------------------
 # Settings for andes
 # --------------------------------------------------------------------
@@ -18,8 +17,8 @@ ANDES_BASE=/data/tools/AndeSight_STD_v530/toolchains/nds64le-elf-newlib-v5f
 ANDES_CC=$(ANDES_BASE)/bin/riscv64-unknown-elf-gcc
 ANDES_OBJD=$(ANDES_BASE)/bin/riscv64-unknown-elf-objdump
 
-ANDES_CC_OPTS =-mcpu=ax65 -march=rv64g_zba_zbb_zbc_zbs_xandes -mcmodel=medany -static \
-               -fvisibility=hidden -nostdlib -nostartfiles $(RVTST_INC) $(RVTST_LNK)
+ANDES_CC_OPTS =-mcpu=ax65 -march=rv64g_zba_zbb_zbc_zbs_xandes -mcmodel=medany \
+  -static -fvisibility=hidden -nostdlib -nostartfiles $(RVTST_INC) $(RVTST_LNK)
 
 ANDES_OBJD_OPTS=$(OBJD_OPTS)
 ANDES_SIM=$(DROM)
@@ -44,4 +43,4 @@ RISCV_SIM_OPTS=$(DROM_OPTS)
 
 # --------------------------------------------------------------------
 DECODER_CC_OPTS= -O3 -flto $(BASE_CC_OPTS) $(RVTST_INC) 
-DECODER_LNK=-T$(BENCHMARKS)/linker/common_proposed.ld
+DECODER_LNK=-T./linker/common_proposed.ld

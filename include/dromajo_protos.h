@@ -82,10 +82,43 @@ extern uint64_t fli_h64(uint32_t rs);
 extern uint64_t fli_s64(uint32_t rs);
 extern uint64_t fli_d64(uint32_t rs);
 
-extern uint64_t fround_h64(uint32_t rs1,uint32_t rm,uint32_t *flags);
-extern uint64_t fround_s64(uint32_t rs1,uint32_t rm,uint32_t *flags);
-extern uint64_t fround_d64(uint32_t rs1,uint32_t rm,uint32_t *flags);
+extern uint64_t fround_h64(uint64_t,uint64_t,uint32_t,uint32_t,uint32_t*,bool=false);
+extern uint64_t fround_s64(uint64_t,uint64_t,uint32_t,uint32_t,uint32_t*,bool=false);
+extern uint64_t fround_d64(uint64_t,uint64_t,uint32_t,uint32_t,uint32_t*,bool=false);
 
-extern uint64_t froundnx_h64(uint32_t rs1,uint32_t rm,uint32_t *flags);
-extern uint64_t froundnx_s64(uint32_t rs1,uint32_t rm,uint32_t *flags);
-extern uint64_t froundnx_d64(uint32_t rs1,uint32_t rm,uint32_t *flags);
+extern uint64_t froundnx_h64(uint64_t,uint64_t,uint32_t,uint32_t,uint32_t*);
+extern uint64_t froundnx_s64(uint64_t,uint64_t,uint32_t,uint32_t,uint32_t*);
+extern uint64_t froundnx_d64(uint64_t,uint64_t,uint32_t,uint32_t,uint32_t*);
+
+bool isHalfPrecisionZero(uint16_t value);
+bool isSinglePrecisionZero(uint32_t value);
+bool isDoublePrecisionZero(uint64_t value);
+
+bool isHalfPrecisionInfinity(uint16_t value);
+bool isPositiveInfinity(uint16_t value);
+bool isNegativeInfinity(uint16_t value);
+
+bool isSinglePrecisionInfinity(uint32_t value);
+bool isPositiveInfinity(uint32_t value);
+bool isNegativeInfinity(uint32_t value);
+
+bool isDoublePrecisionInfinity(uint64_t value);
+bool isPositiveInfinity(uint64_t value);
+bool isNegativeInfinity(uint64_t value);
+
+uint16_t froundHalfPrecision(uint16_t value,RoundingModeEnum,bool);
+uint32_t froundSinglePrecision(uint32_t value,RoundingModeEnum,bool);
+uint64_t froundDoublePrecision(uint64_t value,RoundingModeEnum,bool);
+
+bool isSinglePrecisionNaN(uint32_t value);
+bool isSinglePrecisionSignalingNaN(uint32_t value);
+bool isSinglePrecisionQuietNaN(uint32_t value);
+
+bool isDoublePrecisionNaN(uint64_t value);
+bool isDoublePrecisionSignalingNaN(uint64_t value);
+bool isDoublePrecisionQuietNaN(uint64_t value);
+
+void setHostRoundingMode(RoundingModeEnum);
+void clearHostFpFlags();
+void raiseHostFpFlags(uint32_t);
+

@@ -49,6 +49,9 @@ typedef enum {
     RM_RDN, /* Round Down */
     RM_RUP, /* Round Up */
     RM_RMM, /* Round to Nearest, ties to Max Magnitude */
+    INVALID1,
+    INVALID2,
+    DYNAMIC
 } RoundingModeEnum;
 
 #define FFLAG_INVALID_OP  (1 << 4)

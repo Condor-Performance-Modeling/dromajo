@@ -101,8 +101,6 @@ configure_file(
 # -------------------------------------------------------------------------
 add_compile_options(
         -g
-        -std=c++17
-        -g
         -Wall
         -Wno-parentheses
         -MMD
@@ -169,6 +167,7 @@ add_library(dromajo_cosim STATIC
         src/dw_apb_uart.cpp
         src/elf64.cpp
         src/fdt.cpp
+        src/float_support.cpp
         src/fs.cpp
         src/fs_disk.cpp
         src/iomem.cpp

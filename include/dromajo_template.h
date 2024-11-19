@@ -654,7 +654,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
     uint32_t     opcode, insn, rd, rs1, rs2, funct2, funct3;
     uint32_t     _funct3, _funct6, _funct7, _funct12, _shamt5, _shamt6, _shamt;
     int32_t      imm, cond, err;
-    target_ulong addr, vald, val, val1, val2;
+    target_ulong addr, fvald, fval1, vald, val, val1, val2;
     uint8_t *    code_ptr, *code_end;
     target_ulong code_to_pc_addend;
     uint64_t     insn_counter_addend;
@@ -2742,9 +2742,14 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                 _funct7  = (insn >> 25) & 0x7F;
                 _funct12 = (insn >> 20) & 0xFFF;
                 _funct3  = (insn >> 12) & 0x07;
-                rm       = (insn >> 12) & 0x07;
-                rs1      = (insn >> 15) & 0x1F;
-                rs2      = (insn >> 20) & 0x1F;
+                //FIXME: since this decode also executes you need the unmodified
+                //       copy of the FP-rd in case the instruction bails out.
+                //TODO: split decoder/execution
+                rd    = (insn >>  7) & 0x1F;
+                rm    = (insn >> 12) & 0x07; //instr rounding mode
+                rs1   = (insn >> 15) & 0x1F;
+                fvald = read_fp_reg(rd);
+                fval1 = read_fp_reg(rs1);
 
                 //FIXME: the .q versions have placeholders for decode
                 //they are treated as illegal for the time being
@@ -2797,19 +2802,25 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                   ILLEGAL_INSTR("fminm.q"); //Requires Q
 
                 } else if(_funct12 == 0b0100'0100'0100) {
+                  //We need float16_t support to make the round operation
+                  //less risky. There is not existing support in riscv-tests.
+                  //So for now mark it illegal
+                  //FIXME: implement/float16_t using either softfloat's
+                  // implementation or preferred std:<stdfloat>
 
-                  CAPTURED_INSTR("fround.h");
-                  val = (uintx_t)fround_h64(rs1,rm,&s->fflags);
+                  //CAPTURED_INSTR("fround.h");
+                  //val = (uintx_t)fround_h64(fvald,rs1,rm,s->frm,&s->fflags);
+                  ILLEGAL_INSTR("fround.h"); //Requires H
 
                 } else if(_funct12 == 0b0100'0000'0100) {
 
                   CAPTURED_INSTR("fround.s");
-                  val = (uintx_t)fround_s64(rs1,rm,&s->fflags);
+                  val = (uintx_t)fround_s64(fvald,fval1,rm,s->frm,&s->fflags);
 
                 } else if(_funct12 == 0b0100'0010'0100) {
 
                   CAPTURED_INSTR("fround.d");
-                  val = (uintx_t)fround_d64(rs1,rm,&s->fflags);
+                  val = (uintx_t)fround_d64(fvald,rs1,rm,s->frm,&s->fflags);
 
                 } else if(_funct12 == 0b0100'0110'0100) {
                   //CAPTURED_INSTR("fround.q");
@@ -2817,18 +2828,20 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
 
                 } else if(_funct12 == 0b0100'0100'0101) {
 
-                  CAPTURED_INSTR("froundnx.h");
-                  val = (uintx_t)froundnx_h64(rs1,rm,&s->fflags);
+                  //CAPTURED_INSTR("froundnx.h");
+                  //val = (uintx_t)froundnx_h64(fvald,rs1,rm,s->frm,&s->fflags);
+                  //FIXME: see above
+                  ILLEGAL_INSTR("froundnx.h"); //Requires H
 
                 } else if(_funct12 == 0b0100'0000'0101) {
 
                   CAPTURED_INSTR("froundnx.s");
-                  val = (uintx_t)froundnx_s64(rs1,rm,&s->fflags);
+                  val = (uintx_t)froundnx_s64(fvald,fval1,rm,s->frm,&s->fflags);
 
                 } else if(_funct12 == 0b0100'0010'0101) {
 
                   CAPTURED_INSTR("froundnx.d");
-                  val = (uintx_t)froundnx_d64(rs1,rm,&s->fflags);
+                  val = (uintx_t)froundnx_d64(fvald,fval1,rm,s->frm,&s->fflags);
 
                 } else if(_funct12 == 0b0100'0110'0101) {
                   //CAPTURED_INSTR("froundnx.q");
