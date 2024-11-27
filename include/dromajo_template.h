@@ -348,7 +348,7 @@ static inline uintx_t glue(ctz_,XLEN)(uintx_t val) {
 // -------------------------------------------------------------------------
 static inline uintx_t glue(ctzw,XLEN)(uintx_t val) {
     uint32_t _val = val;
-    return __builtin_ctz(_val);
+    return (val == 0) ? 32 : __builtin_ctz(_val);
 }
 // -------------------------------------------------------------------------
 static inline intx_t glue(sext_h,XLEN)(uintx_t val) { 
