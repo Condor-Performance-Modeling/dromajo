@@ -23,6 +23,12 @@ if [ -z "$TOP" ]; then
     exit 1
 fi
 
+if [ -z "$RV_LINUX_TOOLS" ]; then
+    echo "Required environment variable RV_LINUX_TOOLS is not set."
+    echo "To set the required environment variables, cd into your work area and run: source how-to/env/setuprc.sh"
+    exit 1
+fi
+
 if [ ! -L $TOP/riscv64-unknown-elf ]; then
     echo "Required environment variable riscv64-unknown-elf is not set."
     exit 1
@@ -32,6 +38,8 @@ if [ ! -L $TOP/riscv64-unknown-linux-gnu ]; then
     echo "Required environment variable riscv64-unknown-linux-gnu is not set."
     exit 1
 fi
+
+export PATH="$RV_LINUX_TOOLS/bin:$PATH"
 
 TMP_DIR=$(mktemp -d -t build-XXXXXX)
 echo "Created temporary directory at $TMP_DIR"
