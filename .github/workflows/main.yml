@@ -41,7 +41,7 @@ jobs:
           echo "ERROR: Cmake failed"
           exit 1
         fi
-        make -j$(nproc --all) cam
+        make -j$(nproc --all)
         if [ $? -ne 0 ]; then
           echo "ERROR: Build failed"
           exit 1
