@@ -23,6 +23,7 @@ add_custom_command(
     COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/bin
     COMMAND $ENV{RISCV}/bin/riscv64-unknown-elf-gcc
     -march=rv64gc_zfhmin
+    -mabi=lp64d
     -nostartfiles -mcmodel=medany  
     -fno-tree-loop-distribute-patterns  
     -I${COMMON_DIR}
