@@ -221,10 +221,12 @@ typedef struct VirtMachine {
     uint64_t     stf_insn_length = 0;
 
     // Control
-    uint64_t     stf_insn_count = 0;
     bool         stf_insn_tracing_enabled = false; // STF insn num tracing mode is active
-    bool         stf_insn_started = false;           // Past the start tracing instruction number
+    bool         stf_insn_started = false;         // Past the start tracing instruction number
     bool         stf_insn_stop = false;            // Past the stop tracing instruction number
+
+    // Control
+    uint64_t     num_executed = 0;                 // Total number of instructions executed
 
     // ---------------------------------------------------------------------
     // STF Trace Generation 
@@ -247,7 +249,7 @@ typedef struct VirtMachine {
     bool stf_is_stop_opc;             // detected the STOP_TRACE opcode
     bool stf_has_exit_pending;        // 
     uint64_t stf_prog_asid;           // STF program asid
-    uint64_t stf_count;               // Number of traced instructions
+    uint64_t stf_num_traced;          // Total number of instructions traced
     // ---------------------------------------------------------------------
 
     /* For co-simulation only, they are -1 if nothing is pending. */

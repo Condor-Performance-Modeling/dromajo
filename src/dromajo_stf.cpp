@@ -23,6 +23,14 @@
 #include "dromajo_stf.h"
 stf::STFWriter stf_writer;
 
+#define STF_TRACE_DEBUG(s)	\
+    if((s)->machine->common.stf_insn_tracing_enabled){\
+        if((s)->machine->common.stf_num_traced % 1000000 == 0){\
+            fprintf(dromajo_stderr, "\tSATP: %lx  ASID: %lx>>>>> Traced Instr Count : %ld / exe:%ld\n",\
+                (s)->satp, ((s)->satp >> 4) & 0xFFFF, (s)->machine->common.stf_num_traced, (s)->machine->common.num_executed);\
+        }\
+    }
+
 void stf_record_state(RISCVMachine * m, int hartid, uint64_t last_pc)
 {
     RISCVCPUState * cpu = m->cpu_state[hartid];
@@ -61,39 +69,32 @@ bool stf_trace_trigger(RISCVCPUState *s,target_ulong PC,uint32_t insn)
                 &&  s->machine->common.stf_is_stop_opc)
                 ||  s->machine->common.stf_has_exit_pending;
 
-    if(s->machine->common.stf_has_exit_pending)
-    {
+    if(s->machine->common.stf_has_exit_pending) {
         fprintf(dromajo_stderr, "@@@ DROMAJO: STOP OPC \n");
     }
 
     if(s->machine->common.stf_is_start_opc) {
         stf_trace_open(s, PC);
-        return true;
     } else if(isStop) {
-        s->machine->common.stf_tracing_enabled = false;
-        fprintf(dromajo_stderr, ">>> DROMAJO: Tracing Stopped at 0x%lx\n", PC);
-        fprintf(dromajo_stderr, ">>> DROMAJO: Traced %ld insts\n\n",
-                             s->machine->common.stf_count);
-        //Else Let main decide to close the file if we are done
-        //stf_writer.close();
+        stf_trace_close(s, PC);
         if(s->machine->common.stf_exit_on_stop_opc){
            s->terminate_simulation = 1;
         }
-        return false;
     }
     
+    STF_TRACE_DEBUG(s);
     return s->machine->common.stf_tracing_enabled;
 }
 
 void stf_trace_open(RISCVCPUState *s, target_ulong PC)
 {
     int hartid = s->mhartid;
-    RISCVCPUState *cpu = s->machine->cpu_state[hartid];
+    //RISCVCPUState *cpu = s->machine->cpu_state[hartid];
 
     s->machine->common.stf_tracing_enabled = true;
     fprintf(dromajo_stderr, ">>> DROMAJO: Tracing Started at 0x%lx\n", PC);
 
-    s->machine->common.stf_prog_asid = (cpu->satp >> 4) & 0xFFFF;
+    s->machine->common.stf_prog_asid = (s->satp >> 4) & 0xFFFF;
 
     //Do not re-open stf_writer
     if((bool)stf_writer == false) {
@@ -132,11 +133,16 @@ void stf_trace_open(RISCVCPUState *s, target_ulong PC)
     stf_record_state(s->machine, hartid, PC);
 }
 
-void stf_trace_close()
+void stf_trace_close(RISCVCPUState *s, target_ulong PC)
 {
-    if(stf_writer) {
+    if (stf_writer) {
+        s->machine->common.stf_insn_tracing_enabled = false;
+
+        fprintf(dromajo_stderr, "\n\t>>> DROMAJO: Tracing Stopped at 0x%lx @INST_num %ld\n", 
+                                PC, s->machine->common.num_executed);
+        fprintf(dromajo_stderr, "\n\t>>> DROMAJO: Traced %ld insts in %ld executed instructions\n",
+                                s->machine->common.stf_num_traced, s->machine->common.num_executed);
         stf_writer.close();
-        fprintf(dromajo_stderr,"-I: closed STF file\n");
     }
 }
 
@@ -222,7 +228,7 @@ void stf_trace_element(RISCVMachine *m,int hartid,int priv,
     if(traceable_priv_level && (cpu->pending_exception == -1)
        && (m->common.stf_prog_asid == ((cpu->satp >> 4) & 0xFFFF)))
     {
-        ++m->common.stf_count;
+        ++m->common.stf_num_traced;
 
         const uint32_t inst_width = ((insn_raw & 0x3) == 0x3) ? 4 : 2;
         bool skip_record = false;
@@ -274,65 +280,32 @@ void stf_trace_element(RISCVMachine *m,int hartid,int priv,
     cpu->stf_mem_writes.clear();
 }
 
-#define STF_TRACE_DEBUG	\
-    if(s->machine->common.stf_insn_tracing_enabled){\
-        if(s->machine->common.stf_count % 1000000 == 0){\
-        /**/ fprintf(dromajo_stderr, "\tSATP: %lx  ASID: %lx>>>>> Traced Instr Count : %ld / exe:%ld\n", cpu->satp, (cpu->satp >> 4) & 0xFFFF, s->machine->common.stf_count, insn_executed); /* */\
-        }\
-    }
-
-bool stf_trace_trigger_insn(RISCVCPUState *s,target_ulong PC, uint64_t insn_executed) 
+bool stf_trace_trigger_insn(RISCVCPUState *s, target_ulong PC) 
 {
-    int hartid = s->mhartid;
-    RISCVCPUState *cpu = s->machine->cpu_state[hartid];
+    //int hartid = s->mhartid;
+    //RISCVCPUState *cpu = s->machine->cpu_state[hartid];
 
-    if(!s->machine->common.stf_insn_tracing_enabled && (s->machine->common.stf_count == 0)) {
-       s->machine->common.stf_insn_started = (insn_executed >= s->machine->common.stf_insn_start);
+    if(!s->machine->common.stf_insn_tracing_enabled && (s->machine->common.stf_num_traced == 0)) {
+       s->machine->common.stf_insn_started = (s->machine->common.num_executed >= s->machine->common.stf_insn_start);
     } else {
        s->machine->common.stf_insn_started = false;
     }
 
     if(s->machine->common.stf_insn_tracing_enabled){
-       s->machine->common.stf_insn_stop  = (s->machine->common.stf_count == s->machine->common.stf_insn_length);
+       s->machine->common.stf_insn_stop  = (s->machine->common.stf_num_traced == s->machine->common.stf_insn_length);
     } else {
        s->machine->common.stf_insn_stop  = false;
     }
 
     if(s->machine->common.stf_insn_started) {
-
-        s->machine->common.stf_insn_tracing_enabled = true;
-
-        s->machine->common.stf_prog_asid = (cpu->satp >> 4) & 0xFFFF;
-
-        if((bool)stf_writer == false) {
-            stf_writer.open(s->machine->common.stf_trace);
-            stf_writer.addTraceInfo(stf::TraceInfoRecord(
-                       stf::STF_GEN::STF_GEN_DROMAJO, 1, 1, 0,"Trace from Dromajo"));
-            stf_writer.setISA(stf::ISA::RISCV);
-            stf_writer.setHeaderIEM(stf::INST_IEM::STF_INST_IEM_RV64);
-            stf_writer.setTraceFeature(stf::TRACE_FEATURES::STF_CONTAIN_RV64);
-            stf_writer.setTraceFeature(stf::TRACE_FEATURES::STF_CONTAIN_PHYSICAL_ADDRESS);
-            stf_writer.setHeaderPC(PC);
-            stf_writer.finalizeHeader();
-        }
-        fprintf(dromajo_stderr, "\n\t>>> DROMAJO: Tracing Started at 0x%lx @INST_num %ld - asid=%lx\n", PC, insn_executed, s->machine->common.stf_prog_asid);
-        STF_TRACE_DEBUG
-        return true;
-
+        stf_trace_open(s, PC);
     } else if(s->machine->common.stf_insn_stop) {
-
-        s->machine->common.stf_insn_tracing_enabled = false;
-        fprintf(dromajo_stderr, "\n\t>>> DROMAJO: Tracing Stopped at 0x%lx @INST_num %ld\n", PC, insn_executed);
-        fprintf(dromajo_stderr, "\n\t>>> DROMAJO: Traced %ld insts in %ld executed instructions\n",
-                             s->machine->common.stf_count, insn_executed);
-        stf_writer.close();
-        STF_TRACE_DEBUG
+        stf_trace_close(s, PC);  
         if(s->machine->common.stf_exit_on_stop_opc){
            s->terminate_simulation = 1;
         }
-        return false;
     }
 
-    STF_TRACE_DEBUG
+    STF_TRACE_DEBUG(s);
     return s->machine->common.stf_insn_tracing_enabled;
 }

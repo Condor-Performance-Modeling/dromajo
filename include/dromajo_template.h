@@ -684,7 +684,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
     bool         vm;
     clear_most_recently_written_vregs(s);
 #endif
-    int insn_executed               = 0;
+    int num_executed               = 0;
     s->most_recently_written_reg    = -1;
     s->most_recently_written_fp_reg = -1;
     s->info                         = ctf_nop;
@@ -716,7 +716,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
         if (unlikely(!--n_cycles))
             goto the_end;
 
-        ++insn_executed;
+        ++num_executed;
 
         if (check_triggers(s, MCONTROL_EXECUTE, s->pc))
             goto exception;
@@ -3000,7 +3000,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                     if (s->machine->common.stf_has_exit_pending) {
                         goto the_end;
                     }
-                    return insn_executed;
+                    return num_executed;
                 }
             } 
         }
@@ -3028,7 +3028,7 @@ exception:
             /* All other causes cancelled the instruction and shouldn't be
              * counted in minstret */
             --insn_counter_addend;
-            --insn_executed;
+            --num_executed;
         }
 
         raise_exception2(s, s->pending_exception, s->pending_tval);
@@ -3052,7 +3052,7 @@ the_end:
         s->minstret += delta;
     }
 
-    return insn_executed;
+    return num_executed;
 }
 
 #undef uintx_t

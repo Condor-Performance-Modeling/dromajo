@@ -140,8 +140,8 @@ static int iterate_core(RISCVMachine *m, int hartid, int& n_cycles) {
 
     (void)riscv_read_insn(cpu, &insn_raw, last_pc);
 
-    //fprintf(dromajo_stderr, "\n----Instruction Count-----: %li \n",  m->common.stf_insn_count);
-    stf_trace_trigger_insn(cpu, last_pc, m->common.stf_insn_count);
+    //fprintf(dromajo_stderr, "\n----Instruction Count-----: %li \n",  m->common.num_executed);
+    stf_trace_trigger_insn(cpu, last_pc);
 
     // STF: We are actively tracing, throttle back n_cycles to 1 instruction per iteration
     if (m->common.stf_tracing_enabled || m->common.stf_insn_tracing_enabled) {
@@ -158,12 +158,13 @@ static int iterate_core(RISCVMachine *m, int hartid, int& n_cycles) {
         m->common.exe_trace -= n_cycles;
     }
 
-    m->common.stf_insn_count = m->common.stf_insn_count + n_cycles;
+    m->common.num_executed = m->common.num_executed + n_cycles;
 
-    if(m->common.maxinsns  < uint64_t(n_cycles))
+    if(m->common.maxinsns  < uint64_t(n_cycles)) {
         m->common.maxinsns = 0;
-    else
+    } else {
         m->common.maxinsns -= n_cycles;
+    }
 
     if (m->common.maxinsns <= 0)
         /* Succeed after N instructions without failure. */
@@ -171,7 +172,7 @@ static int iterate_core(RISCVMachine *m, int hartid, int& n_cycles) {
 
     int keep_going = virt_machine_run(m, hartid, n_cycles);
 
-    //STF:Trace the insn if the start OPC has been detected,
+    //STF: Trace the insn if the start OPC has been detected,
     //do not trace the start or stop insn's
     if((m->common.stf_tracing_enabled && !m->common.stf_is_start_opc && !m->common.stf_is_stop_opc) || 
        (m->common.stf_insn_tracing_enabled && m->common.stf_insn_num_tracing))
@@ -288,10 +289,10 @@ int main(int argc, char **argv) {
         }
     }
 
-    if(stf_writer) {
-        stf_writer.flush();
-        stf_trace_close();
-    }
+    //if(stf_writer) {
+    //    stf_writer.flush();
+    //    stf_trace_close();
+    //}
 
     fprintf(dromajo_stderr, "\nInstruction Count: %li \n", total_inst_count);
     fprintf(dromajo_stderr, "Simulation speed: %5.2f MIPS (single-core)\n",

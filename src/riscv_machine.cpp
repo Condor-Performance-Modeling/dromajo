@@ -683,7 +683,7 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
     s->common.stf_has_exit_pending     = false;
 
     s->common.stf_prog_asid = 0;
-    s->common.stf_count     = 0;
+    s->common.stf_num_traced     = 0;
 
     s->common.simpoint_en_bbv            = simpoint_en_bbv;
     s->common.simpoint_bb_file           = simpoint_bb_file;
