@@ -87,7 +87,7 @@ void usage(const char *prog, const char *msg) {
 "                        in all cores\n"
     
 "\n"
-"  STF options\n" 
+"  STF trace options\n" 
 "    --stf_trace <file> Dump an STF trace to the given file\n"
 "                  Use .zstf as the file extension for compressed trace\n"
 "                  output. Use .stf for uncompressed output\n"
@@ -109,6 +109,15 @@ void usage(const char *prog, const char *msg) {
 "    --stf_force_zero_sha Emit 0 for all SHA's in the STF header. This is a \n"
 "                  debug option. Also clears the dromajo version placed in\n"
 "                  the STF header.\n"
+"    --stf_insn_num_tracing  Enable stf tracing with instruction number\n"
+"    --stf_insn_start  starts stf trace after a number of instructions\n"
+"    --stf_insn_length terminates stf trace after a number of instructions from stf_insn_start\n"
+
+"\n"
+"  Simpoint options\n"
+"    --simpoint_en_bbv Enable bbv collection\n"
+"    --simpoint_bb_file <filename>  Name of file to dump simpoint.bb\n"
+"    --simpoint_size <n> Simpoint size for bbv collection \n"
 
 "\n"
 "  Execution trace options\n"
@@ -128,6 +137,7 @@ void usage(const char *prog, const char *msg) {
 "    --load resumes a previously saved snapshot\n"
 "    --save saves a snapshot upon exit\n"
 "    --maxinsns terminates execution after a number of instructions\n"
+"    --heartbeat <n> after executing every n instructions \n"
 "    --terminate-event name of the validate event to terminate \n"
 "                  execution\n"
 "    --ignore_sbi_shutdown continue simulation even upon seeing \n"
@@ -190,6 +200,7 @@ void Options::setup_options(int ac,char **av)
   po::options_description stdOpts("Standard options");
   po::options_description isaOpts("Instruction/extension options");
   po::options_description stfOpts("STF options");
+  po::options_description simpointOpts("Simpoint options");
   po::options_description traceOpts("Trace log options");
   po::options_description cfgOpts("Configuration options");
   po::options_description hiddenOpts("Hidden options");
@@ -200,6 +211,7 @@ void Options::setup_options(int ac,char **av)
   build_options(stdOpts,
                 isaOpts,
                 stfOpts,
+                simpointOpts,
                 traceOpts,
                 cfgOpts,
                 hiddenOpts,posOpts);
@@ -207,6 +219,7 @@ void Options::setup_options(int ac,char **av)
   visibleOpts.add(stdOpts)
              .add(isaOpts)
              .add(stfOpts)
+             .add(simpointOpts)
              .add(traceOpts)
              .add(cfgOpts);
 
@@ -338,6 +351,7 @@ void Options::validate(boost::any& v, const std::vector<std::string>& values,
 void Options::build_options(po::options_description &stdOpts,
                             po::options_description &isaOpts,
                             po::options_description &stfOpts,
+                            po::options_description &simpointOpts,
                             po::options_description &traceOpts,
                             po::options_description &cfgOpts,
                             po::options_description &hiddenOpts,
@@ -407,6 +421,7 @@ void Options::build_options(po::options_description &stdOpts,
   ;
 
   stfOpts.add_options()
+
     ("stf_trace",
        po::value<string>(&stf_trace), 
        "Dump an STF trace to the given file. Use .zstf as the file "
@@ -442,7 +457,34 @@ void Options::build_options(po::options_description &stdOpts,
        "Emit 0 for all SHA's in the STF header. This is a debug option. "
        "Also clears the dromajo version placed in the STF header used in "
        "regression results comparisons")
+  
+    ("stf_insn_num_tracing",
+       po::bool_switch(&stf_insn_num_tracing)->default_value(false),
+       "Enable stf tracing with instruction number")
+       
+    ("stf_insn_start",
+       po::value<uint64_t>(&stf_insn_start), 
+       "Starts stf trace after a number of instructions")
+       
+    ("stf_insn_length",
+       po::value<uint64_t>(&stf_insn_length), 
+       "Terminates stf trace after a number of instructions from stf_insn_start")
   ;
+
+  simpointOpts.add_options()
+  
+    ("simpoint_en_bbv",
+       po::bool_switch(&simpoint_en_bbv)->default_value(false),
+       "Enable bbv collection")
+
+    ("simpoint_bb_file",
+       po::value<string>(&simpoint_bb_file), 
+       "Name of file to dump simpoint.bb")  
+    
+    ("simpoint_size",
+       po::value<uint64_t>(&simpoint_size),
+       "Simpoint size for bbv collection")
+;
 
   traceOpts.add_options()
 
@@ -482,6 +524,10 @@ void Options::build_options(po::options_description &stdOpts,
     ("maxinsns",
        po::value<uint64_t>(&maxinsns),
        "Terminates execution after a number of instructions")
+
+    ("heartbeat",
+       po::value<uint64_t>(&heartbeat), 
+       "Print heartbeat after executing every n instructions")
 
     ("dump_memories", 
        po::bool_switch(&dump_memories)->default_value(false),

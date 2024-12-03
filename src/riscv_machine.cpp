@@ -68,6 +68,7 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
     const char *cmdline             = NULL;
     long        ncpus               = 0;
     uint64_t    maxinsns            = 0;
+    uint64_t    heartbeat           = UINT64_MAX;
 
     uint64_t    exe_trace           = UINT64_MAX;
     const char *exe_trace_file_name = nullptr;
@@ -80,6 +81,13 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
     bool        stf_disable_memory_records = false;
     const char *stf_priv_modes             = "USHM";
     bool        stf_force_zero_sha         = false;
+    bool        stf_insn_num_tracing       = false;
+    uint64_t    stf_insn_start             = UINT64_MAX;
+    uint64_t    stf_insn_length            = 0;
+
+    bool        simpoint_en_bbv            = false;
+    const char *simpoint_bb_file           = nullptr;
+    uint64_t    simpoint_size              = 100000000UL;
 
     long        memory_size_override      = 0;
     uint64_t    memory_addr_override      = 0;
@@ -115,7 +123,7 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
     for (;;) {
         int option_index = 0;
         // clang-format off
-        // available: k, v, E, F, G, J, K, N, O, Q, R, U, V, W, Y, w, x
+        // available: k GJKOQUVW
         static struct option long_options[] = {
             {"help",                              no_argument, 0,  'h' },
             {"help-march",                        no_argument, 0,  'g' },
@@ -128,8 +136,9 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
             {"save",                        required_argument, 0,  's' },
             {"simpoint",                    required_argument, 0,  'S' },
             {"maxinsns",                    required_argument, 0,  'm' }, // CFG
+            {"heartbeat",                   required_argument, 0,  'x' }, // CFG
 
-            {"march   ",                    required_argument, 0,  'i' },
+            {"march",                       required_argument, 0,  'i' },
             {"custom_extension",                  no_argument, 0,  'u' }, // CFG
 
             {"trace",                       required_argument, 0,  't' },
@@ -144,6 +153,13 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
             {"stf_disable_memory_records",        no_argument, 0,  'f' },
             {"stf_priv_modes",              required_argument, 0,  'a' },
             {"stf_force_zero_sha",                no_argument, 0,  'Z' },
+            {"stf_insn_num_tracing",              no_argument, 0,  'N' },
+            {"stf_insn_start",              required_argument, 0,  'R' },
+            {"stf_insn_length",             required_argument, 0,  'E' },
+
+            {"simpoint_en_bbv",                   no_argument, 0,  'v' },
+            {"simpoint_bb_file",            required_argument, 0,  'F' },
+            {"simpoint_size",               required_argument, 0,  'Y' }, // CFG
 
             {"ignore_sbi_shutdown",         required_argument, 0,  'P' }, // CFG
             {"dump_memories",                     no_argument, 0,  'D' }, // CFG
@@ -158,9 +174,9 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
             {"clear_ids",                         no_argument, 0,  'L' }, // CFG
             {"ctrlc",                             no_argument, 0,  'X' },
 #ifdef LIVECACHE
-            {"live_cache_size",          required_argument, 0,  'w' }, // CFG
+            {"live_cache_size",             required_argument, 0,  'w' }, // CFG
 #endif
-            {0,                         0,                 0,  0 }
+            {0,                                             0, 0,   0  }
         };
         // clang-format on
 
@@ -238,6 +254,10 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
                 }
                 break;
 
+            case 'x':
+                heartbeat = (uint64_t)atoll(optarg);
+                break;
+
             case 'T':
             case 't':
                 if (exe_trace != UINT64_MAX)
@@ -253,7 +273,14 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
             case 'f': stf_disable_memory_records = true; break;
             case 'y': stf_trace_register_state = true; break;
             case 'z': stf_trace = strdup(optarg); break;
-
+            case 'N': stf_insn_num_tracing = true; break;
+            case 'R': stf_insn_start = (uint64_t)atoll(optarg); break;
+            case 'E': stf_insn_length = (uint64_t)atoll(optarg); break;
+  
+            case 'v': simpoint_en_bbv = true; break;
+            case 'F': simpoint_bb_file = strdup(optarg); break;
+            case 'Y': simpoint_size = (uint64_t)atoll(optarg); break;
+  
             case 'P': ignore_sbi_shutdown = true; break;
             case 'D': dump_memories = true; break;
 
@@ -644,6 +671,9 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
     s->common.stf_disable_memory_records = stf_disable_memory_records;
     s->common.stf_highest_priv_mode      = get_stf_highest_priv_mode(stf_priv_modes);
     s->common.stf_force_zero_sha         = stf_force_zero_sha;
+    s->common.stf_insn_num_tracing       = stf_insn_num_tracing;
+    s->common.stf_insn_start             = stf_insn_start;
+    s->common.stf_insn_length            = stf_insn_length;
 
     s->common.stf_trace_open           = false;
     s->common.stf_in_traceable_region  = false;
@@ -655,6 +685,9 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
     s->common.stf_prog_asid = 0;
     s->common.stf_count     = 0;
 
+    s->common.simpoint_en_bbv            = simpoint_en_bbv;
+    s->common.simpoint_bb_file           = simpoint_bb_file;
+    s->common.simpoint_size              = simpoint_size;
 
     // Allow the command option argument to overwrite the value
     // specified in the configuration file
@@ -666,6 +699,8 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
     // then run indefinitely
     if (s->common.maxinsns == 0)
         s->common.maxinsns = UINT64_MAX;
+
+    s->common.heartbeat                  = heartbeat;
 
     for (int i = 0; i < s->ncpus; ++i) {
         s->cpu_state[i]->ignore_sbi_shutdown = ignore_sbi_shutdown;

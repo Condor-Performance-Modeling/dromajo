@@ -77,10 +77,6 @@ struct FBDevice {
 
 #ifdef SIMPOINT_BB
 extern int simpoint_roi;
-
-//#define SIMPOINT_SIZE 1000000UL      // For Benchmarking Fine Grain
-//#define SIMPOINT_SIZE 10000UL        // For verification
-#define SIMPOINT_SIZE 100000000UL  // Traditional 100M simpoint
 #endif
 
 typedef enum {
@@ -201,29 +197,49 @@ typedef struct VirtMachine {
     std::vector<Simpoint> simpoints;
 #endif
 
-    char*       snapshot_load_name;
-    char*       snapshot_save_name;
-    char*       terminate_event;
-    uint64_t    maxinsns;
-    uint64_t    exe_trace;   //exe_ to distinguish from stf_trace
+    // Params
+    char*        snapshot_load_name;
+    char*        snapshot_save_name;
+    char*        terminate_event;
+    uint64_t     maxinsns = 0;
+    uint64_t     heartbeat = UINT64_MAX;
+    uint64_t     exe_trace = false;                //exe_ to distinguish from stf_trace
 //    FILE*       exe_trace_fp = (FILE*)0; //handle
 
-    bool      interactive = false;          //Enable interactive operation
-    uint64_t  interactive_run_count    = 0; //run-until support - might be CPU specific?
-    uint128_t interactive_run_until_pc = 0; //run-to-pc support - might be CPU specific?
+    bool         interactive = false;              //Enable interactive operation
+    uint64_t     interactive_run_count    = 0;     //run-until support - might be CPU specific?
+    uint128_t    interactive_run_until_pc = 0;     //run-to-pc support - might be CPU specific?
+
+    // Params
+    bool         simpoint_en_bbv = false;          // Enable simpoint bb generation
+    const char * simpoint_bb_file = nullptr;       // simpoint.bbv file name
+    uint64_t     simpoint_size = 0;
+
+    // Params
+    bool         stf_insn_num_tracing = false;     // STF insn num tracing mode is enabled
+    uint64_t     stf_insn_start = UINT64_MAX;
+    uint64_t     stf_insn_length = 0;
+
+    // Control
+    uint64_t     stf_insn_count = 0;
+    bool         stf_insn_tracing_enabled = false; // STF insn num tracing mode is active
+    bool         stf_insn_started = false;           // Past the start tracing instruction number
+    bool         stf_insn_stop = false;            // Past the stop tracing instruction number
 
     // ---------------------------------------------------------------------
     // STF Trace Generation 
     //FIXME: delete the unused variables below once other 
     //       deprecated functions are removed
+    // Params
     const char * stf_trace = nullptr; // STF trace file name
-    bool stf_exit_on_stop_opc;        // terminate the sim after detecting STOP_TRACE opcode
+    bool stf_exit_on_stop_opc;        // terminate the simulation after detecting STOP_TRACE opcode
     bool stf_memrecord_size_in_bits;  // write memory access size in bits instead of bytes
     bool stf_trace_register_state;    // Enable register records, IN PROGRESS
     bool stf_disable_memory_records;  // Do not place memory accesses into the STF
     int  stf_highest_priv_mode;       // Highest privilege mode to trace
     bool stf_force_zero_sha;          // Emit 0 for the SHA in debug tests
 
+    // Control
     bool stf_trace_open;              // STF trace is open (tracing has begun)
     bool stf_in_traceable_region;
     bool stf_tracing_enabled;         // Tracing is active

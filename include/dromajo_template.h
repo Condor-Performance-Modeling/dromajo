@@ -2992,14 +2992,17 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
         /* update PC for next instruction */
     jump_insn:;
 
-        if(s->machine->common.stf_trace) {
-            if(stf_trace_trigger(s,GET_PC(),insn)) {
-              s->pc = GET_PC();
-              if(s->machine->common.stf_has_exit_pending) {
-                  goto the_end;
-              }
-              return insn_executed;
-            }
+        // STF: Try to trace the instruction
+        if (s->machine->common.stf_trace) {
+            if (!s->machine->common.stf_insn_num_tracing){
+                if (stf_trace_trigger(s, GET_PC(), insn)) {
+                    s->pc = GET_PC();
+                    if (s->machine->common.stf_has_exit_pending) {
+                        goto the_end;
+                    }
+                    return insn_executed;
+                }
+            } 
         }
 
     } /* end of main loop */

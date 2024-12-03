@@ -50,7 +50,6 @@ IsaConfigFlags *IsaConfigFlags::instance = 0;
 std::shared_ptr<IsaConfigFlags> isa_flags(IsaConfigFlags::getInstance());
 
 #ifdef SIMPOINT_BB
-
 FILE *simpoint_bb_file = nullptr;
 int   simpoint_roi     = 0;  // start without ROI enabled
 
@@ -87,8 +86,8 @@ int simpoint_step(RISCVMachine *m, int hartid) {
     static std::unordered_map<uint64_t, int> pc2id;
     static int                               next_id = 1;
     if (m->common.maxinsns <= next_bbv_dump) {
-        if (m->common.maxinsns > SIMPOINT_SIZE)
-            next_bbv_dump = m->common.maxinsns - SIMPOINT_SIZE;
+        if (m->common.maxinsns > m->common.simpoint_size)
+            next_bbv_dump = m->common.maxinsns - m->common.simpoint_size;
         else
             next_bbv_dump = 0;
 
@@ -125,12 +124,7 @@ int simpoint_step(RISCVMachine *m, int hartid) {
 }
 #endif
 
-static int iterate_core(RISCVMachine *m, int hartid, int n_cycles) {
-    m->common.maxinsns -= n_cycles;
-
-    if (m->common.maxinsns <= 0)
-        /* Succeed after N instructions without failure. */
-        return 0;
+static int iterate_core(RISCVMachine *m, int hartid, int& n_cycles) {
 
     RISCVCPUState *cpu = m->cpu_state[hartid];
 
@@ -146,9 +140,12 @@ static int iterate_core(RISCVMachine *m, int hartid, int n_cycles) {
 
     (void)riscv_read_insn(cpu, &insn_raw, last_pc);
 
-    //STF:The start OPC has been detected, throttle back n_cycles
-    if(m->common.stf_tracing_enabled) {
-      n_cycles = 1;
+    //fprintf(dromajo_stderr, "\n----Instruction Count-----: %li \n",  m->common.stf_insn_count);
+    stf_trace_trigger_insn(cpu, last_pc, m->common.stf_insn_count);
+
+    // STF: We are actively tracing, throttle back n_cycles to 1 instruction per iteration
+    if (m->common.stf_tracing_enabled || m->common.stf_insn_tracing_enabled) {
+        n_cycles = 1;
     }
 
     if (m->common.exe_trace < (unsigned) n_cycles) {
@@ -161,15 +158,25 @@ static int iterate_core(RISCVMachine *m, int hartid, int n_cycles) {
         m->common.exe_trace -= n_cycles;
     }
 
+    m->common.stf_insn_count = m->common.stf_insn_count + n_cycles;
+
+    if(m->common.maxinsns  < uint64_t(n_cycles))
+        m->common.maxinsns = 0;
+    else
+        m->common.maxinsns -= n_cycles;
+
+    if (m->common.maxinsns <= 0)
+        /* Succeed after N instructions without failure. */
+        return 0;
+
     int keep_going = virt_machine_run(m, hartid, n_cycles);
 
     //STF:Trace the insn if the start OPC has been detected,
-    //do not trace the start or stop insn's unless enabled
-    if(m->common.stf_tracing_enabled)
+    //do not trace the start or stop insn's
+    if((m->common.stf_tracing_enabled && !m->common.stf_is_start_opc && !m->common.stf_is_stop_opc) || 
+       (m->common.stf_insn_tracing_enabled && m->common.stf_insn_num_tracing))
     {
-        if(!m->common.stf_is_start_opc && !m->common.stf_is_stop_opc) {
-            stf_trace_element(m,hartid,priv,last_pc,insn_raw);
-        }
+        stf_trace_element(m,hartid,priv,last_pc,insn_raw);
     }
 
     if (!en_trace && !in_interactive) {
@@ -206,8 +213,13 @@ int main(int argc, char **argv) {
     RISCVMachine *m = virt_machine_main(argc, argv);
 
     #ifdef SIMPOINT_BB
-    if (m->common.simpoints.empty()) {
-        simpoint_bb_file = fopen("dromajo_simpoint.bb", "w");
+    if (m->common.simpoints.empty() & m->common.simpoint_en_bbv) {
+        if (m->common.simpoint_bb_file != nullptr){
+             simpoint_simpoint_bb_file = fopen(m->common.simpoint_bb_file, "w");
+        }
+        else {
+             simpoint_bb_file = fopen("dromajo_simpoint.bb", "w");
+        }
         if (simpoint_bb_file == nullptr) {
             fprintf(dromajo_stderr, "\nerror: could not "
                     "open dromajo_simpoint.bb for dumping trace\n");
@@ -218,24 +230,52 @@ int main(int argc, char **argv) {
 
     if (!m) return 1;
 
+    RISCVCPUState *cpu = m->cpu_state[0];
+
     int n_cycles = 10000;
     execution_start_ts = get_current_time_in_seconds();
     execution_progress_meassure = &m->cpu_state[0]->minstret;
     signal(SIGINT, sigintr_handler);
 
+    uint64_t prev_prog_asid = 0;
+    uint64_t inst_heart_beat = 0;
+    uint64_t total_inst_count = 0;
     int keep_going;
     do {
+        prev_prog_asid = (cpu->satp);
+
         keep_going = 0;
         for (int i = 0; i < m->ncpus; ++i) {
             keep_going |= iterate_core(m, i, n_cycles);
         }
 
+        inst_heart_beat += n_cycles;
+        total_inst_count += n_cycles;
+        if(inst_heart_beat > m->common.heartbeat){
+            fprintf(dromajo_stderr, "HeartBeat : %li / %li \n", inst_heart_beat, total_inst_count);
+            inst_heart_beat = 0;
+        }
+
+        if((cpu->satp) != prev_prog_asid){
+            fprintf(dromajo_stderr, "\n\t -- ASID ::  %lx --> %lx @%li \n", prev_prog_asid, (cpu->satp), total_inst_count);
+        }
+
         #ifdef SIMPOINT_BB
-        if (simpoint_roi) {
-            if (!simpoint_step(m, 0)) break;
+        if (simpoint_roi && m->common.simpoint_en_bbv) {
+            if (!simpoint_step(m, 0))
+                break;
         }
         #endif
+
     } while (keep_going && !m->common.stf_has_exit_pending);
+
+    FILE *asid_file = fopen("benchmark_asid", "w");
+    fprintf(asid_file, "%lx", cpu->satp);
+    fflush(asid_file);
+
+    FILE *total_insn_count_file = fopen("total_num_instructions", "w");
+    fprintf(total_insn_count_file, "%lx", total_inst_count);
+    fflush(total_insn_count_file);
 
     double t = get_current_time_in_seconds();
 
@@ -253,6 +293,7 @@ int main(int argc, char **argv) {
         stf_trace_close();
     }
 
+    fprintf(dromajo_stderr, "\nInstruction Count: %li \n", total_inst_count);
     fprintf(dromajo_stderr, "Simulation speed: %5.2f MIPS (single-core)\n",
             1e-6 * *execution_progress_meassure / (t - execution_start_ts));
 

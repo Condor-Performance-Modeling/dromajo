@@ -76,6 +76,7 @@ struct Options
                      po::options_description&,
                      po::options_description&,
                      po::options_description&,
+                     po::options_description&,
                      po::positional_options_description&);
 
   bool check_options(po::variables_map&,
@@ -116,6 +117,7 @@ struct Options
 
   uint32_t    ncpus{0};
   uint64_t    maxinsns{0};
+  uint64_t    heartbeat{0};
 
   uint64_t    exe_trace{UINT64_MAX};
   std::string exe_trace_log{""};
@@ -129,6 +131,13 @@ struct Options
   bool        stf_disable_memory_records{false};
   std::string stf_priv_modes{"USHM"};
   bool        stf_force_zero_sha{false};
+  bool        stf_insn_num_tracing{false};
+  uint64_t    stf_insn_start{0};
+  uint64_t    stf_insn_length{0};
+
+  bool        simpoint_en_bbv{false};
+  std::string simpoint_bb_file;
+  uint64_t    simpoint_size{0};
 
   uint64_t    memory_size_override{0};
   uint64_t    memory_addr_override{0};
