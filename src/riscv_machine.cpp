@@ -587,7 +587,7 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
         int distance;
         int num;
         while (fscanf(file, "%d %d", &distance, &num) == 2) {
-            uint64_t start = distance * SIMPOINT_SIZE;
+            uint64_t start = distance * s->common.simpoint_size;
 
             if (start == 0) {  // skip boot ROM
                 start = ROM_SIZE;

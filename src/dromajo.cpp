@@ -215,7 +215,7 @@ int main(int argc, char **argv) {
     #ifdef SIMPOINT_BB
     if (m->common.simpoints.empty() & m->common.simpoint_en_bbv) {
         if (m->common.simpoint_bb_file != nullptr){
-             simpoint_simpoint_bb_file = fopen(m->common.simpoint_bb_file, "w");
+             simpoint_bb_file = fopen(m->common.simpoint_bb_file, "w");
         }
         else {
              simpoint_bb_file = fopen("dromajo_simpoint.bb", "w");
