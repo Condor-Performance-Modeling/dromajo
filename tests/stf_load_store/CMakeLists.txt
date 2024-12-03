@@ -2,9 +2,11 @@ cmake_minimum_required(VERSION 3.10)
 
 project(stf_load_store)
 
+set(COMMON_TEST_FILES ${CMAKE_CURRENT_SOURCE_DIR}/../common_test_files)
+
 file(GLOB SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
 file(GLOB COMMON_DIR ${CMAKE_CURRENT_SOURCE_DIR}/common)
-file(GLOB LINKER_DIR ${CMAKE_CURRENT_SOURCE_DIR}/linker)
+file(GLOB LINKER_DIR ${COMMON_TEST_FILES}/linker)
 
 # Custom target to run the bash script to check RISCV for baremetal
 add_custom_target(check_stf_load_store_bare_dependencies

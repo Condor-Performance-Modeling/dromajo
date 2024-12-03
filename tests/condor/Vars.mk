@@ -9,6 +9,7 @@ OBJD_OPTS=--disassemble-all --disassemble-zeroes --section=.text --section=.text
 # --------------------------------------------------------------------
 
 DROM=$(CPM_DROMAJO)/bin/cpm_dromajo
+DROM_COMMON_TEST_FILES=$(CPM_DROMAJO)/tests/common_test_files
 DROM_OPTS=--ctrlc --trace 0 --march=rv64g_zba_zbb_zbc_zbs_xandes_zfa
 
 # --------------------------------------------------------------------
@@ -44,4 +45,4 @@ RISCV_SIM_OPTS=$(DROM_OPTS)
 
 # --------------------------------------------------------------------
 DECODER_CC_OPTS= -O3 -flto $(BASE_CC_OPTS) $(RVTST_INC) 
-DECODER_LNK=-T$(BENCHMARKS)/linker/common_proposed.ld
+DECODER_LNK=-T$(DROM_COMMON_TEST_FILES)/linker/common_proposed.ld
