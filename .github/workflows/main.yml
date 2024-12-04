@@ -35,6 +35,7 @@ jobs:
 
     - name: Build Project
       run: |
+        export RISCV=/data/tools/riscv64-unknown-elf
         mkdir -p $([[ "${{ matrix.build_type }}" == "Release" ]] && echo "release" || echo "build") && cd $([[ "${{ matrix.build_type }}" == "Release" ]] && echo "release" || echo "build")
         cmake .. $([[ "${{ matrix.build_type }}" == "Release" ]] && echo "-DCMAKE_BUILD_TYPE=Release" || echo "")
         if [ $? -ne 0 ]; then
@@ -50,6 +51,7 @@ jobs:
 
     - name: Regression Test
       run: |
+        export RISCV=/data/tools/riscv64-unknown-elf
         cd $([[ "${{ matrix.build_type }}" == "Release" ]] && echo "release" || echo "build")
         make -j$(nproc --all) regress
         if [ $? -ne 0 ]; then
