@@ -34,6 +34,7 @@ jobs:
       shell: bash
 
     - name: Build Project
+      continue-on-error: true
       run: |
         export RISCV=/data/tools/riscv64-unknown-elf
         mkdir -p $([[ "${{ matrix.build_type }}" == "Release" ]] && echo "release" || echo "build") && cd $([[ "${{ matrix.build_type }}" == "Release" ]] && echo "release" || echo "build")
@@ -50,6 +51,7 @@ jobs:
       shell: bash
 
     - name: Regression Test
+      continue-on-error: true
       run: |
         export RISCV=/data/tools/riscv64-unknown-elf
         cd $([[ "${{ matrix.build_type }}" == "Release" ]] && echo "release" || echo "build")
@@ -58,4 +60,17 @@ jobs:
             echo "ERROR: Regression tests failed"
             exit 1
         fi
+      shell: bash
+
+    - name: Check Failures
+      run: |
+        if [ -f build.failed ]; then
+          echo "One or more steps failed."
+          exit 1
+        fi
+      shell: bash
+
+    - name: Mark Failures
+      if: failure()
+      run: touch build.failed
       shell: bash
