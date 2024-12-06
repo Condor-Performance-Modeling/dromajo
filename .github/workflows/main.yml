@@ -5,34 +5,57 @@ on:
 
 jobs:
   build_and_test:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
+    strategy:
+      matrix:
+        mode: [Sparta, Base]
+        build_type: [Release, None]
     steps:
     - uses: actions/checkout@v3
-      name: Checkout code 
+      name: Checkout code
       with:
-        submodules: true  # Ensure stf_lib is checked out
+        submodules: true
+        fetch-depth: 0
         
-    - name: Install dependencies
-      run: sudo apt-get update && sudo apt-get install -y libboost-all-dev
+    - name: Initialize and update submodules
+      run: git submodule update --init --recursive
       
+    - name: Setup Environment
+      run: |
+        source /home/github-runner/miniconda3/etc/profile.d/conda.sh
+        if [ "${{ matrix.mode }}" == "Sparta" ]; then
+          conda activate sparta
+        else
+          conda deactivate
+          conda deactivate
+          conda activate base
+        fi
+        source /opt/condor/how-to/env/setuprc.sh
+      shell: bash
+
     - name: Build Project
       run: |
-        mkdir -p release && cd release
-        cmake .. -DCMAKE_BUILD_TYPE=Release
+        export RISCV=/data/tools/riscv64-unknown-elf
+        mkdir -p $([[ "${{ matrix.build_type }}" == "Release" ]] && echo "release" || echo "build") && cd $([[ "${{ matrix.build_type }}" == "Release" ]] && echo "release" || echo "build")
+        cmake .. $([[ "${{ matrix.build_type }}" == "Release" ]] && echo "-DCMAKE_BUILD_TYPE=Release" || echo "")
         if [ $? -ne 0 ]; then
-          echo "ERROR: Cmake framework failed"
+          echo "ERROR: Cmake failed"
           exit 1
         fi
-        make -j$(nproc --all) 
+        make -j$(nproc --all)
         if [ $? -ne 0 ]; then
           echo "ERROR: Build failed"
           exit 1
         fi
+      shell: bash
+
     - name: Regression Test
       run: |
-        cd release
+        export RISCV=/data/tools/riscv64-unknown-elf
+        cd $([[ "${{ matrix.build_type }}" == "Release" ]] && echo "release" || echo "build")
         make -j$(nproc --all) regress
         if [ $? -ne 0 ]; then
             echo "ERROR: Regression tests failed"
             exit 1
         fi
+      shell: bash
