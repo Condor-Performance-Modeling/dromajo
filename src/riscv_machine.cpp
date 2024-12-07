@@ -57,7 +57,7 @@ using namespace std;
 RISCVMachine *virt_machine_main(int argc, char **argv) {
 
 //FIXME: full integration of boost options is in progress.
-//commenting this turns of boost options but keeps the 
+//commenting this turns of boost options but keeps the
 //other code
 //    opts->setup_options(argc,argv);
 
@@ -276,11 +276,11 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
             case 'N': stf_insn_num_tracing = true; break;
             case 'R': stf_insn_start = (uint64_t)atoll(optarg); break;
             case 'E': stf_insn_length = (uint64_t)atoll(optarg); break;
-  
+
             case 'v': simpoint_en_bbv = true; break;
             case 'F': simpoint_bb_file = strdup(optarg); break;
             case 'Y': simpoint_size = (uint64_t)atoll(optarg); break;
-  
+
             case 'P': ignore_sbi_shutdown = true; break;
             case 'D': dump_memories = true; break;
 
@@ -448,7 +448,7 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
 #ifdef CONFIG_FS_NET
         if (is_url(fname)) {
             net_completed = FALSE;
-            drive = block_device_init_http(fname, 128 * 1024, 
+            drive = block_device_init_http(fname, 128 * 1024,
                                            net_start_cb, NULL);
             /* wait until the drive is initialized */
             fs_net_event_loop(net_poll_cb, NULL);
@@ -549,7 +549,7 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
 
 #ifdef LIVECACHE
     // LiveCache (should be ~2x larger than real LLC)
-    s->llc = new LiveCache("LiveCache", live_cache_size, 
+    s->llc = new LiveCache("LiveCache", live_cache_size,
                            p->ram_base_addr, p->ram_size);
 #endif
 
@@ -635,11 +635,11 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
       dromajo_trace = fopen(exe_trace_file_name,"w");
 
       if(dromajo_trace == NULL) {
-            fprintf(stderr, "Could not open execution log file '%s'\n", 
+            fprintf(stderr, "Could not open execution log file '%s'\n",
                     exe_trace_file_name);
       }
 
-    } 
+    }
 
     s->common.interactive = interactive;
 
@@ -658,32 +658,32 @@ RISCVMachine *virt_machine_main(int argc, char **argv) {
             return PRV_U;
         }
         else {
-            fprintf(stderr, "invalid stf privilege modes '%s'\n", 
+            fprintf(stderr, "invalid stf privilege modes '%s'\n",
                     stf_priv_modes);
             exit(1);
         }
     };
 
     s->common.stf_trace                  = stf_trace;
+    s->common.stf_insn_num_tracing       = stf_insn_num_tracing;
     s->common.stf_exit_on_stop_opc       = stf_exit_on_stop_opc;
+    s->common.stf_insn_start             = stf_insn_start;
+    s->common.stf_insn_length            = stf_insn_length;
     s->common.stf_memrecord_size_in_bits = stf_memrecord_size_in_bits;
     s->common.stf_trace_register_state   = stf_trace_register_state;
     s->common.stf_disable_memory_records = stf_disable_memory_records;
     s->common.stf_highest_priv_mode      = get_stf_highest_priv_mode(stf_priv_modes);
     s->common.stf_force_zero_sha         = stf_force_zero_sha;
-    s->common.stf_insn_num_tracing       = stf_insn_num_tracing;
-    s->common.stf_insn_start             = stf_insn_start;
-    s->common.stf_insn_length            = stf_insn_length;
 
-    s->common.stf_trace_open           = false;
-    s->common.stf_in_traceable_region  = false;
-    s->common.stf_tracing_enabled      = false;
-    s->common.stf_is_start_opc         = false;
-    s->common.stf_is_stop_opc          = false;
-    s->common.stf_has_exit_pending     = false;
-
-    s->common.stf_prog_asid = 0;
-    s->common.stf_num_traced     = 0;
+    s->common.stf_trace_open             = false;
+    s->common.stf_in_traceable_region    = false;
+    s->common.stf_macro_tracing_active   = false;
+    s->common.stf_insn_tracing_active    = false;
+    s->common.stf_is_start_opc           = false;
+    s->common.stf_is_stop_opc            = false;
+    s->common.stf_has_exit_pending       = false;
+    s->common.stf_prog_asid              = 0;
+    s->common.stf_num_traced             = 0;
 
     s->common.simpoint_en_bbv            = simpoint_en_bbv;
     s->common.simpoint_bb_file           = simpoint_bb_file;

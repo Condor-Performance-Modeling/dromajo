@@ -124,7 +124,7 @@ int simpoint_step(RISCVMachine *m, int hartid) {
 }
 #endif
 
-static int iterate_core(RISCVMachine *m, int hartid, int& n_cycles) {
+static int iterate_core(RISCVMachine *m, int hartid, int n_cycles) {
 
     RISCVCPUState *cpu = m->cpu_state[hartid];
 
@@ -140,11 +140,11 @@ static int iterate_core(RISCVMachine *m, int hartid, int& n_cycles) {
 
     (void)riscv_read_insn(cpu, &insn_raw, last_pc);
 
-    //fprintf(dromajo_stderr, "\n----Instruction Count-----: %li \n",  m->common.num_executed);
+    // STF: Trace the instruction in instruction number mode
     stf_trace_trigger_insn(cpu, last_pc);
 
     // STF: We are actively tracing, throttle back n_cycles to 1 instruction per iteration
-    if (m->common.stf_tracing_enabled || m->common.stf_insn_tracing_enabled) {
+    if (m->common.stf_macro_tracing_active || m->common.stf_insn_tracing_active) {
         n_cycles = 1;
     }
 
@@ -172,10 +172,9 @@ static int iterate_core(RISCVMachine *m, int hartid, int& n_cycles) {
 
     int keep_going = virt_machine_run(m, hartid, n_cycles);
 
-    //STF: Trace the insn if the start OPC has been detected,
-    //do not trace the start or stop insn's
-    if((m->common.stf_tracing_enabled && !m->common.stf_is_start_opc && !m->common.stf_is_stop_opc) || 
-       (m->common.stf_insn_tracing_enabled && m->common.stf_insn_num_tracing))
+    // STF: Trace the insn if tracing is active. Do not trace start or stop opcodes.
+    if (m->common.stf_macro_tracing_active && !m->common.stf_is_start_opc && !m->common.stf_is_stop_opc ||
+       m->common.stf_insn_tracing_active) {}
     {
         stf_trace_element(m,hartid,priv,last_pc,insn_raw);
     }
@@ -214,7 +213,7 @@ int main(int argc, char **argv) {
     RISCVMachine *m = virt_machine_main(argc, argv);
 
     #ifdef SIMPOINT_BB
-    if (m->common.simpoints.empty() & m->common.simpoint_en_bbv) {
+    if (m->common.simpoints.empty() && m->common.simpoint_en_bbv) {
         if (m->common.simpoint_bb_file != nullptr){
              simpoint_bb_file = fopen(m->common.simpoint_bb_file, "w");
         }

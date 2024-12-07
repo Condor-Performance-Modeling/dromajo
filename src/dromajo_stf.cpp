@@ -1,6 +1,6 @@
 /*
  * STF gen trigger detection
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License")
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -24,7 +24,7 @@
 stf::STFWriter stf_writer;
 
 #define STF_TRACE_DEBUG(s)	\
-    if((s)->machine->common.stf_insn_tracing_enabled){\
+    if ((s)->machine->common.stf_insn_tracing_active || (s)->machine->common.stf_macro_tracing_active) {\
         if((s)->machine->common.stf_num_traced % 1000000 == 0){\
             fprintf(dromajo_stderr, "\tSATP: %lx  ASID: %lx>>>>> Traced Instr Count : %ld / exe:%ld\n",\
                 (s)->satp, ((s)->satp >> 4) & 0xFFFF, (s)->machine->common.stf_num_traced, (s)->machine->common.num_executed);\
@@ -54,36 +54,39 @@ void stf_record_state(RISCVMachine * m, int hartid, uint64_t last_pc)
               riscv_get_fpreg(cpu, rn));
         }
         #endif
-    } 
+    }
     // TODO: CSRs
 }
 
-bool stf_trace_trigger(RISCVCPUState *s,target_ulong PC,uint32_t insn) 
+bool stf_trace_trigger(RISCVCPUState *s,target_ulong PC,uint32_t insn)
 {
-    s->machine->common.stf_is_start_opc     = insn == START_TRACE_OPC;
-    s->machine->common.stf_is_stop_opc      = insn == STOP_TRACE_OPC;
-    s->machine->common.stf_has_exit_pending = insn == STOP_TRACE_OPC
-                               && s->machine->common.stf_exit_on_stop_opc;
-
-    bool isStop =  (s->machine->common.stf_tracing_enabled
-                &&  s->machine->common.stf_is_stop_opc)
-                ||  s->machine->common.stf_has_exit_pending;
-
-    if(s->machine->common.stf_has_exit_pending) {
-        fprintf(dromajo_stderr, "@@@ DROMAJO: STOP OPC \n");
+   // Early out if stf macro tracing not enabled
+    if (!s->machine->stf_trace || s->machine->common.stf_insn_num_tracing) {
+        return false;
     }
 
-    if(s->machine->common.stf_is_start_opc) {
+    s->machine->common.stf_is_start_opc = insn == START_TRACE_OPC;
+    s->machine->common.stf_is_stop_opc  = insn == STOP_TRACE_OPC;
+
+    bool start = !s->machine->common.stf_macro_tracing_active && s->machine->common.stf_is_start_opc;
+    bool stop = s->machine->common.stf_macro_tracing_active && s->machine->common.stf_is_stop_opc;
+
+    if (start) {
+        fprintf(dromajo_stderr, "@@@ DROMAJO: START OPC \n");
+        s->machine->common.stf_macro_tracing_active = true;
         stf_trace_open(s, PC);
-    } else if(isStop) {
+    } else if (stop) {
+        fprintf(dromajo_stderr, "@@@ DROMAJO: STOP OPC \n");
+        s->machine->common.stf_macro_tracing_active = false;
         stf_trace_close(s, PC);
-        if(s->machine->common.stf_exit_on_stop_opc){
+        if (s->machine->common.stf_exit_on_stop_opc) {
            s->terminate_simulation = 1;
+           s->machine->common.stf_has_exit_pending = true;
         }
     }
-    
+
     STF_TRACE_DEBUG(s);
-    return s->machine->common.stf_tracing_enabled;
+    return s->machine->common.stf_macro_tracing_active;
 }
 
 void stf_trace_open(RISCVCPUState *s, target_ulong PC)
@@ -91,9 +94,9 @@ void stf_trace_open(RISCVCPUState *s, target_ulong PC)
     int hartid = s->mhartid;
     //RISCVCPUState *cpu = s->machine->cpu_state[hartid];
 
-    s->machine->common.stf_tracing_enabled = true;
     fprintf(dromajo_stderr, ">>> DROMAJO: Tracing Started at 0x%lx\n", PC);
 
+    s->machine->common.stf_trace_open = true;
     s->machine->common.stf_prog_asid = (s->satp >> 4) & 0xFFFF;
 
     //Do not re-open stf_writer
@@ -136,9 +139,11 @@ void stf_trace_open(RISCVCPUState *s, target_ulong PC)
 void stf_trace_close(RISCVCPUState *s, target_ulong PC)
 {
     if (stf_writer) {
-        s->machine->common.stf_insn_tracing_enabled = false;
+        s->machine->common.stf_trace_open = false;
+        s->machine->common.stf_macro_tracing_active = false;
+        s->machine->common.stf_insn_tracing_active = false;
 
-        fprintf(dromajo_stderr, "\n\t>>> DROMAJO: Tracing Stopped at 0x%lx @INST_num %ld\n", 
+        fprintf(dromajo_stderr, "\n\t>>> DROMAJO: Tracing Stopped at 0x%lx @INST_num %ld\n",
                                 PC, s->machine->common.num_executed);
         fprintf(dromajo_stderr, "\n\t>>> DROMAJO: Traced %ld insts in %ld executed instructions\n",
                                 s->machine->common.stf_num_traced, s->machine->common.num_executed);
@@ -261,7 +266,7 @@ void stf_trace_element(RISCVMachine *m,int hartid,int priv,
               stf_emit_register_records(cpu);
             }
 
-            // Instruction records 
+            // Instruction records
             if(inst_width == 4) {
                stf_writer << stf::InstOpcode32Record(insn_raw);
             }
@@ -280,32 +285,33 @@ void stf_trace_element(RISCVMachine *m,int hartid,int priv,
     cpu->stf_mem_writes.clear();
 }
 
-bool stf_trace_trigger_insn(RISCVCPUState *s, target_ulong PC) 
+bool stf_trace_trigger_insn(RISCVCPUState *s, target_ulong PC)
 {
-    //int hartid = s->mhartid;
-    //RISCVCPUState *cpu = s->machine->cpu_state[hartid];
-
-    if(!s->machine->common.stf_insn_tracing_enabled && (s->machine->common.stf_num_traced == 0)) {
-       s->machine->common.stf_insn_started = (s->machine->common.num_executed >= s->machine->common.stf_insn_start);
-    } else {
-       s->machine->common.stf_insn_started = false;
+    // Early out if stf insn num tracing not enabled
+    if (!s->machine->stf_trace || !s->machine->common.stf_insn_num_tracing) {
+        return false;
     }
 
-    if(s->machine->common.stf_insn_tracing_enabled){
-       s->machine->common.stf_insn_stop  = (s->machine->common.stf_num_traced == s->machine->common.stf_insn_length);
-    } else {
-       s->machine->common.stf_insn_stop  = false;
-    }
+    bool start = !s->machine->common.stf_insn_trace_active &&
+                 s->machine->common.num_executed == s->machine->common.stf_insn_start;
 
-    if(s->machine->common.stf_insn_started) {
+    bool stop = s->machine->common.stf_insn_trace_active &&
+                s->machine->common.stf_num_traced == s->machine->common.stf_insn_length;
+
+    if (start) {
+        fprintf(dromajo_stderr, "@@@ DROMAJO: START INSTRUCTION NUMBER \n");
+        s->machine->common.stf_insn_trace_active = true;
         stf_trace_open(s, PC);
-    } else if(s->machine->common.stf_insn_stop) {
-        stf_trace_close(s, PC);  
-        if(s->machine->common.stf_exit_on_stop_opc){
+    } else if (stop) {
+         fprintf(dromajo_stderr, "@@@ DROMAJO: STOP INSTRUCTION NUMBER \n");
+        s->machine->common.stf_insn_trace_active = false;
+        stf_trace_close(s, PC);
+        if (s->machine->common.stf_exit_on_stop_opc) {
            s->terminate_simulation = 1;
+           s->machine->common.stf_has_exit_pending = true;
         }
     }
 
     STF_TRACE_DEBUG(s);
-    return s->machine->common.stf_insn_tracing_enabled;
+    return s->machine->common.stf_insn_tracing_active;
 }

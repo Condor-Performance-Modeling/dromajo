@@ -215,41 +215,33 @@ typedef struct VirtMachine {
     const char * simpoint_bb_file = nullptr;       // simpoint.bbv file name
     uint64_t     simpoint_size = 0;
 
-    // Params
-    bool         stf_insn_num_tracing = false;     // STF insn num tracing mode is enabled
-    uint64_t     stf_insn_start = UINT64_MAX;
-    uint64_t     stf_insn_length = 0;
-
-    // Control
-    bool         stf_insn_tracing_enabled = false; // STF insn num tracing mode is active
-    bool         stf_insn_started = false;         // Past the start tracing instruction number
-    bool         stf_insn_stop = false;            // Past the stop tracing instruction number
-
     // Control
     uint64_t     num_executed = 0;                 // Total number of instructions executed
 
     // ---------------------------------------------------------------------
-    // STF Trace Generation 
-    //FIXME: delete the unused variables below once other 
-    //       deprecated functions are removed
-    // Params
+    // STF Trace Generation
     const char * stf_trace = nullptr; // STF trace file name
-    bool stf_exit_on_stop_opc;        // terminate the simulation after detecting STOP_TRACE opcode
-    bool stf_memrecord_size_in_bits;  // write memory access size in bits instead of bytes
-    bool stf_trace_register_state;    // Enable register records, IN PROGRESS
-    bool stf_disable_memory_records;  // Do not place memory accesses into the STF
-    int  stf_highest_priv_mode;       // Highest privilege mode to trace
-    bool stf_force_zero_sha;          // Emit 0 for the SHA in debug tests
+    bool         stf_insn_num_tracing = false;     // STF insn num tracing mode is enabled
+    bool         stf_exit_on_stop_opc;        // Terminate the simulation after detecting trace stop instruction
+    uint64_t     stf_insn_start = UINT64_MAX;
+    uint64_t     stf_insn_length = 0;
+    bool         stf_memrecord_size_in_bits;  // write memory access size in bits instead of bytes
+    bool         stf_trace_register_state;    // Enable register records, IN PROGRESS
+    bool         stf_disable_memory_records;  // Do not place memory accesses into the STF
+    int          stf_highest_priv_mode;       // Highest privilege mode to trace
+    bool         stf_force_zero_sha;          // Emit 0 for the SHA in debug tests
 
     // Control
-    bool stf_trace_open;              // STF trace is open (tracing has begun)
+    bool stf_trace_open;              // Is the STF trace open
     bool stf_in_traceable_region;
-    bool stf_tracing_enabled;         // Tracing is active
-    bool stf_is_start_opc;            // detected the START_TRACE opcode
-    bool stf_is_stop_opc;             // detected the STOP_TRACE opcode
-    bool stf_has_exit_pending;        // 
+    bool stf_macro_tracing_active;   // STF macro tracing is active
+    bool stf_insn_tracing_active = false; // STF insn num tracing is active
+    bool stf_is_start_opc;            // Detected trace start instruction in either macro or insn mode
+    bool stf_is_stop_opc;             // Detected trace stop instruction in either macro or insn mode
+    bool stf_has_exit_pending;        //
     uint64_t stf_prog_asid;           // STF program asid
     uint64_t stf_num_traced;          // Total number of instructions traced
+
     // ---------------------------------------------------------------------
 
     /* For co-simulation only, they are -1 if nothing is pending. */

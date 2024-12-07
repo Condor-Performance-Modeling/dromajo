@@ -185,9 +185,9 @@ static inline void track_write(RISCVCPUState *s, uint64_t vaddr, uint64_t paddr,
 #ifdef GOLDMEM_INORDER
     s->last_data_value = data;
 #endif
-    //FIXME: marshall these calls, here and in track_dread when 
+    //FIXME: marshall these calls, here and in track_dread when
     // the regression has more complete tests
-    if(trace_en && s->machine->common.stf_tracing_enabled) {
+    if(trace_en && s->machine->common.stf_macro_tracing_enabled) {
         RISCVCPUState *cpu = s->machine->cpu_state[0];
         int  priv       = riscv_get_priv_level(cpu);
         bool priv_ok    = priv  <= s->machine->common.stf_highest_priv_mode;
@@ -209,9 +209,9 @@ static inline uint64_t track_dread(RISCVCPUState *s, uint64_t vaddr, uint64_t pa
     s->last_data_type  = 0;
     //printf("track.ld[%llx:%llx]=%llx\n", paddr, paddr+size-1, data);
 
-    //FIXME: marshall these calls, here and in track_dread when 
+    //FIXME: marshall these calls, here and in track_dread when
     // the regression has more complete tests
-    if(trace_en && s->machine->common.stf_tracing_enabled) {
+    if(trace_en && s->machine->common.stf_macro_tracing_enabled) {
         RISCVCPUState *cpu = s->machine->cpu_state[0];
         int  priv       = riscv_get_priv_level(cpu);
         bool priv_ok    = priv  <= s->machine->common.stf_highest_priv_mode;
@@ -1276,7 +1276,7 @@ static BOOL counter_access_ok(RISCVCPUState *s, uint32_t csr) {
 
 /* return -1 if invalid CSR. 0 if OK. 'will_write' indicate that the
    csr will be written after (used for CSR access check) */
-static int csr_read(RISCVCPUState *s, uint32_t funct3, 
+static int csr_read(RISCVCPUState *s, uint32_t funct3,
                     target_ulong *pval, uint32_t csr, BOOL will_write) {
     target_ulong val;
 
@@ -1363,7 +1363,7 @@ static int csr_read(RISCVCPUState *s, uint32_t funct3,
         case 0x744: //mcontext
             if(opts->en_unimpl_csr_msg) fprintf(dromajo_stderr,"-W: access to unimpl mcontext iqnored\n");
             val = s->unimpl_mcontext;
-            break; 
+            break;
 
         case 0x7a0:  // tselect
             val = s->tselect;
@@ -1768,7 +1768,7 @@ static int csr_write(RISCVCPUState *s, uint32_t funct3, uint32_t csr, target_ulo
 
         case 0x744: //mcontext
             if(opts->en_unimpl_csr_msg) fprintf(dromajo_stderr,"-W: access to unimpl mcontext iqnored\n");
-            break; 
+            break;
 
         case 0x7a0:  // tselect
             s->tselect = val % MAX_TRIGGERS;

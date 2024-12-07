@@ -14,7 +14,7 @@
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions andfstf_
+ * See the License for the specific language governing permissions and
  * limitations under the License.
  *
  * THIS FILE IS BASED ON THE RISCVEMU SOURCE CODE WHICH IS DISTRIBUTED
@@ -68,8 +68,6 @@ BOOL virt_machine_run(RISCVMachine *s, int hartid, int n_cycles) {
         }
     }
 
-	//std::cout << "++++" << !riscv_terminated(s->cpu_state[hartid]) << "++++" <<  s->common.maxinsns << std::endl;
-	//non zero trace value that is !=10000  or max instructions not a multiple of 10000
     return !riscv_terminated(s->cpu_state[hartid]) && s->common.maxinsns > 0;
 }
 
@@ -128,3 +126,4 @@ bool load_elf_and_fake_the_config(VirtMachineParams *p, const char *path) {
 
     return false;
 }
+

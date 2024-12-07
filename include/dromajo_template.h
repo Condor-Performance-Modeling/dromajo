@@ -111,7 +111,7 @@ extern uint32_t _XLEN;
 }
 
 // ---------------------------------------------------------------------------
-#if CAPTURE_LOG == 1 
+#if CAPTURE_LOG == 1
 #define CAPTURED_INSTR(S) { \
   fprintf(dromajo_stderr,"CAPTURED INSTR %s PC:0x%lx ENC:0x%08x\n",S,s->pc,insn);  \
 }
@@ -139,7 +139,7 @@ static inline uint32_t shift_mask()
 }
 // =========================================================================
 // =========================================================================
-static inline uintx_t glue(orc_b,XLEN)(uintx_t rs) { 
+static inline uintx_t glue(orc_b,XLEN)(uintx_t rs) {
   auto bytes = std::bit_cast<std::array<uint8_t, sizeof(uintx_t)>>(rs);
   for (size_t i = 0; i < bytes.size(); i++) {
     bytes[i] = (bytes[i] == 0 ? 0 : UINT8_MAX);
@@ -148,7 +148,7 @@ static inline uintx_t glue(orc_b,XLEN)(uintx_t rs) {
   return rd;
 }
 // -------------------------------------------------------------------------
-static inline uintx_t glue(rev8,XLEN)(uintx_t rs) { 
+static inline uintx_t glue(rev8,XLEN)(uintx_t rs) {
   uintx_t rd = 0;
   int num_bytes = sizeof(uintx_t);
   // Reverse the bytes
@@ -159,12 +159,12 @@ static inline uintx_t glue(rev8,XLEN)(uintx_t rs) {
   return rd;
 }
 // -------------------------------------------------------------------------
-static inline uintx_t glue(rol,XLEN)(uintx_t rs1,uintx_t rs2) { 
+static inline uintx_t glue(rol,XLEN)(uintx_t rs1,uintx_t rs2) {
     int shift = rs2 % XLEN; // Ensure shift is within the register size
     return (rs1 << shift) | (rs1 >> (XLEN - shift));
 }
 // -------------------------------------------------------------------------
-static inline uintx_t rolw64(uintx_t rs1,uintx_t rs2) { 
+static inline uintx_t rolw64(uintx_t rs1,uintx_t rs2) {
   uint32_t len   = 32;
   uint32_t mask  = 32 - 1;
   uint32_t shamt = rs2 & mask;
@@ -174,14 +174,14 @@ static inline uintx_t rolw64(uintx_t rs1,uintx_t rs2) {
   return rd;
 }
 // -------------------------------------------------------------------------
-static inline uintx_t glue(ror,XLEN)(uintx_t rs1,uintx_t rs2) { 
+static inline uintx_t glue(ror,XLEN)(uintx_t rs1,uintx_t rs2) {
   uint32_t shamt = rs2 & shift_mask();
   uintx_t v1 = rs1;
   uintx_t rd = (v1 >> shamt) | (v1 << ((XLEN - shamt) & shift_mask()));
   return rd;
 }
 // -------------------------------------------------------------------------
-static inline uintx_t glue(rori,XLEN)(uintx_t rd,uintx_t rs1,uintx_t shamt) { 
+static inline uintx_t glue(rori,XLEN)(uintx_t rd,uintx_t rs1,uintx_t shamt) {
   assert(XLEN == 32 || XLEN == 64);
   //is sh amount bigger than XLEN-1?
   bool tooLarge = shamt > (XLEN-1);
@@ -191,7 +191,7 @@ static inline uintx_t glue(rori,XLEN)(uintx_t rd,uintx_t rs1,uintx_t shamt) {
   return _rd;
 }
 // -------------------------------------------------------------------------
-static inline uintx_t glue(roriw,XLEN)(uintx_t rs1,uintx_t shamt5) { 
+static inline uintx_t glue(roriw,XLEN)(uintx_t rs1,uintx_t shamt5) {
   assert(XLEN == 64);
   uint32_t len  = 32;
   unsigned mask = len - 1;
@@ -200,7 +200,7 @@ static inline uintx_t glue(roriw,XLEN)(uintx_t rs1,uintx_t shamt5) {
   return u64;
 }
 // -------------------------------------------------------------------------
-static inline uintx_t glue(rorw,XLEN)(uintx_t rs1,uintx_t rs2) { 
+static inline uintx_t glue(rorw,XLEN)(uintx_t rs1,uintx_t rs2) {
   assert(XLEN == 64);
   uint32_t len   = 32;
   uint32_t mask  = 32 - 1;
@@ -284,36 +284,36 @@ static inline uint64_t remu64(uint64_t a, uint64_t b) {
 }
 // =========================================================================
 // =========================================================================
-static inline uintx_t glue(clmul,XLEN)(uintx_t v1,uintx_t v2) { 
+static inline uintx_t glue(clmul,XLEN)(uintx_t v1,uintx_t v2) {
     assert(XLEN == 32 || XLEN == 64 || XLEN == 128);
-   
+
     uintx_t val = 0;
     for (unsigned i = 0; i < XLEN; ++i)
         if ((v2 >> i) & 1) val ^= v1 << i;
     return val;
 }
 // -------------------------------------------------------------------------
-static inline uintx_t glue(clmulh,XLEN)(uintx_t v1,uintx_t v2) { 
+static inline uintx_t glue(clmulh,XLEN)(uintx_t v1,uintx_t v2) {
     assert(XLEN == 32 || XLEN == 64 || XLEN == 128);
-  
+
     uintx_t val = 0;
     for (unsigned i = 1; i < XLEN; ++i)
         if ((v2 >> i) & 1) val ^= v1 >> (XLEN - i);
     return val;
 }
 // -------------------------------------------------------------------------
-static inline uintx_t glue(clmulr,XLEN)(uintx_t v1,uintx_t v2) { 
+static inline uintx_t glue(clmulr,XLEN)(uintx_t v1,uintx_t v2) {
     assert(XLEN == 32 || XLEN == 64 || XLEN == 128);
-  
+
     uintx_t val = 0;
     for (unsigned i = 0; i < XLEN; ++i)
         if ((v2 >> i) & 1) val ^= v1 >> (XLEN - i - 1);
     return val;
 }
 // -------------------------------------------------------------------------
-static inline uintx_t glue(cpop,XLEN)(uintx_t val) { 
+static inline uintx_t glue(cpop,XLEN)(uintx_t val) {
     assert(XLEN == 32 || XLEN == 64 || XLEN == 128);
-    
+
     if(XLEN == 32)      return __builtin_popcount(val);
     else if(XLEN == 64) return __builtin_popcountl(val);
     else {
@@ -323,7 +323,7 @@ static inline uintx_t glue(cpop,XLEN)(uintx_t val) {
             bit_count++;
         }
         return bit_count;
-    } 
+    }
 }
 // -------------------------------------------------------------------------
 static inline uintx_t glue(cpopw,XLEN)(uintx_t val) {
@@ -343,7 +343,7 @@ static inline uintx_t glue(ctz_,XLEN)(uintx_t val) {
         if(lo_val != 0) return __builtin_ctzl(lo_val);
         if(hi_val != 0) return __builtin_ctzl(hi_val);
         return 128;
-    } 
+    }
 }
 // -------------------------------------------------------------------------
 static inline uintx_t glue(ctzw,XLEN)(uintx_t val) {
@@ -351,22 +351,22 @@ static inline uintx_t glue(ctzw,XLEN)(uintx_t val) {
     return (val == 0) ? 32 : __builtin_ctz(_val);
 }
 // -------------------------------------------------------------------------
-static inline intx_t glue(sext_h,XLEN)(uintx_t val) { 
+static inline intx_t glue(sext_h,XLEN)(uintx_t val) {
     intx_t tmp = val << (XLEN-16);
     return (intx_t) (((intx_t)tmp) >> (XLEN-16));
 }
 // -------------------------------------------------------------------------
-static inline intx_t glue(sext_b,XLEN)(uintx_t val) { 
+static inline intx_t glue(sext_b,XLEN)(uintx_t val) {
     intx_t tmp = val << (XLEN-8);
     return (intx_t) (((intx_t)tmp) >> (XLEN-8));
 }
 // -------------------------------------------------------------------------
-static inline uintx_t glue(clz,XLEN)(uintx_t val) { 
+static inline uintx_t glue(clz,XLEN)(uintx_t val) {
   assert(XLEN == 64);
   return std::countl_zero(val);
 }
 // -------------------------------------------------------------------------
-static inline uintx_t glue(clzw,XLEN)(uintx_t val) { 
+static inline uintx_t glue(clzw,XLEN)(uintx_t val) {
   assert(XLEN == 64);
   return std::countl_zero((uint32_t)val);
 }
@@ -382,7 +382,7 @@ static inline uint64_t clear_bits(uint64_t value, int start, int end) {
 }
 // -------------------------------------------------------------------------
 // FIXME: The documentation from andes isn't clear about what should happen
-// when msb or lsb is zero. This code is suspect until tested 
+// when msb or lsb is zero. This code is suspect until tested
 // -------------------------------------------------------------------------
 static inline uint64_t bfoz_oper(uint32_t insn,uintx_t Rs1) {
 
@@ -402,7 +402,7 @@ static inline uint64_t bfoz_oper(uint32_t insn,uintx_t Rs1) {
         if (lsb < 63) {
             val = clear_bits(val, 63, lsbp1);
         }
-        
+
         // Zero out the lower part if lsb > 0
         if (lsb > 0) {
             val = clear_bits(val, lsbm1, 0);
@@ -410,15 +410,15 @@ static inline uint64_t bfoz_oper(uint32_t insn,uintx_t Rs1) {
     } else if (msb < lsb) {
         // Case: msb < lsb
         int lenm1 = lsb - msb;
-        
+
         // Set val[lsb:msb] = Rs1[lenm1:0]
         val |= (Rs1 & get_mask(lenm1 + 1)) << msb;
-        
+
         // Zero out the upper part if lsb < 63
         if (lsb < 63) {
             val = clear_bits(val, 63, lsbp1);
         }
-  
+
         // Zero out lower part val[msbm1:0]
         val = clear_bits(val, msbm1, 0);
     } else {
@@ -442,7 +442,7 @@ static inline uint64_t repeat_bit(uint64_t value, int bit_pos) {
 }
 // -------------------------------------------------------------------------
 // FIXME: The documentation from andes isn't clear about what should happen
-// when msb or lsb is zero. This code is suspect until tested 
+// when msb or lsb is zero. This code is suspect until tested
 // -------------------------------------------------------------------------
 static inline uint64_t bfos_oper(uint32_t insn,uint64_t Rs1) {
 
@@ -667,9 +667,9 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
     uint64_t     simm11,cimm7,cimm6,zero32_rs2;
     uint32_t     _bit30;
     (void) simm11; //GCC complains for XLEN != 64
-    (void) cimm7; 
-    (void) cimm6; 
-    (void) _bit30; 
+    (void) cimm7;
+    (void) cimm6;
+    (void) _bit30;
     (void) zero32_rs2;
     (void) _new_pc;
     (void) isBranchGroup;
@@ -684,7 +684,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
     bool         vm;
     clear_most_recently_written_vregs(s);
 #endif
-    int num_executed               = 0;
+    uint64_t num_executed           = 0;
     s->most_recently_written_reg    = -1;
     s->most_recently_written_fp_reg = -1;
     s->info                         = ctf_nop;
@@ -784,7 +784,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                                | get_field1(insn,15,15,16)
                                | get_field1(insn,17,12,14)
                                | get_field1(insn,20,11,11)
-                               | get_field1(insn,21, 1,10) 
+                               | get_field1(insn,21, 1,10)
                                | get_field1(insn,14, 0, 0)),18);
                     addr = read_reg(_GP) + imm;
                     if (target_read_u8(s, &_rval, addr)) goto mmu_exception;
@@ -795,17 +795,17 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                                | get_field1(insn,15,15,16)
                                | get_field1(insn,17,12,14)
                                | get_field1(insn,20,11,11)
-                               | get_field1(insn,21, 1,10) 
+                               | get_field1(insn,21, 1,10)
                                | get_field1(insn,14, 0, 0)),18);
                     val = ((intx_t) read_reg(_GP)) + imm;
                 } else if (funct2 == 0x02) { // LBUGP
-                    CAPTURED_INSTR("A* LBUGP"); 
+                    CAPTURED_INSTR("A* LBUGP");
                     imm = sext((get_field1(insn,31,17,17)
                                | get_field1(insn,15,15,16)
                                | get_field1(insn,17,12,14)
                                | get_field1(insn,20,11,11)
-                               | get_field1(insn,21, 1,10) 
-                               | get_field1(insn,14, 0, 0)),18);                    
+                               | get_field1(insn,21, 1,10)
+                               | get_field1(insn,14, 0, 0)),18);
                     addr = read_reg(_GP) + imm;
                     if (target_read_u8(s, &_rval, addr)) goto mmu_exception;
                     val = _rval;
@@ -840,7 +840,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                             | get_field1(insn,17,12,14)
                             | get_field1(insn,7, 11,11)
                             | get_field1(insn,25, 5,10)
-                            | get_field1(insn,8,  1,4)),18); 
+                            | get_field1(insn,8,  1,4)),18);
 
                   addr = read_reg(_GP) + imm;
                   if (target_write_u16(s, addr, read_reg(rs2))) goto mmu_exception;
@@ -851,7 +851,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                             | get_field1(insn,15,15,16)
                             | get_field1(insn,17,12,14)
                             | get_field1(insn,20,11,11)
-                            | get_field1(insn,21, 1,10)),18); 
+                            | get_field1(insn,21, 1,10)),18);
                   addr = read_reg(_GP) + imm;
                   uint16_t rval;
                   if (target_read_u16(s, &rval, addr)) goto mmu_exception;
@@ -864,7 +864,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                             | get_field1(insn,15,15,16)
                             | get_field1(insn,17,12,14)
                             | get_field1(insn,20,11,11)
-                            | get_field1(insn,22, 2,10)),19); 
+                            | get_field1(insn,22, 2,10)),19);
                   addr = read_reg(_GP) + imm;
                   uint32_t rval;
                   if (target_read_u32(s, &rval, addr)) goto mmu_exception;
@@ -877,7 +877,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                             | get_field1(insn,15,15,16)
                             | get_field1(insn,17,12,14)
                             | get_field1(insn,20,11,11)
-                            | get_field1(insn,23, 3,10)),20); 
+                            | get_field1(insn,23, 3,10)),20);
                   addr = read_reg(_GP) + imm;
                   uint64_t rval;
                   if (target_read_u64(s, &rval, addr)) goto mmu_exception;
@@ -891,7 +891,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                             | get_field1(insn,17,12,14)
                             | get_field1(insn, 7,11,11)
                             | get_field1(insn,25, 5,10)
-                            | get_field1(insn, 9, 2, 4)),19); 
+                            | get_field1(insn, 9, 2, 4)),19);
 
                   addr = read_reg(_GP) + imm;
                   if (target_write_u32(s, addr, read_reg(rs2))) goto mmu_exception;
@@ -902,7 +902,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                             | get_field1(insn,15,15,16)
                             | get_field1(insn,17,12,14)
                             | get_field1(insn,20,11,11)
-                            | get_field1(insn,21, 1,10)),18); 
+                            | get_field1(insn,21, 1,10)),18);
                   addr = read_reg(_GP) + imm;
                   uint16_t rval;
                   if (target_read_u16(s, &rval, addr)) goto mmu_exception;
@@ -916,7 +916,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                             | get_field1(insn,15,15,16)
                             | get_field1(insn,17,12,14)
                             | get_field1(insn,20,11,11)
-                            | get_field1(insn,22, 2,10)),19); 
+                            | get_field1(insn,22, 2,10)),19);
                   addr = read_reg(_GP) + imm;
                   uint32_t rval;
                   if (target_read_u32(s, &rval, addr)) goto mmu_exception;
@@ -1528,7 +1528,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
 
                 switch (funct3) {
                     case 0: /* addi */ val = (intx_t)(val1 + imm); break;
-                    case 1: 
+                    case 1:
                         if (EN_ZBB && (_funct12 == 0x601)) {
 
                             CAPTURED_INSTR("CTZ");
@@ -1585,7 +1585,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                     case 2: /* slti  */ val = (target_long)val1 < (target_long)imm; break;
                     case 3: /* sltiu */ val = val1 < (target_ulong)imm; break;
                     case 4: /* xori  */ val = val1 ^ imm; break;
-                    case 5: 
+                    case 5:
                         if (EN_ZBB && _funct12 == 0x287) {
 
                             CAPTURED_INSTR("ORC.B");
@@ -1672,7 +1672,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                           val = (int32_t)(val1 << (imm & 31));
                         }
                         break;
-                    case 5: 
+                    case 5:
                         if(EN_ZBB && _funct7 == 0x30 && _funct3 == 0x5) {
 
                             CAPTURED_INSTR("RORIW");
@@ -1805,7 +1805,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                                        mask >>= 8;
                                     }
                                     val = byte_found - 8;
-                                    break; 
+                                    break;
                                  }
                       default: ILLEGAL_INSTR("CUST2-1");
                     }
@@ -1819,13 +1819,13 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                     if (rd != 0) write_reg(rd, val);
                     //ILLEGAL_INSTR("A* BFOZ RV64"); need test
 
-                } else if(_funct3 == 0x3) { //BFOS 
+                } else if(_funct3 == 0x3) { //BFOS
 
                     CAPTURED_INSTR("A* BFOS RV64");
                     val = bfos_oper(insn,read_reg(rs1));
                     if (rd != 0) write_reg(rd, val);
                     //ILLEGAL_INSTR("A* BFOS RV64"); need test
-                       
+
                 } else { //Branch group
 
                     isBranchGroup = true;
@@ -1861,7 +1861,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                                 cond = (read_reg(rs1) != cimm7);
                                 break;
 
-                        case 0x7: 
+                        case 0x7:
                             if(_bit30 == 0) {
 
                                 CAPTURED_INSTR("A* BBC RV64");
@@ -1874,7 +1874,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                                 cond = (((read_reg(rs1) >> cimm6) & 0x1) == 0x1); //bit set
                                 break;
                             }
-                            
+
                         default: ILLEGAL_INSTR("CUST2-2"); break;
                     }
 
@@ -1888,11 +1888,11 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                         //s->pc = (intx_t)(GET_PC() + simm11);
                         s->pc = _new_pc;
                         JUMP_INSN(ctf_taken_branch);
-                    } 
+                    }
 
                 } //end of branch group
 
-                NEXT_INSN;     
+                NEXT_INSN;
 #endif
 
 
@@ -2992,7 +2992,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
         /* update PC for next instruction */
     jump_insn:;
 
-        // STF: Try to trace the instruction
+        // STF: Trace the instruction in macro mode
         if (s->machine->common.stf_trace) {
             if (!s->machine->common.stf_insn_num_tracing){
                 if (stf_trace_trigger(s, GET_PC(), insn)) {
@@ -3002,7 +3002,7 @@ int no_inline glue(riscv_cpu_interp, XLEN)(RISCVCPUState *s, int n_cycles) {
                     }
                     return num_executed;
                 }
-            } 
+            }
         }
 
     } /* end of main loop */
