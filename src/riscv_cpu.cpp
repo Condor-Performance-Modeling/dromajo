@@ -187,7 +187,7 @@ static inline void track_write(RISCVCPUState *s, uint64_t vaddr, uint64_t paddr,
 #endif
     //FIXME: marshall these calls, here and in track_dread when
     // the regression has more complete tests
-    if(trace_en && s->machine->common.stf_macro_tracing_enabled) {
+    if(trace_en && s->machine->common.stf_macro_tracing_active) {
         RISCVCPUState *cpu = s->machine->cpu_state[0];
         int  priv       = riscv_get_priv_level(cpu);
         bool priv_ok    = priv  <= s->machine->common.stf_highest_priv_mode;
@@ -211,7 +211,7 @@ static inline uint64_t track_dread(RISCVCPUState *s, uint64_t vaddr, uint64_t pa
 
     //FIXME: marshall these calls, here and in track_dread when
     // the regression has more complete tests
-    if(trace_en && s->machine->common.stf_macro_tracing_enabled) {
+    if(trace_en && s->machine->common.stf_macro_tracing_active) {
         RISCVCPUState *cpu = s->machine->cpu_state[0];
         int  priv       = riscv_get_priv_level(cpu);
         bool priv_ok    = priv  <= s->machine->common.stf_highest_priv_mode;

@@ -61,7 +61,7 @@ void stf_record_state(RISCVMachine * m, int hartid, uint64_t last_pc)
 bool stf_trace_trigger(RISCVCPUState *s,target_ulong PC,uint32_t insn)
 {
    // Early out if stf macro tracing not enabled
-    if (!s->machine->stf_trace || s->machine->common.stf_insn_num_tracing) {
+    if (!s->machine->common.stf_trace || s->machine->common.stf_insn_num_tracing) {
         return false;
     }
 
@@ -288,23 +288,23 @@ void stf_trace_element(RISCVMachine *m,int hartid,int priv,
 bool stf_trace_trigger_insn(RISCVCPUState *s, target_ulong PC)
 {
     // Early out if stf insn num tracing not enabled
-    if (!s->machine->stf_trace || !s->machine->common.stf_insn_num_tracing) {
+    if (!s->machine->common.stf_trace || !s->machine->common.stf_insn_num_tracing) {
         return false;
     }
 
-    bool start = !s->machine->common.stf_insn_trace_active &&
+    bool start = !s->machine->common.stf_insn_tracing_active &&
                  s->machine->common.num_executed == s->machine->common.stf_insn_start;
 
-    bool stop = s->machine->common.stf_insn_trace_active &&
+    bool stop = s->machine->common.stf_insn_tracing_active &&
                 s->machine->common.stf_num_traced == s->machine->common.stf_insn_length;
 
     if (start) {
         fprintf(dromajo_stderr, "@@@ DROMAJO: START INSTRUCTION NUMBER \n");
-        s->machine->common.stf_insn_trace_active = true;
+        s->machine->common.stf_insn_tracing_active = true;
         stf_trace_open(s, PC);
     } else if (stop) {
          fprintf(dromajo_stderr, "@@@ DROMAJO: STOP INSTRUCTION NUMBER \n");
-        s->machine->common.stf_insn_trace_active = false;
+        s->machine->common.stf_insn_tracing_active = false;
         stf_trace_close(s, PC);
         if (s->machine->common.stf_exit_on_stop_opc) {
            s->terminate_simulation = 1;
